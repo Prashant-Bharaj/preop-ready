@@ -1,0 +1,38 @@
+# Demo Deployment Workflow
+# Calls the central platform workflow to deploy
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Extract config from demo.config.yml
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      demo_name: ${{ steps.config.outputs.name }}
+      owner_email: ${{ steps.config.outputs.email }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Read demo config
+        id: config
+        run: |
+          NAME=$(grep '^name:' demo.config.yml | cut -d':' -f2 | tr -d ' ')
+          EMAIL=$(grep '^email:' demo.config.yml | cut -d':' -f2 | tr -d ' ')
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "email=$EMAIL" >> $GITHUB_OUTPUT
+          echo "Demo: $NAME, Owner: $EMAIL"
+
+  # Call platform deployment workflow
+  deploy:
+    needs: config
+    uses: bayer-int/dd-platform-repo/.github/workflows/deploy-demo.yml@main
+    with:
+      demo_name: ${{ needs.config.outputs.demo_name }}
+      owner_email: ${{ needs.config.outputs.owner_email }}
+    secrets: inherit
+
