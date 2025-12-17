@@ -1,0 +1,12 @@
+# ============================================================================
+# DEMO PLATFORM CONFIGURATION
+# ============================================================================
+# Fill in your details below. This is the ONLY required configuration.
+# ============================================================================
+
+# Your demo name (becomes your URL: <name>.demo.int.bayer.com)
+# Use lowercase letters, numbers, and hyphens only
+name: my-demo-name
+
+# Your Bayer email (for deployment notifications)
+email: your.name@bayer.com

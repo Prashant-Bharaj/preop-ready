@@ -1,0 +1,93 @@
+# ============================================================================
+# LOCAL DEVELOPMENT - DOCKER COMPOSE
+# ============================================================================
+# This file is configured by AI based on your stack choice.
+#
+# Commands:
+#   docker compose up --build     # Start services
+#   docker compose down           # Stop services
+#   docker compose logs -f        # View logs
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # --------------------------------------------------------------------------
+  # FRONTEND
+  # --------------------------------------------------------------------------
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # BACKEND
+  # --------------------------------------------------------------------------
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=demo
+      - DATABASE_USER=demo_user
+      - DATABASE_PASSWORD=demo_password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # DATABASE
+  # --------------------------------------------------------------------------
+  # MySQL (default) - AI will switch to PostgreSQL if needed
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=demo
+      - MYSQL_USER=demo_user
+      - MYSQL_PASSWORD=demo_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # PostgreSQL alternative (AI will uncomment if chosen):
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     - POSTGRES_DB=demo
+  #     - POSTGRES_USER=demo_user
+  #     - POSTGRES_PASSWORD=demo_password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U demo_user -d demo"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
