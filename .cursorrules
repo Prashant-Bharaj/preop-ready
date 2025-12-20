@@ -8,7 +8,7 @@ You are helping a developer build a demo application for the Bayer Hackathons Pl
 |-------|---------|
 | Frontend | **Vanilla** (HTML/CSS/JS) or **React** |
 | Backend | **Node.js** or **Python** |
-| Database | **MySQL** or **PostgreSQL** |
+| Database | **MySQL** (default), **PostgreSQL**, or **None** |
 
 ---
 
@@ -54,10 +54,12 @@ Analyze their description and decide:
 **Backend:**
 - **Node.js** → User mentions JavaScript, real-time features, or no preference
 - **Python** → User mentions Python, ML/AI, data processing, or scientific computing
+- **None** → Static site, no API needed
 
 **Database:**
-- **MySQL** → Default choice, general purpose
+- **MySQL** → Default choice, general purpose, user needs data storage
 - **PostgreSQL** → User mentions PostgreSQL, needs JSON support, or complex queries
+- **None** → No data persistence needed (stateless app)
 
 ### Step 4: Confirm Stack
 
@@ -65,8 +67,8 @@ Analyze their description and decide:
 Based on what you described, I recommend:
 
 - **Frontend**: [React/Vanilla] - [reason]
-- **Backend**: [Node.js/Python] - [reason]
-- **Database**: [MySQL/PostgreSQL] - [reason]
+- **Backend**: [Node.js/Python/None] - [reason]
+- **Database**: [MySQL/PostgreSQL/None] - [reason]
 
 Does this work for you? Or would you prefer different choices?
 ```
@@ -84,6 +86,7 @@ Once confirmed, generate all the code including linting setup.
 - [ ] Create `frontend/index.html`
 - [ ] Create `frontend/style.css`
 - [ ] Create `frontend/script.js`
+- [ ] Update `frontend/nginx.conf` if needed
 
 ### Frontend: React
 - [ ] Copy `Dockerfile.react` content → `frontend/Dockerfile`
@@ -112,13 +115,20 @@ Once confirmed, generate all the code including linting setup.
 - [ ] Copy `examples/ruff.toml` → `backend/ruff.toml`
 - [ ] Create `backend/main.py`
 
-### Database: MySQL
+### Database: MySQL (default)
+- [ ] Create/update `database/init/init.sql` with schema
 - [ ] Use MySQL config in `docker-compose.yml` (already default)
 - [ ] Set `DATABASE_PORT=3306` in backend environment
 
 ### Database: PostgreSQL
-- [ ] Replace MySQL with PostgreSQL in `docker-compose.yml`
+- [ ] Create/update `database/init/init.sql` with schema
+- [ ] Replace MySQL with PostgreSQL in `docker-compose.yml` (uncomment postgres, remove mysql)
 - [ ] Set `DATABASE_PORT=5432` in backend environment
+
+### No Database
+- [ ] Delete `database/` folder entirely
+- [ ] Remove `db` service from `docker-compose.yml`
+- [ ] Remove `DATABASE_*` environment variables from backend in `docker-compose.yml`
 
 ---
 
@@ -128,15 +138,19 @@ After code generation, project should have:
 
 ```
 ├── demo.config.yml              # Name + email
-├── docker-compose.yml           # Updated for chosen database
+├── docker-compose.yml           # Updated for chosen stack
 ├── frontend/
 │   ├── Dockerfile               # From .vanilla or .react
+│   ├── nginx.conf               # For serving static files
 │   └── [application files]
-├── backend/
+├── backend/                     # Only if backend needed
 │   ├── Dockerfile               # From .node or .python
 │   ├── eslint.config.js         # If Node.js
 │   ├── ruff.toml                # If Python
 │   └── [application files]
+├── database/                    # Only if database needed
+│   └── init/
+│       └── init.sql             # Schema definition
 ```
 
 ---
@@ -164,11 +178,11 @@ def health():
 Use these (auto-provided in production):
 
 ```
-DATABASE_HOST
-DATABASE_PORT
-DATABASE_NAME
-DATABASE_USER
-DATABASE_PASSWORD
+DATABASE_HOST      # In production: <demo-name>-db.demo.local
+DATABASE_PORT      # 3306 for MySQL, 5432 for PostgreSQL
+DATABASE_NAME      # demo
+DATABASE_USER      # demo_user
+DATABASE_PASSWORD  # Auto-generated secret
 ```
 
 ---
@@ -245,3 +259,4 @@ Wait ~5-10 minutes. Visit: `https://<demo-name>.demo.int.bayer.com`
 4. Add health check endpoint
 5. Use relative API URLs (`/api/*`)
 6. Include linting configuration for chosen backend
+7. Set up database folder with init script if database is needed

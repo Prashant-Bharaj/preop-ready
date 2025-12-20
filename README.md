@@ -1,6 +1,6 @@
-# Demo Deployment Template
+# Vibe Coded Project Template
 
-Template for deploying demo applications to the Bayer Hackathons Platform.
+Template for deploying vibe coded projects to the Bayer Hackathons Platform.
 
 ## Supported Stacks
 
@@ -22,7 +22,7 @@ Click **"Use this template"** on GitHub.
 ### 3. Tell AI What You Want to Build
 
 The AI will ask you:
-1. **Demo name and email** (for `demo.config.yml`)
+1. **Project name and email** (for `demo.config.yml`)
 2. **What do you want to build?** - Describe your app
 
 Based on your description, AI will:
@@ -35,11 +35,11 @@ Based on your description, AI will:
 
 ```bash
 git add .
-git commit -m "feat: my demo"
+git commit -m "feat: my vibe project"
 git push origin main
 ```
 
-Wait ~5-10 minutes. Visit: `https://<demo-name>.demo.int.bayer.com`
+Wait ~5-10 minutes. Visit: `https://<project-name>.vibe.int.bayer.com`
 
 ---
 

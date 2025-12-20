@@ -35,13 +35,20 @@
 - [ ] **Copy `examples/ruff.toml` → `backend/ruff.toml`**
 - [ ] Create `backend/main.py`
 
-### Database: MySQL
-- [ ] Use MySQL config in `docker-compose.yml` (default)
+### Database: MySQL (default)
+- [ ] Create/update `database/init/init.sql` with schema
+- [ ] Use MySQL config in `docker-compose.yml` (already default)
 - [ ] Set `DATABASE_PORT=3306`
 
 ### Database: PostgreSQL
+- [ ] Create/update `database/init/init.sql` with schema
 - [ ] Replace MySQL with PostgreSQL in `docker-compose.yml`
 - [ ] Set `DATABASE_PORT=5432`
+
+### No Database
+- [ ] Delete entire `database/` folder
+- [ ] Remove `db` service from `docker-compose.yml`
+- [ ] Remove `DATABASE_*` env vars from backend service
 
 ## Required Files After Generation
 
@@ -50,12 +57,16 @@
 ├── docker-compose.yml
 ├── frontend/
 │   ├── Dockerfile
+│   ├── nginx.conf
 │   └── [app files]
-├── backend/
+├── backend/                     # Only if needed
 │   ├── Dockerfile
-│   ├── eslint.config.js    # Node.js only
-│   ├── ruff.toml           # Python only
+│   ├── eslint.config.js         # Node.js only
+│   ├── ruff.toml                # Python only
 │   └── [app files]
+├── database/                    # Only if needed
+│   └── init/
+│       └── init.sql
 ```
 
 ## Health Check Endpoint (REQUIRED)
@@ -72,6 +83,35 @@ app.get('/health', (req, res) => {
 @app.get("/health")
 def health():
     return {"status": "ok"}
+```
+
+## Database Connection Example
+
+```javascript
+// Node.js with MySQL
+const mysql = require('mysql2/promise');
+
+const pool = mysql.createPool({
+  host: process.env.DATABASE_HOST,
+  port: process.env.DATABASE_PORT,
+  database: process.env.DATABASE_NAME,
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+});
+```
+
+```python
+# Python with MySQL
+import os
+import mysql.connector
+
+db = mysql.connector.connect(
+    host=os.environ["DATABASE_HOST"],
+    port=int(os.environ["DATABASE_PORT"]),
+    database=os.environ["DATABASE_NAME"],
+    user=os.environ["DATABASE_USER"],
+    password=os.environ["DATABASE_PASSWORD"],
+)
 ```
 
 ## API Communication

@@ -7,8 +7,8 @@ You are helping a developer build a demo application for the **Bayer Hackathons 
 | Layer | Options |
 |-------|---------|
 | Frontend | **Vanilla** (HTML/CSS/JS) or **React** |
-| Backend | **Node.js** or **Python** |
-| Database | **MySQL** or **PostgreSQL** |
+| Backend | **Node.js** or **Python** (or None) |
+| Database | **MySQL** (default), **PostgreSQL**, or **None** |
 
 ## Conversation Flow
 
@@ -52,10 +52,12 @@ Analyze their description and decide:
 **Backend:**
 - **Node.js** → User mentions JavaScript, real-time features, or no preference
 - **Python** → User mentions Python, ML/AI, data processing, or scientific computing
+- **None** → Static site only, no API needed
 
 **Database:**
-- **MySQL** → Default choice, general purpose
+- **MySQL** → Default choice, general purpose, user needs data storage
 - **PostgreSQL** → User mentions PostgreSQL, needs JSON support, or complex queries
+- **None** → No data persistence needed (stateless app)
 
 ### Step 4: Confirm Stack
 
@@ -63,8 +65,8 @@ Analyze their description and decide:
 Based on what you described, I recommend:
 
 - **Frontend**: [React/Vanilla] - [reason]
-- **Backend**: [Node.js/Python] - [reason]
-- **Database**: [MySQL/PostgreSQL] - [reason]
+- **Backend**: [Node.js/Python/None] - [reason]
+- **Database**: [MySQL/PostgreSQL/None] - [reason]
 
 Does this work for you? Or would you prefer different choices?
 ```
@@ -74,3 +76,4 @@ Does this work for you? Or would you prefer different choices?
 Once confirmed, generate all the code **including linting configuration**:
 - Node.js → copy `examples/eslint.config.js` to `backend/`
 - Python → copy `examples/ruff.toml` to `backend/`
+- Database → create `database/init/init.sql` with schema (uses official images, no Dockerfile needed)
