@@ -1,38 +1,88 @@
-# Demo Deployment Workflow
-# Calls the central platform workflow to deploy
+# =============================================================================
+# Vibe Coded Project Deployment Workflow
+# =============================================================================
+# This workflow deploys your vibe coded project to the platform.
+#
+# Triggers:
+#   - Push to main branch (production deployment)
+#   - Manual dispatch (for testing)
+#
+# Prerequisites:
+#   1. Configure demo.config.yml with your project name and settings
+#   2. Make sure you're on the allowed users list
+#   3. Push to main branch to deploy
+# =============================================================================
 
-name: Deploy
+name: Deploy Vibe Project
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
   workflow_dispatch:
 
+# Required for OIDC authentication to AWS
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
-  # Extract config from demo.config.yml
+  # ===========================================================================
+  # Read Project Configuration
+  # ===========================================================================
   config:
+    name: Read Config
     runs-on: ubuntu-latest
     outputs:
-      demo_name: ${{ steps.config.outputs.name }}
-      owner_email: ${{ steps.config.outputs.email }}
+      project-name: ${{ steps.read.outputs.project-name }}
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Read demo config
-        id: config
-        run: |
-          NAME=$(grep '^name:' demo.config.yml | cut -d':' -f2 | tr -d ' ')
-          EMAIL=$(grep '^email:' demo.config.yml | cut -d':' -f2 | tr -d ' ')
-          echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "email=$EMAIL" >> $GITHUB_OUTPUT
-          echo "Demo: $NAME, Owner: $EMAIL"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  # Call platform deployment workflow
+      - name: Read demo.config.yml
+        id: read
+        run: |
+          if [[ ! -f "demo.config.yml" ]]; then
+            echo "::error::demo.config.yml not found. Please create it with your project name."
+            exit 1
+          fi
+          
+          PROJECT_NAME=$(grep '^name:' demo.config.yml | awk '{print $2}')
+          
+          if [[ -z "$PROJECT_NAME" ]] || [[ "$PROJECT_NAME" == "my-project-name" ]]; then
+            echo "::error::Please configure your project name in demo.config.yml"
+            exit 1
+          fi
+          
+          # Validate project name format
+          if [[ ! "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]] || [[ ${#PROJECT_NAME} -gt 32 ]]; then
+            echo "::error::Project name must be lowercase alphanumeric with hyphens, 2-32 characters"
+            exit 1
+          fi
+          
+          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "✅ Project name: $PROJECT_NAME"
+
+      - name: Configuration summary
+        run: |
+          echo "## 📋 Project Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Project Name | \`${{ steps.read.outputs.project-name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://${{ steps.read.outputs.project-name }}.vibe.int.bayer.com |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Deploy using Platform Workflow
+  # ===========================================================================
   deploy:
+    name: Deploy
     needs: config
     uses: bayer-int/dd-platform-repo/.github/workflows/deploy-demo.yml@main
     with:
-      demo_name: ${{ needs.config.outputs.demo_name }}
-      owner_email: ${{ needs.config.outputs.owner_email }}
-    secrets: inherit
-
+      project-name: ${{ needs.config.outputs.project-name }}
+    secrets:
+      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}

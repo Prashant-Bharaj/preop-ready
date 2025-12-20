@@ -1,12 +1,42 @@
-# ============================================================================
-# DEMO PLATFORM CONFIGURATION
-# ============================================================================
+# =============================================================================
+# VIBE CODED PROJECT CONFIGURATION
+# =============================================================================
 # Fill in your details below. This is the ONLY required configuration.
-# ============================================================================
+#
+# After configuring:
+#   1. Push to main branch to deploy
+#   2. Your project will be available at: https://<name>.vibe.int.bayer.com
+# =============================================================================
 
-# Your demo name (becomes your URL: <name>.demo.int.bayer.com)
-# Use lowercase letters, numbers, and hyphens only
-name: my-demo-name
+# Your project name (becomes your URL: <name>.vibe.int.bayer.com)
+# Rules:
+#   - Use lowercase letters, numbers, and hyphens only
+#   - Must start and end with a letter or number
+#   - Maximum 32 characters
+name: my-project-name
 
 # Your Bayer email (for deployment notifications)
 email: your.name@bayer.com
+
+# Database type (optional)
+# Options: mysql, postgres, none
+# Default: none
+database: none
+
+# =============================================================================
+# OPTIONAL: Advanced Configuration
+# =============================================================================
+# Uncomment and modify these if you need custom settings.
+# Default values work for most projects.
+
+# Resource limits
+# cpu: 512        # CPU units (256, 512, 1024, 2048, 4096)
+# memory: 1024    # Memory in MB
+
+# Number of instances
+# replicas: 1
+
+# Environment variables (passed to backend container)
+# env:
+#   - name: MY_VAR
+#     value: my-value
