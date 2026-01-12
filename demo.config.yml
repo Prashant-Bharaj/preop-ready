@@ -1,42 +1,23 @@
 # =============================================================================
 # VIBE CODED PROJECT CONFIGURATION
 # =============================================================================
-# Fill in your details below. This is the ONLY required configuration.
+# This is the ONLY required configuration file.
 #
 # After configuring:
 #   1. Push to main branch to deploy
 #   2. Your project will be available at: https://<name>.vibe.992872368362.cloud.bayer.com
 # =============================================================================
 
-# Your project name (becomes your URL: <name>.vibe.int.bayer.com)
+# Your project name (becomes your URL subdomain)
 # Rules:
-#   - Use lowercase letters, numbers, and hyphens only
+#   - Lowercase letters, numbers, and hyphens only
 #   - Must start and end with a letter or number
-#   - Maximum 32 characters
+#   - 2-30 characters
 name: my-project-name
 
-# Your Bayer email (for deployment notifications)
+# Your Bayer email (for notifications - optional)
 email: your.name@bayer.com
 
 # Database type (optional)
 # Options: mysql, postgres, none
-# Default: none
 database: none
-
-# =============================================================================
-# OPTIONAL: Advanced Configuration
-# =============================================================================
-# Uncomment and modify these if you need custom settings.
-# Default values work for most projects.
-
-# Resource limits
-# cpu: 512        # CPU units (256, 512, 1024, 2048, 4096)
-# memory: 1024    # Memory in MB
-
-# Number of instances
-# replicas: 1
-
-# Environment variables (passed to backend container)
-# env:
-#   - name: MY_VAR
-#     value: my-value
