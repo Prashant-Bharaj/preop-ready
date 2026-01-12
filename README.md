@@ -108,12 +108,43 @@ Does this work for you?"
 
 ---
 
+## Application Secrets
+
+Need API keys or other secrets in your backend?
+
+### Local Development: Use `.env` File
+
+Create `backend/.env` (gitignored):
+```bash
+OPENAI_KEY=sk-your-dev-key
+API_KEY=test-key-123
+```
+
+### Production: Use GitHub Secrets
+
+**Before pushing code that needs secrets:**
+
+1. Go to your repo → **Settings** → **Secrets** → **Actions**
+2. Click **New repository secret**
+3. Name it with `APP_` prefix → Value: your secret
+4. Push your code - secrets auto-inject!
+
+| GitHub Secret | Use in Backend |
+|---------------|----------------|
+| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
+| `APP_API_KEY` | `process.env.API_KEY` |
+| `APP_DATABASE_URL` | `process.env.DATABASE_URL` |
+| `APP_SECRET_1` - `APP_SECRET_3` | `process.env.SECRET_1` - `SECRET_3` |
+
+> ⚠️ **Never commit `.env` files!** Add secrets to GitHub before deploying.
+
+---
+
 ## Security
 
 - **Linting**: ESLint (Node.js) or Ruff (Python) catches security issues
 - **GitHub CodeQL**: Scans every push
-- **Deployment blocked** if vulnerabilities found
-- **Email sent** with details
+- **Secrets**: Stored encrypted in GitHub, injected at deploy time
 
 ---
 

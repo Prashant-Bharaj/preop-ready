@@ -237,9 +237,9 @@ def health():
     return {"status": "ok"}
 ```
 
-### Environment Variables
+### Environment Variables (Auto-Provided)
 
-Use these (auto-provided in production):
+These are automatically available in production:
 
 ```
 DATABASE_HOST      # In production: <demo-name>-db.demo.local
@@ -247,7 +247,112 @@ DATABASE_PORT      # 3306 for MySQL, 5432 for PostgreSQL
 DATABASE_NAME      # demo
 DATABASE_USER      # demo_user
 DATABASE_PASSWORD  # Auto-generated secret
+PROJECT_NAME       # Your project name
+ENVIRONMENT        # "production"
 ```
+
+### Application Secrets (User-Provided)
+
+Secrets workflow differs between local development and production:
+
+#### Local Development: Use `.env` File
+
+Create a `.env` file in your backend folder (it's gitignored by default):
+
+```bash
+# backend/.env - FOR LOCAL DEVELOPMENT ONLY
+OPENAI_KEY=sk-your-dev-key-here
+API_KEY=your-test-api-key
+DATABASE_URL=postgres://localhost:5432/mydb
+```
+
+Load it in your code:
+
+```javascript
+// Node.js - install: npm install dotenv
+require('dotenv').config();
+const apiKey = process.env.API_KEY;
+```
+
+```python
+# Python - install: pip install python-dotenv
+from dotenv import load_dotenv
+load_dotenv()
+api_key = os.environ.get('API_KEY')
+```
+
+#### Production Deployment: Use GitHub Secrets
+
+**IMPORTANT**: AI cannot add secrets to GitHub. You must tell the user exactly what to add!
+
+When generating code that uses secrets, analyze the code and tell the user:
+1. The exact GitHub secret NAME to create
+2. Where to get the VALUE (e.g., which website, dashboard, etc.)
+
+**Example - if you generate code using OpenAI:**
+
+```
+⚠️ BEFORE YOU PUSH: Add your secrets to GitHub!
+
+Your code uses these secrets. Add them NOW before pushing:
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ GitHub Secret Name    │ Value                                       │
+├───────────────────────┼─────────────────────────────────────────────┤
+│ APP_OPENAI_KEY        │ Your OpenAI API key                         │
+│                       │ Get it from: https://platform.openai.com/api-keys │
+├───────────────────────┼─────────────────────────────────────────────┤
+│ APP_DATABASE_URL      │ Your database connection string             │
+│                       │ Format: postgres://user:pass@host:5432/db   │
+└─────────────────────────────────────────────────────────────────────┘
+
+Steps:
+1. Go to your GitHub repo
+2. Click: Settings → Secrets and variables → Actions  
+3. Click "New repository secret"
+4. Add each secret above with the EXACT name shown
+5. THEN push your code
+```
+
+**Always be specific about:**
+- The exact `APP_*` name to use
+- Where to get the value (URL, dashboard, etc.)
+- The expected format of the value
+
+If user pushes without adding secrets → app deploys but secrets will be undefined!
+
+**Supported Secret Names (predefined slots):**
+
+Due to GitHub Actions limitations, only these specific secret names are supported.
+Use the generic `SECRET_1` - `SECRET_3` slots for any custom secrets.
+
+| GitHub Secret (add this) | Environment Variable (use this) | Use For |
+|--------------------------|--------------------------------|---------|
+| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI API |
+| `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Database connection |
+| `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
+| `APP_API_SECRET` | `process.env.API_SECRET` | Generic API secret |
+| `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing |
+| `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook verification |
+| `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Data encryption |
+| `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret #1 |
+| `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret #2 |
+| `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret #3 |
+
+**Total: 10 secret slots available**
+
+> ℹ️ Need more secrets? Contact platform admin to add more `APP_SECRET_X` slots.
+
+#### Summary
+
+| Environment | Where to Store Secrets | Who Does It |
+|-------------|----------------------|-------------|
+| **Local Dev** | `.env` file (gitignored) | User creates file |
+| **Production** | GitHub Secrets (with `APP_` prefix) | User adds via GitHub UI |
+
+> ⚠️ **AI REMINDER**: You CANNOT add GitHub secrets programmatically!
+> Always instruct the user to manually add secrets via GitHub UI before pushing.
+> If code uses secrets, warn them: "Add APP_XYZ to GitHub Secrets before deploying!"
 
 ---
 

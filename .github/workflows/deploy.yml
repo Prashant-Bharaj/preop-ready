@@ -81,9 +81,21 @@ jobs:
   deploy:
     name: Deploy
     needs: config
-    uses: bayer-int/dd-platform-repo/.github/workflows/deploy-demo.yml@main
+    uses: bayer-int/dd-platform-repository/.github/workflows/deploy-demo.yml@master
     with:
       project-name: ${{ needs.config.outputs.project-name }}
     secrets:
       # Role ARN for Vibe Platform deployment (no user configuration needed)
       AWS_DEPLOY_ROLE_ARN: "arn:aws:iam::992872368362:role/vibe-platform-github-deploy"
+      # Pass through application secrets (users add APP_* secrets to their repo)
+      # Go to: Repo Settings → Secrets → Actions → New repository secret
+      APP_OPENAI_KEY: ${{ secrets.APP_OPENAI_KEY }}
+      APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL }}
+      APP_API_KEY: ${{ secrets.APP_API_KEY }}
+      APP_API_SECRET: ${{ secrets.APP_API_SECRET }}
+      APP_JWT_SECRET: ${{ secrets.APP_JWT_SECRET }}
+      APP_WEBHOOK_SECRET: ${{ secrets.APP_WEBHOOK_SECRET }}
+      APP_ENCRYPTION_KEY: ${{ secrets.APP_ENCRYPTION_KEY }}
+      APP_SECRET_1: ${{ secrets.APP_SECRET_1 }}
+      APP_SECRET_2: ${{ secrets.APP_SECRET_2 }}
+      APP_SECRET_3: ${{ secrets.APP_SECRET_3 }}
