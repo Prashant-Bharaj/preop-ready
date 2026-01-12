@@ -15,7 +15,9 @@ Template for deploying vibe coded projects to the Bayer Hackathons Platform.
 ## Quick Start
 
 ### 1. Create Your Repository
-Click **"Use this template"** on GitHub.
+Click **"Use this template"** on GitHub to create a new repository.
+
+> ⚠️ **Important**: Your repository must be whitelisted before you can deploy. Contact a platform admin to add your repository. See [Getting Access](#getting-access) below.
 
 ### 2. Open in VS Code with Cline
 
@@ -39,7 +41,19 @@ git commit -m "feat: my vibe project"
 git push origin main
 ```
 
-Wait ~5-10 minutes. Visit: `https://<project-name>.vibe.int.bayer.com`
+Wait ~5-10 minutes. Visit: `https://<project-name>.vibe.992872368362.cloud.bayer.com`
+
+---
+
+## Getting Access
+
+Before your first deployment, your repository must be authorized by a platform admin. This is a **one-time setup** that requires changes in **two places**:
+
+### How to Get Access
+
+Contact a **platform admin** and provide your **full repository name** (e.g., `bayer-int/my-awesome-project`).
+
+The admin will whitelist your repository, and you'll be notified when deployment is enabled.
 
 ---
 
@@ -49,9 +63,11 @@ Wait ~5-10 minutes. Visit: `https://<project-name>.vibe.int.bayer.com`
 ├── demo.config.yml              # Your config (name + email)
 ├── docker-compose.yml           # For local testing
 ├── frontend/
+│   ├── Dockerfile               # Copy from .vanilla or .react
 │   ├── Dockerfile.vanilla       # For HTML/CSS/JS
 │   └── Dockerfile.react         # For React
 ├── backend/
+│   ├── Dockerfile               # Copy from .node or .python
 │   ├── Dockerfile.node          # For Node.js
 │   └── Dockerfile.python        # For Python
 ├── examples/
@@ -98,6 +114,17 @@ Does this work for you?"
 - **GitHub CodeQL**: Scans every push
 - **Deployment blocked** if vulnerabilities found
 - **Email sent** with details
+
+---
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Not authorized to perform sts:AssumeRoleWithWebIdentity` | Repository not whitelisted | Contact platform admin to add your repo |
+| `tag invalid: already exists...immutable` | Same commit already deployed | Push a new commit with changes |
+| `nginx: [emerg] "events" directive is not allowed` | Invalid nginx.conf format | See `.cursorrules` for correct format |
+| `failed to build: file with no instructions` | Empty/placeholder Dockerfile | Create a real Dockerfile with `FROM` instruction |
 
 ---
 
