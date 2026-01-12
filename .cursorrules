@@ -86,7 +86,7 @@ Once confirmed, generate all the code including linting setup.
 - [ ] Create `frontend/index.html`
 - [ ] Create `frontend/style.css`
 - [ ] Create `frontend/script.js`
-- [ ] Update `frontend/nginx.conf` if needed
+- [ ] **CRITICAL**: Create correct `frontend/nginx.conf` (see NGINX RULES below)
 
 ### Frontend: React
 - [ ] Copy `Dockerfile.react` content → `frontend/Dockerfile`
@@ -96,6 +96,7 @@ Once confirmed, generate all the code including linting setup.
 - [ ] Create `frontend/src/main.jsx`
 - [ ] Create `frontend/src/App.jsx`
 - [ ] Create `frontend/src/App.css`
+- [ ] **CRITICAL**: Create correct `frontend/nginx.conf` (see NGINX RULES below)
 
 ### Backend: Node.js
 - [ ] Copy `Dockerfile.node` content → `backend/Dockerfile`
@@ -155,6 +156,69 @@ After code generation, project should have:
 
 ---
 
+---
+
+## ⚠️ CRITICAL PLATFORM RULES (MUST FOLLOW)
+
+### NGINX CONFIGURATION (frontend/nginx.conf)
+
+**THIS IS THE #1 CAUSE OF DEPLOYMENT FAILURES!**
+
+The `nginx.conf` file is copied to `/etc/nginx/conf.d/default.conf` inside the container.
+Files in `conf.d/` are INCLUDED inside nginx's main config, so they must ONLY contain server blocks.
+
+**✅ CORRECT nginx.conf:**
+```nginx
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /health {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+}
+```
+
+**❌ WRONG nginx.conf (WILL CRASH THE CONTAINER):**
+```nginx
+events {           # ❌ NOT ALLOWED in conf.d files!
+    worker_connections 1024;
+}
+
+http {             # ❌ NOT ALLOWED in conf.d files!
+    server { ... }
+}
+```
+
+### PORT REQUIREMENTS
+
+| Component | Port | Notes |
+|-----------|------|-------|
+| Frontend | **80** | nginx listens on port 80 |
+| Backend | **3000** | Express/FastAPI must listen on 3000 |
+
+### HEALTH CHECK ENDPOINTS (REQUIRED)
+
+Every container MUST have a health endpoint or deployment will fail:
+
+- **Frontend**: `/health` returning HTTP 200
+- **Backend**: `/health` returning HTTP 200 with JSON `{"status": "ok"}`
+
+### DOCKERFILE REQUIREMENTS
+
+- Every Dockerfile MUST start with a valid `FROM` instruction
+- Placeholder Dockerfiles (with only comments) will be SKIPPED during deployment
+- If you don't need frontend/backend, DELETE the folder entirely
+
+---
+
 ## BACKEND REQUIREMENTS
 
 ### Health Check Endpoint (REQUIRED)
@@ -187,16 +251,47 @@ DATABASE_PASSWORD  # Auto-generated secret
 
 ---
 
-## API COMMUNICATION
+## API COMMUNICATION & ROUTING
 
-Frontend calls backend via relative URLs:
+### How Routing Works (Traefik)
+
+In production, Traefik routes traffic like this:
+- `https://<name>.vibe.domain.com/` → Frontend container (port 80)
+- `https://<name>.vibe.domain.com/api/*` → Backend container (port 3000)
+
+**Important**: The `/api` prefix is STRIPPED before reaching the backend!
+- Request: `GET /api/users` → Backend receives: `GET /users`
+- Request: `GET /api/health` → Backend receives: `GET /health`
+
+### Frontend API Calls
+
+Always use relative URLs:
 
 ```javascript
-// ✅ Correct
+// ✅ Correct - works in both local dev and production
 fetch('/api/users')
 
-// ❌ Wrong
+// ❌ Wrong - hardcoded URL won't work
 fetch('https://api.myapp.demo.int.bayer.com/users')
+```
+
+### Backend Route Definitions
+
+Define routes WITHOUT the `/api` prefix (it's stripped by Traefik):
+
+```javascript
+// Node.js/Express
+app.get('/users', (req, res) => { ... });     // ✅ Accessed via /api/users
+app.get('/health', (req, res) => { ... });    // ✅ Accessed via /api/health
+
+// ❌ WRONG - don't include /api in routes
+app.get('/api/users', (req, res) => { ... }); // Would require /api/api/users
+```
+
+```python
+# Python/FastAPI
+@app.get("/users")     # ✅ Accessed via /api/users
+@app.get("/health")    # ✅ Accessed via /api/health
 ```
 
 ---
@@ -247,7 +342,24 @@ git commit -m "feat: my demo app"
 git push origin main
 ```
 
-Wait ~5-10 minutes. Visit: `https://<demo-name>.demo.int.bayer.com`
+The GitHub Actions workflow will automatically:
+1. Validate the repository is whitelisted
+2. Detect frontend/backend/database from Dockerfiles
+3. Build and push Docker images to ECR
+4. Deploy to ECS with Traefik routing
+5. Wait for health checks to pass
+
+Wait ~3-5 minutes. Visit: `https://<demo-name>.vibe.992872368362.cloud.bayer.com`
+
+### Deployment Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| "Bad Gateway" | Container not running | Check ECS logs, fix health endpoint |
+| Container keeps restarting | nginx.conf has events/http blocks | Use only server block in nginx.conf |
+| "Rollback failed" in ECS | Health check failing | Add /health endpoint returning 200 |
+| Build fails | Empty/placeholder Dockerfile | Add FROM instruction or delete folder |
+| 404 on /api/* | Backend not deployed | Ensure backend/Dockerfile has FROM |
 
 ---
 
