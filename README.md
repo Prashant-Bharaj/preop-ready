@@ -1,169 +1,346 @@
-# Vibe Coded Project Template
+# 🎉 Welcome to the Vibe Hackathon Platform!
 
-Template for deploying vibe coded projects to the Bayer Hackathons Platform.
-
-## Supported Stacks
-
-| Layer | Options |
-|-------|---------|
-| Frontend | Vanilla (HTML/CSS/JS) or React |
-| Backend | Node.js or Python |
-| Database | MySQL or PostgreSQL |
+> **No coding experience? No problem!** Your AI assistant will help you build and deploy your app.
+>
+> **Developer?** Skip to the [Developer Quick-Start](#-developer-quick-start) below.
 
 ---
 
-## Quick Start
+## 🤔 What is this?
 
-### 1. Create Your Repository
-Click **"Use this template"** on GitHub to create a new repository.
+This is your **hackathon project workspace**. You're going to build a web application that will be live on the internet!
 
-> ⚠️ **Important**: Your repository must be whitelisted before you can deploy. Contact a platform admin to add your repository. See [Getting Access](#getting-access) below.
+**What you'll create:**
+- A website that real people can visit
+- With features YOU design (forms, dashboards, AI integrations, etc.)
+- Deployed automatically when you save your work
 
-### 2. Open in VS Code with Cline
+**What you DON'T need:**
+- ❌ Coding experience
+- ❌ Server setup knowledge
+- ❌ DevOps skills
 
-### 3. Tell AI What You Want to Build
+**Your AI assistant (Cline) will write all the code for you!**
 
-The AI will ask you:
-1. **Project name and email** (for `demo.config.yml`)
-2. **What do you want to build?** - Describe your app
+---
 
-Based on your description, AI will:
-- Recommend the right stack (React vs Vanilla, Node vs Python, MySQL vs PostgreSQL)
-- Generate all the code
-- Set up Dockerfiles
-- **Configure linting** (ESLint for Node.js, Ruff for Python)
+## 👨‍💻 Developer Quick-Start
 
-### 4. Deploy
+<details>
+<summary><b>Click here if you're a developer</b> - skip the hand-holding</summary>
 
+### Architecture
+```
+frontend/          → nginx (port 80) - static or React build
+backend/           → Express/FastAPI (port 3000)
+database/          → MySQL/PostgreSQL (optional)
+```
+
+### Routing (Traefik)
+```
+https://[project].vibe.demo.bfrg.de      → frontend
+https://[project].vibe.demo.bfrg.de/api  → backend (stripped)
+```
+
+### Required: Health Endpoint
+```javascript
+// backend/server.js - MUST exist at /health on port 3000
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+```
+
+### Local Development
 ```bash
-git add .
-git commit -m "feat: my vibe project"
-git push origin main
+docker-compose up --build
+# Frontend: http://localhost:8080
+# Backend:  http://localhost:3000
 ```
 
-Wait ~5-10 minutes. Visit: `https://<project-name>.vibe.992872368362.cloud.bayer.com`
-
----
-
-## Getting Access
-
-Before your first deployment, your repository must be authorized by a platform admin. This is a **one-time setup** that requires changes in **two places**:
-
-### How to Get Access
-
-Contact a **platform admin** and provide your **full repository name** (e.g., `bayer-int/my-awesome-project`).
-
-The admin will whitelist your repository, and you'll be notified when deployment is enabled.
-
----
-
-## Template Structure
-
-```
-├── demo.config.yml              # Your config (name + email)
-├── docker-compose.yml           # For local testing
-├── frontend/
-│   ├── Dockerfile               # Copy from .vanilla or .react
-│   ├── Dockerfile.vanilla       # For HTML/CSS/JS
-│   └── Dockerfile.react         # For React
-├── backend/
-│   ├── Dockerfile               # Copy from .node or .python
-│   ├── Dockerfile.node          # For Node.js
-│   └── Dockerfile.python        # For Python
-├── examples/
-│   ├── eslint.config.js         # Linting for Node.js
-│   └── ruff.toml                # Linting for Python
-└── .github/workflows/deploy.yml # CI/CD
-```
-
----
-
-## What AI Generates
-
-Based on your stack choice:
-
-| Stack | Files Generated |
-|-------|-----------------|
-| Node.js backend | `Dockerfile`, `package.json`, `src/index.js`, **`eslint.config.js`** |
-| Python backend | `Dockerfile`, `requirements.txt`, `main.py`, **`ruff.toml`** |
-| Vanilla frontend | `Dockerfile`, `index.html`, `style.css`, `script.js` |
-| React frontend | `Dockerfile`, `package.json`, `vite.config.js`, `src/*` |
-
----
-
-## Example Conversation
-
-**You:** "I want to build a task management app where users can create, edit, and delete tasks. It should have a nice dashboard."
-
-**AI:** "Based on what you described, I recommend:
-- **Frontend**: React - for the interactive dashboard
-- **Backend**: Node.js - great for CRUD operations
-- **Database**: MySQL - perfect for structured task data
-
-Does this work for you?"
-
-**You:** "Yes!"
-
-**AI:** *generates all code including `eslint.config.js` for security linting*
-
----
-
-## Application Secrets
-
-Need API keys or other secrets in your backend?
-
-### Local Development: Use `.env` File
-
-Create `backend/.env` (gitignored):
+### Deploy
 ```bash
-OPENAI_KEY=sk-your-dev-key
-API_KEY=test-key-123
+# First time: Contact admin to whitelist your repo
+git add . && git commit -m "feat: description" && git push
+# → GitHub Actions builds & deploys (~3-5 min)
+# → https://[project-name].vibe.demo.bfrg.de (VPN required)
 ```
 
-### Production: Use GitHub Secrets
-
-**Before pushing code that needs secrets:**
-
-1. Go to your repo → **Settings** → **Secrets** → **Actions**
-2. Click **New repository secret**
-3. Name it with `APP_` prefix → Value: your secret
-4. Push your code - secrets auto-inject!
-
-| GitHub Secret | Use in Backend |
-|---------------|----------------|
+### Secrets (GitHub → Settings → Secrets → Actions)
+| Secret Name | Env Var in Code |
+|-------------|-----------------|
 | `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
 | `APP_API_KEY` | `process.env.API_KEY` |
-| `APP_DATABASE_URL` | `process.env.DATABASE_URL` |
-| `APP_SECRET_1` - `APP_SECRET_3` | `process.env.SECRET_1` - `SECRET_3` |
+| `APP_SECRET_1` | `process.env.SECRET_1` |
 
-> ⚠️ **Never commit `.env` files!** Add secrets to GitHub before deploying.
+### Stack Options
+- **Frontend:** Copy `Dockerfile.vanilla` or `Dockerfile.react` → `Dockerfile`
+- **Backend:** Copy `Dockerfile.node` or `Dockerfile.python` → `Dockerfile`
 
----
+### Tell the AI
+When you open Cline, just say: **"I'm a developer"** - it'll skip the hand-holding.
 
-## Security
-
-- **Linting**: ESLint (Node.js) or Ruff (Python) catches security issues
-- **GitHub CodeQL**: Scans every push
-- **Secrets**: Stored encrypted in GitHub, injected at deploy time
+</details>
 
 ---
 
-## Troubleshooting
+## 🚀 How to Get Started
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `Not authorized to perform sts:AssumeRoleWithWebIdentity` | Repository not whitelisted | Contact platform admin to add your repo |
-| `tag invalid: already exists...immutable` | Same commit already deployed | Push a new commit with changes |
-| `nginx: [emerg] "events" directive is not allowed` | Invalid nginx.conf format | See `.cursorrules` for correct format |
-| `failed to build: file with no instructions` | Empty/placeholder Dockerfile | Create a real Dockerfile with `FROM` instruction |
+### Step 1: Talk to Your AI Assistant
 
----
+Look for the **Cline** extension in the sidebar (robot icon 🤖).
 
-## Local Testing (Optional)
+Click on it and say something like:
 
-If you have Docker installed:
-```bash
-docker compose up --build
 ```
-- Frontend: http://localhost:3000
-- Backend: http://localhost:3001
+Hi! I want to build [your idea here]
+```
+
+**Example ideas:**
+- "A voting app for our team's lunch decisions"
+- "A dashboard to track hackathon project ideas"
+- "A form that collects feedback and shows results"
+- "An AI chatbot that answers questions about our product"
+
+### Step 2: Let AI Build It
+
+The AI will:
+1. Ask clarifying questions about your idea
+2. Create all the code for you
+3. Explain what it's building (if you want to know)
+
+**Just describe what you want in plain English!**
+
+### Step 3: Test Your App
+
+When the AI finishes building, it will ask:
+
+```
+"Want me to start the app so you can see it?"
+```
+
+Say **yes** and the AI will run it for you! Then open: **http://localhost:8080**
+
+### Step 4: Make It Live!
+
+Happy with your app? Just tell the AI:
+
+```
+"I'm happy with it, let's deploy!"
+```
+
+The AI will save your work and deploy it automatically!
+
+**The AI will handle everything** - saving, committing, and deploying.
+
+**Wait 3-5 minutes**, then visit your live site:
+> `https://YOUR-PROJECT-NAME.vibe.demo.bfrg.de`
+
+*(Requires Bayer VPN)*
+
+---
+
+## 📁 Where is Everything?
+
+```
+📂 Your Project
+│
+├── 📁 frontend/          ← The website (what users see)
+│   ├── index.html        ← Your main webpage
+│   ├── style.css         ← Colors and styling
+│   └── script.js         ← Interactive features
+│
+├── 📁 backend/           ← The server (saves data, APIs)
+│   └── server.js         ← Server code
+│
+└── 📁 database/          ← Data storage (optional)
+    └── init/init.sql     ← Database setup
+```
+
+**Don't worry about the other files** - the AI manages them for you!
+
+---
+
+## ❓ Why This Platform?
+
+| Traditional Way | Vibe Platform |
+|-----------------|---------------|
+| Learn to code first | Just describe what you want |
+| Set up servers | Automatic deployment |
+| Configure databases | AI handles it |
+| Debug errors alone | AI helps fix issues |
+| Takes weeks | Takes hours |
+
+**Focus on your IDEA, not the technology!**
+
+---
+
+## 🔄 How Deployment Works
+
+### ⚠️ First Time Only: Get Whitelisted
+
+Before your first deployment, you need to be **approved by an admin**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│  📧 CONTACT A PLATFORM ADMIN                                   │
+│                                                                 │
+│  Send them:                                                     │
+│  • Your repository name (e.g., bayer-int/my-awesome-app)       │
+│  • Your Bayer email                                             │
+│                                                                 │
+│  They will whitelist your repo (one-time setup)                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**This is a one-time step** - once approved, all future deployments are automatic!
+
+---
+
+### 🚀 After You're Whitelisted
+
+When you say **"Let's deploy!"**, here's what happens:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│  YOU: "I'm happy with it, let's deploy!"                       │
+│                           │                                     │
+│                           ▼                                     │
+│  ┌─────────────────────────────────────┐                       │
+│  │  1️⃣  AI saves your code             │  ← Instant           │
+│  │     (git add & commit)              │                       │
+│  └─────────────────────────────────────┘                       │
+│                           │                                     │
+│                           ▼                                     │
+│  ┌─────────────────────────────────────┐                       │
+│  │  2️⃣  Code pushed to GitHub          │  ← Instant           │
+│  │     (git push)                      │                       │
+│  └─────────────────────────────────────┘                       │
+│                           │                                     │
+│                           ▼                                     │
+│  ┌─────────────────────────────────────┐                       │
+│  │  3️⃣  GitHub Actions starts          │  ← Automatic!        │
+│  │     • Builds your app               │    (3-5 mins)        │
+│  │     • Creates containers            │                       │
+│  │     • Deploys to cloud              │                       │
+│  └─────────────────────────────────────┘                       │
+│                           │                                     │
+│                           ▼                                     │
+│  ┌─────────────────────────────────────┐                       │
+│  │  4️⃣  YOUR APP IS LIVE! 🎉           │                       │
+│  │     https://your-app.vibe.demo...   │                       │
+│  └─────────────────────────────────────┘                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Watch the Progress
+
+Want to see what's happening? 
+
+1. Go to your **GitHub repository** (the website)
+2. Click the **Actions** tab
+3. Watch the deployment progress in real-time!
+
+### After Deployment
+
+- ✅ **Green checkmark** = Success! Your app is live
+- ❌ **Red X** = Something went wrong - ask the AI to help fix it
+
+---
+
+## 💡 Tips for Success
+
+### Be Specific with AI
+```
+❌ "Make it look nice"
+✅ "Use a dark theme with blue accent colors and rounded buttons"
+```
+
+### Start Simple, Then Add
+```
+❌ "Build a complete project management system with AI"
+✅ "Start with a page to add and view projects"
+   (then add features one at a time)
+```
+
+### Ask Questions!
+```
+"What does this code do?"
+"Why did you choose this approach?"
+"Can you explain how this works?"
+```
+
+---
+
+## 🔐 Using API Keys (Like OpenAI)
+
+### For Local Testing
+
+There's a template file ready for you:
+
+```
+📁 backend/env.example  ← Your secret template
+```
+
+Tell the AI: **"I need to set up my API keys for local testing"**
+
+It will copy the template and help you fill in your keys. Your secrets stay private (never uploaded to GitHub).
+
+### For Production (Live Site)
+
+Add secrets to GitHub (the AI will guide you):
+
+1. Go to your **GitHub repository** (the website)
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add your key with `APP_` prefix:
+   - Name: `APP_OPENAI_KEY`
+   - Value: *your actual API key*
+5. Deploy again
+
+| GitHub Secret | Use in Code |
+|---------------|-------------|
+| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
+| `APP_API_KEY` | `process.env.API_KEY` |
+| `APP_SECRET_1` | `process.env.SECRET_1` |
+
+---
+
+## 🆘 Need Help?
+
+### "My app isn't working"
+Tell the AI: *"Something's broken, can you check my code?"*
+
+### "The deployment failed"
+Check the **Actions** tab in GitHub - the AI can help interpret errors.
+
+### "I want to change something"
+Just tell the AI what you want to change!
+
+### "I'm stuck"
+Ask the AI: *"I'm stuck, can you help me figure out what to do next?"*
+
+---
+
+## 🎯 What to Say to the AI
+
+| What you want | Say this |
+|---------------|----------|
+| Test your app | "Can you start the app so I can see it?" |
+| Stop testing | "Stop the app" or press `Ctrl + C` |
+| Deploy live | "I'm happy with it, let's deploy!" |
+| Make changes | "Change the button color to blue" |
+| Fix something | "Something's not working, can you check?" |
+| Undo changes | "Can we go back to the previous version?" |
+
+---
+
+## 🏆 You've Got This!
+
+Remember:
+- **There are no stupid questions** - ask the AI anything
+- **Mistakes are okay** - we can always undo and try again
+- **Have fun** - you're building something real!
+
+**Now go talk to your AI assistant and start building!** 🚀

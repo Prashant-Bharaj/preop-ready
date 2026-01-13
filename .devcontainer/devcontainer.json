@@ -1,0 +1,52 @@
+{
+  "name": "Vibe Hackathon Dev Environment",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // 🤖 AI Coding Assistant - Ask it to write code for you!
+        "saoudrizwan.claude-dev",
+        
+        // ✨ Auto-formatting - Makes your code look pretty automatically
+        "esbenp.prettier-vscode",
+        
+        // 🔴 Error Lens - Shows errors right in the code (very visual!)
+        "usernamehv.errorlens",
+        
+        // 🐳 Docker - Helps with containers
+        "ms-azuretools.vscode-docker",
+        
+        // 📁 Better file icons
+        "vscode-icons-team.vscode-icons"
+      ],
+      
+      "settings": {
+        // === AUTO-FORMAT ON SAVE (no action needed!) ===
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        
+        // === VISUAL HELPERS ===
+        "editor.bracketPairColorization.enabled": true,
+        "editor.guides.bracketPairs": true,
+        "editor.minimap.enabled": false,
+        "editor.wordWrap": "on",
+        
+        // === ERROR LENS (shows errors inline) ===
+        "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+        "errorLens.messageMaxChars": 100,
+        
+        // === TERMINAL ===
+        "terminal.integrated.defaultProfile.linux": "bash",
+        
+        // === FILES ===
+        "files.autoSave": "afterDelay",
+        "files.autoSaveDelay": 1000,
+        "explorer.confirmDelete": false
+      }
+    }
+  },
+
+  "postCreateCommand": "echo '🎉 Welcome to Vibe Hackathon! Your dev environment is ready. Use Cline (the AI) to help you code!'",
+  
+  "forwardPorts": [3000, 5173, 8080]
+}
