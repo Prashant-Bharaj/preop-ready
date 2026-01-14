@@ -120,6 +120,8 @@ Say **yes** and the AI will run it for you! Then open: **http://localhost:8080**
 
 ### Step 4: Make It Live!
 
+> ⚠️ **First time?** Your repo must be [whitelisted](#-first-time-only-get-whitelisted) before deploying.
+
 Happy with your app? Just tell the AI:
 
 ```
@@ -128,10 +130,8 @@ Happy with your app? Just tell the AI:
 
 The AI will save your work and deploy it automatically!
 
-**The AI will handle everything** - saving, committing, and deploying.
-
 **Wait 3-5 minutes**, then visit your live site:
-> `https://YOUR-PROJECT-NAME.vibe.demo.bfrg.de`
+> `https://YOUR-REPO-NAME.vibe.992872368362.cloud.bayer.com`
 
 *(Requires Bayer VPN)*
 
