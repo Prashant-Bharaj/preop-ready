@@ -3,6 +3,10 @@
 > **No coding experience? No problem!** Your AI assistant will help you build and deploy your app.
 >
 > **Developer?** Skip to the [Developer Quick-Start](#-developer-quick-start) below.
+>
+> **Have existing code to migrate?** See the [Migration Guide](docs/MIGRATION.md).
+>
+> **Not sure how to describe your idea?** See [Example Prompts](docs/EXAMPLES.md).
 
 ---
 
@@ -33,7 +37,7 @@ This is your **hackathon project workspace**. You're going to build a web applic
 ```
 frontend/          → nginx (port 80) - static or React build
 backend/           → Express/FastAPI (port 3000)
-database/          → MySQL/PostgreSQL (optional)
+database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 ```
 
 ### Routing (Traefik)
@@ -48,9 +52,17 @@ https://[project].vibe.demo.bfrg.de/api  → backend (stripped)
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 ```
 
+### Pre-flight Check (Before First Deploy)
+```bash
+./scripts/preflight-check.sh
+# Validates: Dockerfiles, nginx.conf, health endpoints, etc.
+```
+
 ### Local Development
 ```bash
-docker-compose up --build
+docker-compose up -d --build    # Run in background
+docker-compose logs -f          # Watch logs
+docker-compose down             # Stop
 # Frontend: http://localhost:8080
 # Backend:  http://localhost:3000
 ```
@@ -73,6 +85,12 @@ git add . && git commit -m "feat: description" && git push
 ### Stack Options
 - **Frontend:** Copy `Dockerfile.vanilla` or `Dockerfile.react` → `Dockerfile`
 - **Backend:** Copy `Dockerfile.node` or `Dockerfile.python` → `Dockerfile`
+- **Database:** Copy one of these to `database/Dockerfile`:
+  - `Dockerfile.postgres` - Standard SQL database (recommended)
+  - `Dockerfile.mysql` - MySQL database
+  - `Dockerfile.pgvector` - PostgreSQL + vector search (AI apps)
+  - `Dockerfile.chroma` - ChromaDB vector database
+  - `Dockerfile.qdrant` - Qdrant vector database
 
 ### Tell the AI
 When you open Cline, just say: **"I'm a developer"** - it'll skip the hand-holding.
@@ -145,13 +163,16 @@ The AI will save your work and deploy it automatically!
 ├── 📁 frontend/          ← The website (what users see)
 │   ├── index.html        ← Your main webpage
 │   ├── style.css         ← Colors and styling
-│   └── script.js         ← Interactive features
+│   ├── script.js         ← Interactive features
+│   └── Dockerfile        ← Copy from Dockerfile.vanilla or .react
 │
 ├── 📁 backend/           ← The server (saves data, APIs)
-│   └── server.js         ← Server code
+│   ├── server.js         ← Server code
+│   └── Dockerfile        ← Copy from Dockerfile.node or .python
 │
 └── 📁 database/          ← Data storage (optional)
-    └── init/init.sql     ← Database setup
+    ├── Dockerfile        ← Copy from Dockerfile.postgres/.mysql/.pgvector/.chroma/.qdrant
+    └── init/init.sql     ← Database setup (for SQL databases)
 ```
 
 **Don't worry about the other files** - the AI manages them for you!

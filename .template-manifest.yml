@@ -1,0 +1,132 @@
+# =============================================================================
+# Template Manifest - Vibe Hackathon Platform
+# =============================================================================
+# This file defines which files should be auto-updated when template changes.
+# AI uses this to keep user projects in sync with platform improvements.
+# =============================================================================
+
+version: "1.0.0"
+template_repo: "bayer-int/dd-template-repo"
+template_branch: "main"
+
+# -----------------------------------------------------------------------------
+# Files to auto-update (platform files, not user code)
+# These are safe to overwrite - users shouldn't modify them
+# -----------------------------------------------------------------------------
+auto_update:
+  # Deployment workflow - critical for platform compatibility
+  - path: ".github/workflows/deploy.yml"
+    description: "Deployment workflow"
+    
+  # Frontend Dockerfile templates
+  - path: "frontend/Dockerfile.vanilla"
+    description: "Vanilla HTML/CSS/JS Dockerfile template"
+  - path: "frontend/Dockerfile.react"
+    description: "React/Vite Dockerfile template"
+    
+  # Backend Dockerfile templates
+  - path: "backend/Dockerfile.node"
+    description: "Node.js backend Dockerfile template"
+  - path: "backend/Dockerfile.python"
+    description: "Python backend Dockerfile template"
+    
+  # Database Dockerfile templates
+  - path: "database/Dockerfile.postgres"
+    description: "PostgreSQL database template"
+  - path: "database/Dockerfile.mysql"
+    description: "MySQL database template"
+  - path: "database/Dockerfile.pgvector"
+    description: "PostgreSQL with pgvector extension template"
+  - path: "database/Dockerfile.chroma"
+    description: "ChromaDB vector database template"
+  - path: "database/Dockerfile.qdrant"
+    description: "Qdrant vector database template"
+  - path: "database/env.example"
+    description: "Database environment example"
+    
+  # AI instructions - always use latest guidance
+  - path: ".cursorrules"
+    description: "AI assistant instructions"
+  - path: ".clinerules/"
+    description: "AI assistant instructions (Cline)"
+    is_directory: true
+    
+  # Development environment
+  - path: ".devcontainer/devcontainer.json"
+    description: "Codespaces/devcontainer configuration"
+    
+  # Documentation
+  - path: "docs/MIGRATION.md"
+    description: "Migration guide for existing projects"
+  - path: "docs/EXAMPLES.md"
+    description: "Example prompts for describing app ideas"
+    
+  # Code Snippet Library
+  - path: "snippets/"
+    description: "Reusable code snippets"
+    is_directory: true
+
+# -----------------------------------------------------------------------------
+# Files to merge intelligently
+# AI will preserve user additions while updating structure
+# -----------------------------------------------------------------------------
+merge_update:
+  - path: "docker-compose.yml"
+    description: "Local development configuration"
+    strategy: "preserve_user_services"
+    
+  - path: ".gitignore"
+    description: "Git ignore patterns"
+    strategy: "append_missing"
+
+# -----------------------------------------------------------------------------
+# Files to check but not auto-update
+# AI will warn if these are outdated but won't change them
+# -----------------------------------------------------------------------------
+check_only:
+  - path: "frontend/nginx.conf"
+    description: "Nginx configuration"
+    check_for:
+      - "/health endpoint exists"
+      - "No events{} or http{} blocks"
+      
+  - path: "frontend/Dockerfile"
+    description: "User's frontend Dockerfile"
+    check_for:
+      - "nginx.conf copied to conf.d/default.conf"
+
+# -----------------------------------------------------------------------------
+# Files to never touch (user code and status)
+# -----------------------------------------------------------------------------
+ignore:
+  - "frontend/src/**"
+  - "frontend/index.html"
+  - "frontend/style.css"
+  - "frontend/script.js"
+  - "frontend/package.json"
+  - "frontend/Dockerfile"       # User's chosen frontend Dockerfile
+  - "backend/server.js"
+  - "backend/main.py"
+  - "backend/requirements.txt"
+  - "backend/package.json"
+  - "backend/Dockerfile"        # User's chosen backend Dockerfile
+  - "database/Dockerfile"       # User's chosen database Dockerfile
+  - "database/init/**"          # User's database init scripts
+  - "docs/PROJECT_STATUS.md"    # User's project status - never overwrite!
+  - ".env"
+  - "*.log"
+
+# -----------------------------------------------------------------------------
+# Changelog
+# -----------------------------------------------------------------------------
+changelog:
+  "1.0.0":
+    date: "2026-01-19"
+    changes:
+      - "Initial versioned template"
+      - "Added automatic update checking"
+      - "Simplified project setup flow"
+      - "Fixed nginx.conf path in Dockerfiles"
+      - "Removed demo.config.yml requirement"
+      - "Project name derived from repo name"
+      - "Added MIGRATION.md guide"

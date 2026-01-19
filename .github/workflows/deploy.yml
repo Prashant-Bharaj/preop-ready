@@ -4,13 +4,10 @@
 # This workflow deploys your vibe coded project to the platform.
 #
 # Triggers:
-#   - Push to main branch (production deployment)
+#   - Push to main/master branch (production deployment)
 #   - Manual dispatch (for testing)
 #
-# Prerequisites:
-#   1. Configure demo.config.yml with your project name and settings
-#   2. Make sure you're on the allowed users list
-#   3. Push to main branch to deploy
+# Your app URL will be: https://<repo-name>.vibe.992872368362.cloud.bayer.com
 # =============================================================================
 
 name: Deploy Vibe Project
@@ -23,6 +20,8 @@ on:
     paths-ignore:
       - 'README.md'
       - 'docs/**'
+      - '.clinerules/**'
+      - '.cursorrules'
   workflow_dispatch:
 
 # Required for OIDC authentication to AWS
@@ -32,59 +31,14 @@ permissions:
 
 jobs:
   # ===========================================================================
-  # Read Project Configuration
-  # ===========================================================================
-  config:
-    name: Read Config
-    runs-on: ubuntu-latest
-    outputs:
-      project-name: ${{ steps.read.outputs.project-name }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Read demo.config.yml
-        id: read
-        run: |
-          if [[ ! -f "demo.config.yml" ]]; then
-            echo "::error::demo.config.yml not found. Please create it with your project name."
-            exit 1
-          fi
-          
-          PROJECT_NAME=$(grep '^name:' demo.config.yml | awk '{print $2}')
-          
-          if [[ -z "$PROJECT_NAME" ]] || [[ "$PROJECT_NAME" == "my-project-name" ]]; then
-            echo "::error::Please configure your project name in demo.config.yml"
-            exit 1
-          fi
-          
-          # Validate project name format
-          if [[ ! "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]] || [[ ${#PROJECT_NAME} -gt 32 ]]; then
-            echo "::error::Project name must be lowercase alphanumeric with hyphens, 2-32 characters"
-            exit 1
-          fi
-          
-          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
-          echo "✅ Project name: $PROJECT_NAME"
-
-      - name: Configuration summary
-        run: |
-          echo "## 📋 Project Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Project Name | \`${{ steps.read.outputs.project-name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| URL | https://${{ steps.read.outputs.project-name }}.vibe.992872368362.cloud.bayer.com |" >> $GITHUB_STEP_SUMMARY
-
-  # ===========================================================================
   # Deploy using Platform Workflow
   # ===========================================================================
   deploy:
     name: Deploy
-    needs: config
     uses: bayer-int/dd-platform-repository/.github/workflows/deploy-demo.yml@master
     with:
-      project-name: ${{ needs.config.outputs.project-name }}
+      # Project name is derived from repository name (lowercase, validated by platform)
+      project-name: ${{ github.event.repository.name }}
     secrets:
       # Role ARN for Vibe Platform deployment (no user configuration needed)
       AWS_DEPLOY_ROLE_ARN: "arn:aws:iam::992872368362:role/vibe-platform-github-deploy"
