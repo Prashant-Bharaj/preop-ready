@@ -94,83 +94,65 @@ Quick question - what's your coding experience?
 
 ## 4️⃣ If User Says "Yes" to Update
 
-**Apply updates when user confirms:**
-
-### Files to Update (Overwrite)
+### Step 1: Fetch the Manifest (Single Source of Truth)
 
 ```bash
-# Deployment workflow
-gh api repos/bayer-int/dd-template-repository/contents/.github/workflows/deploy.yml \
-  --jq '.content' | base64 -d > .github/workflows/deploy.yml
-
-# Frontend Dockerfile templates
-gh api repos/bayer-int/dd-template-repository/contents/frontend/Dockerfile.vanilla \
-  --jq '.content' | base64 -d > frontend/Dockerfile.vanilla
-gh api repos/bayer-int/dd-template-repository/contents/frontend/Dockerfile.react \
-  --jq '.content' | base64 -d > frontend/Dockerfile.react
-
-# Backend Dockerfile templates  
-gh api repos/bayer-int/dd-template-repository/contents/backend/Dockerfile.node \
-  --jq '.content' | base64 -d > backend/Dockerfile.node
-gh api repos/bayer-int/dd-template-repository/contents/backend/Dockerfile.python \
-  --jq '.content' | base64 -d > backend/Dockerfile.python
-
-# Database Dockerfile templates
-gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.postgres \
-  --jq '.content' | base64 -d > database/Dockerfile.postgres
-gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.mysql \
-  --jq '.content' | base64 -d > database/Dockerfile.mysql
-gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.pgvector \
-  --jq '.content' | base64 -d > database/Dockerfile.pgvector
-gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.chroma \
-  --jq '.content' | base64 -d > database/Dockerfile.chroma
-gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.qdrant \
-  --jq '.content' | base64 -d > database/Dockerfile.qdrant
-
-# AI rules
-gh api repos/bayer-int/dd-template-repository/contents/.cursorrules \
-  --jq '.content' | base64 -d > .cursorrules
-
-# Documentation
-gh api repos/bayer-int/dd-template-repository/contents/docs/MIGRATION.md \
-  --jq '.content' | base64 -d > docs/MIGRATION.md
-gh api repos/bayer-int/dd-template-repository/contents/docs/EXAMPLES.md \
-  --jq '.content' | base64 -d > docs/EXAMPLES.md
+REPO="bayer-int/dd-template-repository"
+gh api "repos/$REPO/contents/.template-manifest.yml" --jq '.content' | base64 -d > /tmp/manifest.yml
 ```
 
-### Update .clinerules/ Directory
+### Step 2: Read the `auto_update` Section
 
+The AI should read `/tmp/manifest.yml` and find all entries under `auto_update:`.
+Each entry has:
+- `path`: the file or directory path
+- `is_directory`: (optional) if true, fetch all files in that directory
+
+### Step 3: Fetch Each File/Directory
+
+**For single files:**
 ```bash
-# Fetch list of files in .clinerules/
-FILES=$(gh api repos/bayer-int/dd-template-repository/contents/.clinerules --jq '.[].name')
-
-# Update each file
-for FILE in $FILES; do
-  gh api "repos/bayer-int/dd-template-repository/contents/.clinerules/$FILE" \
-    --jq '.content' | base64 -d > ".clinerules/$FILE"
-done
+gh api "repos/$REPO/contents/PATH_HERE" --jq '.content' | base64 -d > "PATH_HERE"
 ```
 
-### Update Version Tracker
+**For directories (is_directory: true):**
+```bash
+# List files in directory
+gh api "repos/$REPO/contents/DIRECTORY_PATH" --jq '.[].name'
+# Then fetch each file
+```
+
+### Step 4: Update Version Tracker
 
 ```bash
-# Update .template-version with new version
+LATEST_VERSION=$(grep "^version:" /tmp/manifest.yml | cut -d'"' -f2)
 cat > .template-version << EOF
 # Template Version Tracker
-version: "${LATEST_VERSION}"
-template_repo: "bayer-int/dd-template-repository"
+version: "$LATEST_VERSION"
+template_repo: "$REPO"
 last_update_check: "$(date -Iseconds)"
 EOF
 ```
 
-### Confirm to User
+### Key Principle
+
+**The manifest is the single source of truth.** 
+
+- ✅ Add a file to template → add to manifest `auto_update` → users get it on next update
+- ✅ Remove a file → remove from manifest → stops being updated
+- ✅ No hardcoded paths in update logic
+
+### After Update - Tell User
 
 ```
-✅ Updated! Your project is now on version ${LATEST_VERSION}.
+✅ Updated to version ${LATEST_VERSION}!
 
-Your code (frontend/, backend/, database/init/) was not touched.
+Updated:
+- [list files that were updated]
 
-Now, let's continue - what would you like to work on?
+Your code (frontend/*, backend/*, database/init/*) was NOT touched.
+
+Would you like to continue?
 ```
 
 ---
