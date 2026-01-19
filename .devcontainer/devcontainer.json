@@ -48,5 +48,7 @@
 
   "postCreateCommand": "echo '🎉 Welcome to Vibe Hackathon! Your dev environment is ready. Use Cline (the AI) to help you code!'",
   
+  "postStartCommand": "git pull --ff-only 2>/dev/null || true",
+  
   "forwardPorts": [3000, 5173, 8080]
 }

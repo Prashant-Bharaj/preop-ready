@@ -6,7 +6,7 @@
 # =============================================================================
 
 version: "1.0.0"
-template_repo: "bayer-int/dd-template-repo"
+template_repo: "bayer-int/dd-template-repository"
 template_branch: "main"
 
 # -----------------------------------------------------------------------------

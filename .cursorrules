@@ -16,9 +16,9 @@ Check if platform updates are available and apply them automatically:
 # Read local version
 LOCAL_VERSION=$(grep "^version:" .template-version 2>/dev/null | cut -d'"' -f2)
 
-# Fetch latest from template repo
-MANIFEST_URL="https://raw.githubusercontent.com/bayer-int/dd-template-repo/main/.template-manifest.yml"
-LATEST_VERSION=$(curl -s "$MANIFEST_URL" 2>/dev/null | grep "^version:" | cut -d'"' -f2)
+# For private repos in Codespaces, use GitHub CLI (already authenticated)
+LATEST_VERSION=$(gh api repos/bayer-int/dd-template-repository/contents/.template-manifest.yml \
+  --jq '.content' 2>/dev/null | base64 -d | grep "^version:" | cut -d'"' -f2)
 ```
 
 ### If Versions Differ - Apply Updates Silently

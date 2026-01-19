@@ -1,184 +1,232 @@
-# 🚀 Session Start - Automatic Checks
+# 🚀 Session Start - Version Check & Welcome
 
 ## IMPORTANT: Run These Checks at the START of Every New Session
 
-Before greeting the user, **silently perform these checks in order**:
+**Order of operations:**
 
-1. **Read Project Status** (if exists)
-2. **Check Template Version** (apply updates if needed)
-3. **Greet User** (with context if returning)
+1. **Check Template Version** (silently compare versions)
+2. **Read Project Status** (if exists)
+3. **Greet User** (include update notification if available)
 
 ---
 
-## 0️⃣ Read Project Status
+## 1️⃣ Template Version Check (Run Silently)
 
-**First, check if this is a returning user with an existing project:**
+**At session start, check if platform updates are available:**
+
+```bash
+# Read local version
+LOCAL_VERSION=$(grep "^version:" .template-version 2>/dev/null | cut -d'"' -f2)
+
+# For private repos in Codespaces, use GitHub CLI (already authenticated)
+LATEST_VERSION=$(gh api repos/bayer-int/dd-template-repository/contents/.template-manifest.yml \
+  --jq '.content' 2>/dev/null | base64 -d | grep "^version:" | cut -d'"' -f2)
+```
+
+**Store the result** - you'll use it in the greeting. Don't apply updates yet!
+
+---
+
+## 2️⃣ Read Project Status
+
+**Check if this is a returning user:**
 
 ```bash
 cat docs/PROJECT_STATUS.md 2>/dev/null
 ```
 
-### If Status Exists and Shows Work Done
+- If status shows work done → This is a returning user
+- If status is fresh/empty → This is a new user
 
-This is a **returning user**. Read the status and greet with context:
+---
+
+## 3️⃣ Greet User (Include Update Notification)
+
+### If Updates Available (LOCAL_VERSION ≠ LATEST_VERSION)
+
+**Include this in your greeting:**
+
+```
+📦 **Platform Update Available!**
+
+A new version of the platform is available (${LOCAL_VERSION} → ${LATEST_VERSION}).
+
+Updates include improvements to:
+- Deployment workflow
+- Dockerfile templates  
+- AI instructions
+
+**Would you like me to update now?** (Your code won't be affected)
+
+Reply "yes" to update, or we can continue and update later.
+```
+
+### If No Updates (or check failed)
+
+Don't mention updates - proceed with normal greeting.
+
+### For Returning Users
 
 ```
 👋 Welcome back!
 
 Last time we [summary from Latest Session].
 Your project: [Project Idea from status]
-Current status: [Frontend/Backend/Database status]
 
-Ready to continue? Or would you like to work on something else?
+[Include update notification here if available]
+
+Ready to continue?
 ```
 
-### If Status is Fresh/Empty
-
-This is a **new user**. Proceed with normal welcome flow after version check.
-
----
-
----
-
-## 1️⃣ Template Version Check (After Reading Status)
-
-**Check if template updates are available:**
-
-```bash
-# Read local version
-LOCAL_VERSION=$(grep "^version:" .template-version 2>/dev/null | cut -d'"' -f2)
-
-# Fetch latest manifest from template repo (works in Codespaces)
-MANIFEST_URL="https://raw.githubusercontent.com/bayer-int/dd-template-repo/main/.template-manifest.yml"
-LATEST_VERSION=$(curl -s "$MANIFEST_URL" 2>/dev/null | grep "^version:" | cut -d'"' -f2)
-```
-
-**If versions differ, apply updates silently:**
-
-### Files to Auto-Update (Overwrite)
-
-Fetch and replace these files from template repo:
-- `.github/workflows/deploy.yml`
-- `Dockerfile.vanilla`, `Dockerfile.react`, `Dockerfile.node`, `Dockerfile.python`
-- `.cursorrules`
-- `.clinerules/*` (entire directory)
-- `.devcontainer/devcontainer.json`
-- `MIGRATION.md`
-
-**How to fetch a file:**
-```bash
-# Example: Update deploy workflow
-curl -s "https://raw.githubusercontent.com/bayer-int/dd-template-repo/main/.github/workflows/deploy.yml" > .github/workflows/deploy.yml
-```
-
-### Files to Merge (Preserve User Additions)
-
-For `docker-compose.yml`:
-1. Fetch template version
-2. Identify user-added services (not in template)
-3. Keep user services, update template services
-
-### After Updates
-
-Update `.template-version`:
-```yaml
-version: "[NEW_VERSION]"
-last_update_check: "[CURRENT_TIMESTAMP]"
-```
-
----
-
-## 2️⃣ Notify User (Briefly)
-
-### If Updates Were Applied
-
-**For beginners (detected later, but default to brief):**
-```
-📦 Quick update: I've improved some platform files in the background. Your code is unchanged!
-```
-
-**For developers (if they identified as dev in previous session):**
-```
-📦 Template updated (1.0.0 → 1.1.0):
-  • Updated deployment workflow
-  • Fixed Dockerfile configurations
-  
-Your code unchanged. See changelog in .template-manifest.yml
-```
-
-### If No Updates Needed
-
-Say nothing about updates - just proceed with greeting.
-
-### If Update Check Failed (Network Issue)
-
-Say nothing - proceed normally. Updates will be checked next session.
-
----
-
-## 3️⃣ Then Proceed to Welcome
-
-After silent checks, show the welcome message from `00-welcome.md`:
+### For New Users
 
 ```
 🎉 Welcome to the Vibe Hackathon!
 
-Quick question before we start - what's your coding experience?
-...
+[Include update notification here if available]
+
+Quick question - what's your coding experience?
+1️⃣ "I'm new to coding"
+2️⃣ "I'm a developer"
+```
+
+---
+
+## 4️⃣ If User Says "Yes" to Update
+
+**Apply updates when user confirms:**
+
+### Files to Update (Overwrite)
+
+```bash
+# Deployment workflow
+gh api repos/bayer-int/dd-template-repository/contents/.github/workflows/deploy.yml \
+  --jq '.content' | base64 -d > .github/workflows/deploy.yml
+
+# Frontend Dockerfile templates
+gh api repos/bayer-int/dd-template-repository/contents/frontend/Dockerfile.vanilla \
+  --jq '.content' | base64 -d > frontend/Dockerfile.vanilla
+gh api repos/bayer-int/dd-template-repository/contents/frontend/Dockerfile.react \
+  --jq '.content' | base64 -d > frontend/Dockerfile.react
+
+# Backend Dockerfile templates  
+gh api repos/bayer-int/dd-template-repository/contents/backend/Dockerfile.node \
+  --jq '.content' | base64 -d > backend/Dockerfile.node
+gh api repos/bayer-int/dd-template-repository/contents/backend/Dockerfile.python \
+  --jq '.content' | base64 -d > backend/Dockerfile.python
+
+# Database Dockerfile templates
+gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.postgres \
+  --jq '.content' | base64 -d > database/Dockerfile.postgres
+gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.mysql \
+  --jq '.content' | base64 -d > database/Dockerfile.mysql
+gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.pgvector \
+  --jq '.content' | base64 -d > database/Dockerfile.pgvector
+gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.chroma \
+  --jq '.content' | base64 -d > database/Dockerfile.chroma
+gh api repos/bayer-int/dd-template-repository/contents/database/Dockerfile.qdrant \
+  --jq '.content' | base64 -d > database/Dockerfile.qdrant
+
+# AI rules
+gh api repos/bayer-int/dd-template-repository/contents/.cursorrules \
+  --jq '.content' | base64 -d > .cursorrules
+
+# Documentation
+gh api repos/bayer-int/dd-template-repository/contents/docs/MIGRATION.md \
+  --jq '.content' | base64 -d > docs/MIGRATION.md
+gh api repos/bayer-int/dd-template-repository/contents/docs/EXAMPLES.md \
+  --jq '.content' | base64 -d > docs/EXAMPLES.md
+```
+
+### Update .clinerules/ Directory
+
+```bash
+# Fetch list of files in .clinerules/
+FILES=$(gh api repos/bayer-int/dd-template-repository/contents/.clinerules --jq '.[].name')
+
+# Update each file
+for FILE in $FILES; do
+  gh api "repos/bayer-int/dd-template-repository/contents/.clinerules/$FILE" \
+    --jq '.content' | base64 -d > ".clinerules/$FILE"
+done
+```
+
+### Update Version Tracker
+
+```bash
+# Update .template-version with new version
+cat > .template-version << EOF
+# Template Version Tracker
+version: "${LATEST_VERSION}"
+template_repo: "bayer-int/dd-template-repository"
+last_update_check: "$(date -Iseconds)"
+EOF
+```
+
+### Confirm to User
+
+```
+✅ Updated! Your project is now on version ${LATEST_VERSION}.
+
+Your code (frontend/, backend/, database/init/) was not touched.
+
+Now, let's continue - what would you like to work on?
+```
+
+---
+
+## 5️⃣ If User Says "No" or "Later"
+
+```
+No problem! You can update anytime by asking me to "update platform files".
+
+Now, what would you like to work on?
 ```
 
 ---
 
 ## ⚠️ Important Notes for Codespaces
 
-1. **Network Access**: Codespaces has internet access, so `curl` to GitHub works
+1. **GitHub CLI**: Use `gh api` for fetching files (pre-authenticated in Codespaces)
 2. **Git Operations**: User may need to commit after updates
 3. **No Sudo**: Don't use sudo commands
 4. **Working Directory**: Always work from repo root
 
 ---
 
-## 🔄 Update Logic Summary
+## 🔄 Update Flow Summary
 
 ```
 Session Start
      │
      ▼
-Read .template-version
+Check .template-version (silently)
      │
      ▼
-Fetch latest .template-manifest.yml from GitHub
+Fetch latest version via gh api (silently)
      │
      ▼
 Compare versions
      │
-     ├─── Same version ──► Proceed to Welcome
+     ├─── Same version ──► Normal greeting (no mention of updates)
      │
      └─── Different version
               │
               ▼
-         Fetch & apply auto_update files
+         Include update offer in greeting
+         "Update available! Would you like me to update?"
               │
-              ▼
-         Merge merge_update files
+              ├─── User says YES ──► Apply updates → Confirm → Continue
               │
-              ▼
-         Update .template-version
-              │
-              ▼
-         Brief notification
-              │
-              ▼
-         Proceed to Welcome
+              └─── User says NO ──► Continue normally
 ```
 
 ---
 
-## 📋 Quick Reference: What to Update
+## 📋 Quick Reference: What Gets Updated
 
-| Category | Files | Action |
-|----------|-------|--------|
-| **Auto-update** | workflows, Dockerfiles, AI rules, docs | Overwrite |
-| **Merge** | docker-compose.yml, .gitignore | Preserve user additions |
-| **Check only** | nginx.conf, user Dockerfiles | Warn if issues |
-| **Never touch** | frontend/src/*, backend/*, database/* | Ignore |
+| Category | Files | When Updated |
+|----------|-------|--------------|
+| **Platform files** | deploy.yml, Dockerfile templates, AI rules | When user approves |
+| **Documentation** | MIGRATION.md, EXAMPLES.md | When user approves |
+| **Never touched** | frontend/*, backend/*, database/init/* | Never (user code) |

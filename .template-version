@@ -5,6 +5,6 @@
 # DO NOT DELETE THIS FILE - it helps keep your project up to date!
 
 version: "1.0.0"
-template_repo: "bayer-int/dd-template-repo"
+template_repo: "bayer-int/dd-template-repository"
 created_at: ""
 last_update_check: ""
