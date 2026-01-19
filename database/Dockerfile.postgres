@@ -1,0 +1,18 @@
+# PostgreSQL Database
+# Standard relational database - good for most web applications
+#
+# Environment variables (set by platform):
+#   DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+#
+# To use: Copy this file to database/Dockerfile
+
+FROM postgres:16-alpine
+
+# Copy initialization scripts (run on first start)
+COPY init/ /docker-entrypoint-initdb.d/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} || exit 1
+
+EXPOSE 5432

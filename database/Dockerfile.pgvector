@@ -1,0 +1,21 @@
+# PostgreSQL + pgvector - Relational + Vector Database
+# Best of both worlds: SQL queries AND vector similarity search
+# Perfect for apps that need both structured data and AI features
+#
+# Environment variables (set by platform):
+#   DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+#
+# To use: Copy this file to database/Dockerfile
+# Then enable extension in your init.sql:
+#   CREATE EXTENSION IF NOT EXISTS vector;
+
+FROM pgvector/pgvector:pg16
+
+# Copy initialization scripts (run on first start)
+COPY init/ /docker-entrypoint-initdb.d/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} || exit 1
+
+EXPOSE 5432

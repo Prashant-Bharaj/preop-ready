@@ -1,0 +1,21 @@
+# ChromaDB - Vector Database
+# Perfect for AI/ML applications, RAG, semantic search
+# Simple API, great for prototypes and hackathons
+#
+# Connection: http://localhost:8000
+# Python client: chromadb.HttpClient(host="database", port=8000)
+#
+# To use: Copy this file to database/Dockerfile
+
+FROM chromadb/chroma:latest
+
+# Persist data to mounted volume
+ENV IS_PERSISTENT=TRUE
+ENV PERSIST_DIRECTORY=/chroma/chroma
+ENV ANONYMIZED_TELEMETRY=FALSE
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8000/api/v1/heartbeat || exit 1
+
+EXPOSE 8000
