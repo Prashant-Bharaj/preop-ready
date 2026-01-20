@@ -46,7 +46,7 @@ your-repo/
 The `nginx.conf` file is copied to `/etc/nginx/conf.d/default.conf` inside the container.
 Files in `conf.d/` are INCLUDED inside nginx's main config, so they must ONLY contain server blocks.
 
-### ✅ CORRECT nginx.conf:
+### ✅ CORRECT nginx.conf (Production):
 
 ```nginx
 server {
@@ -66,7 +66,7 @@ server {
 }
 ```
 
-### ❌ WRONG nginx.conf (WILL CRASH THE CONTAINER):
+### ❌ WRONG nginx.conf (WILL CRASH OR FAIL):
 
 ```nginx
 events {           # ❌ NOT ALLOWED in conf.d files!
@@ -77,6 +77,17 @@ http {             # ❌ NOT ALLOWED in conf.d files!
     server { ... }
 }
 ```
+
+### ⚠️ Don't Proxy to Backend in nginx.conf!
+
+In **local docker-compose**, you can proxy `/api` and `/socket.io` to `http://backend:3000` because containers share a Docker network.
+
+In **production (ECS)**, this **WON'T WORK** because:
+- Containers run as separate ECS tasks with no shared network
+- There's no `backend` hostname
+- Traefik handles all routing to the backend
+
+**For production deployment, nginx should ONLY serve static files.** Remove any `proxy_pass` directives - they'll cause 502 errors.
 
 ---
 
@@ -148,6 +159,27 @@ In production, Traefik routes traffic like this:
 
 - `https://<repo-name>.vibe.demo.bfrg.de/` → Frontend container (port 80)
 - `https://<repo-name>.vibe.demo.bfrg.de/api/*` → Backend container (port 3000)
+- `https://<repo-name>.vibe.demo.bfrg.de/socket.io/*` → Backend container (WebSocket)
+
+### 🔌 WebSocket Support (Socket.IO)
+
+WebSocket routing is **automatically enabled** for all projects. If your backend uses Socket.IO:
+
+```javascript
+// Backend - Socket.IO setup
+const { Server } = require('socket.io');
+const io = new Server(httpServer, {
+  cors: { origin: '*' }
+});
+```
+
+```javascript
+// Frontend - Connect to same origin (Traefik handles routing)
+import { io } from 'socket.io-client';
+const socket = io(window.location.origin);  // ✅ Works in production
+```
+
+**Important:** In production with Traefik, the frontend should NOT try to proxy WebSocket connections through nginx. The frontend nginx.conf should only serve static files - Traefik routes `/socket.io/*` directly to the backend.
 
 ### ⚠️ IMPORTANT: The `/api` prefix is STRIPPED!
 
@@ -317,6 +349,9 @@ Before deploying, verify ALL of these:
 | Container won't start | Invalid nginx.conf | Remove `events{}` and `http{}` blocks |
 | Health check timeout | Missing /health endpoint | Add health endpoint to both FE and BE |
 | 502 Bad Gateway | Backend not on port 3000 | Ensure backend listens on 3000 |
+| 502 on API/WebSocket | nginx proxy_pass to backend | Remove proxy_pass - Traefik handles routing |
 | API calls fail | Routes include /api prefix | Remove /api from backend routes |
+| WebSocket won't connect | Frontend uses wrong URL | Use `window.location.origin` for Socket.IO |
 | CORS errors | Backend missing CORS headers | Add CORS middleware to backend |
 | Build fails | Missing Dockerfile | Copy template Dockerfile to component |
+| Database not deployed | No database/Dockerfile | Create Dockerfile from template |
