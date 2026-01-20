@@ -193,6 +193,107 @@ cp database/Dockerfile.postgres database/Dockerfile    # SQL database
 cp database/Dockerfile.chroma database/Dockerfile      # Vector database for AI
 ```
 
+### Database Schema Changes (Migrations)
+
+**IMPORTANT:** Init scripts in `database/init/` only run on **first deployment** (when database is empty). After that, schema changes require migrations.
+
+**User says:** "I need to add a new column" / "Change the database schema"
+
+```
+Since your database already has data, we can't just change init.sql - 
+that only runs once when the database is first created.
+
+For schema changes, I'll add migration logic to your backend that runs 
+on startup. This is the safe way to update your database structure 
+without losing data.
+```
+
+**Implementation approach:**
+
+1. **Add a migrations table** to track which migrations have run:
+
+```javascript
+// backend/src/db/migrations.js
+async function runMigrations(db) {
+  // Create migrations table if not exists
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // Define migrations
+  const migrations = [
+    {
+      name: '001_add_user_email',
+      sql: 'ALTER TABLE users ADD COLUMN email VARCHAR(255)'
+    },
+    {
+      name: '002_add_created_at',
+      sql: 'ALTER TABLE posts ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+    }
+  ];
+  
+  // Run pending migrations
+  for (const migration of migrations) {
+    const [rows] = await db.query(
+      'SELECT * FROM _migrations WHERE name = ?',
+      [migration.name]
+    );
+    
+    if (rows.length === 0) {
+      console.log(`Running migration: ${migration.name}`);
+      await db.query(migration.sql);
+      await db.query(
+        'INSERT INTO _migrations (name) VALUES (?)',
+        [migration.name]
+      );
+    }
+  }
+}
+```
+
+2. **Call migrations on startup** (in server.js):
+
+```javascript
+// After database connection
+await runMigrations(db);
+console.log('✅ Database migrations complete');
+```
+
+3. **For PostgreSQL**, use the same pattern:
+
+```javascript
+const migrations = [
+  {
+    name: '001_add_user_email',
+    sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)'
+  }
+];
+```
+
+**Migration rules:**
+- ✅ Always add new migrations, never edit old ones
+- ✅ Name migrations sequentially (001_, 002_, etc.)
+- ✅ Make migrations idempotent when possible (IF NOT EXISTS)
+- ✅ Test migrations locally before deploying
+- ❌ Never delete data columns without backing up first
+- ❌ Never rename tables/columns (add new, migrate data, drop old)
+
+**Tell the user:**
+```
+I've added migration support to your backend. Now when you need 
+schema changes:
+
+1. Add a new migration to the migrations array
+2. Deploy - it will automatically run on startup
+3. Your existing data stays safe!
+
+Want me to add a migration for your change?
+```
+
 ### Adding OpenAI / AI Features
 
 **User says:** "Add AI" / "Use ChatGPT" / "Make it smart"

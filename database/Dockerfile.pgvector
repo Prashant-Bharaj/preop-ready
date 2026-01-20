@@ -3,7 +3,11 @@
 # Perfect for apps that need both structured data and AI features
 #
 # Environment variables (set by platform):
-#   DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+#   POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   PostgreSQL is configured to use /data/postgres as its data directory.
 #
 # To use: Copy this file to database/Dockerfile
 # Then enable extension in your init.sql:
@@ -11,8 +15,12 @@
 
 FROM pgvector/pgvector:pg16
 
-# Copy initialization scripts (run on first start)
+# Copy initialization scripts (run on first start only)
 COPY init/ /docker-entrypoint-initdb.d/
+
+# Configure PostgreSQL to use /data/postgres for storage
+# This is where EFS is mounted in production for persistence
+ENV PGDATA=/data/postgres
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \

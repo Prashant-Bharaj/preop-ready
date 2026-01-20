@@ -2,14 +2,22 @@
 # Popular relational database - widely supported
 #
 # Environment variables (set by platform):
-#   DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+#   MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   MySQL is configured to use /data/mysql as its data directory.
 #
 # To use: Copy this file to database/Dockerfile
 
 FROM mysql:8.0
 
-# Copy initialization scripts (run on first start)
+# Copy initialization scripts (run on first start only)
 COPY init/ /docker-entrypoint-initdb.d/
+
+# Configure MySQL to use /data/mysql for storage
+# This is where EFS is mounted in production for persistence
+RUN echo '[mysqld]\ndatadir=/data/mysql\nsocket=/var/run/mysqld/mysqld.sock\n[client]\nsocket=/var/run/mysqld/mysqld.sock' > /etc/mysql/conf.d/datadir.cnf
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \

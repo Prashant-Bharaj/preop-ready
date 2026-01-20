@@ -37,6 +37,23 @@ your-repo/
 | `Dockerfile.chroma` | ChromaDB vector database |
 | `Dockerfile.qdrant` | Qdrant vector database |
 
+### 💾 Database Data Persistence
+
+**Data is NOT erased between deployments!** The platform uses AWS EFS (Elastic File System) for persistent storage.
+
+- EFS is mounted to `/data` inside the database container
+- All database templates are pre-configured to store data in `/data`
+- Data survives container restarts, redeployments, and scaling
+
+| Database | Data Directory |
+|----------|---------------|
+| PostgreSQL | `/data/postgres` |
+| MySQL | `/data/mysql` |
+| ChromaDB | `/data/chroma` |
+| Qdrant | `/data/qdrant` |
+
+⚠️ **Init scripts only run once!** Files in `database/init/` are executed on the **first deployment only** (when the database is empty). Subsequent deployments won't re-run them.
+
 ---
 
 ## 🌐 NGINX Configuration
