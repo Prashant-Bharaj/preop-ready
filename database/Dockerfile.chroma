@@ -5,13 +5,16 @@
 # Connection: http://localhost:8000
 # Python client: chromadb.HttpClient(host="database", port=8000)
 #
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#
 # To use: Copy this file to database/Dockerfile
 
 FROM chromadb/chroma:latest
 
-# Persist data to mounted volume
+# Persist data to /data (EFS mount point in production)
 ENV IS_PERSISTENT=TRUE
-ENV PERSIST_DIRECTORY=/chroma/chroma
+ENV PERSIST_DIRECTORY=/data/chroma
 ENV ANONYMIZED_TELEMETRY=FALSE
 
 # Health check
