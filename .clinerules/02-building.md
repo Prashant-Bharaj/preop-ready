@@ -193,6 +193,42 @@ cp database/Dockerfile.postgres database/Dockerfile    # SQL database
 cp database/Dockerfile.chroma database/Dockerfile      # Vector database for AI
 ```
 
+### ⚠️ CRITICAL: Database Persistence Requirements
+
+**The platform mounts EFS (persistent storage) at `/data` in the container.** Your database MUST store data in `/data/<subdir>` to persist across deployments.
+
+**MySQL - ALWAYS use CMD with --datadir flag:**
+```dockerfile
+FROM mysql:8.0
+COPY init/ /docker-entrypoint-initdb.d/
+RUN mkdir -p /data/mysql && chown -R mysql:mysql /data
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+  CMD mysqladmin ping -h localhost || exit 1
+EXPOSE 3306
+# CRITICAL: Command line --datadir ALWAYS takes precedence
+CMD ["mysqld", "--datadir=/data/mysql"]
+```
+
+**PostgreSQL - use PGDATA environment variable:**
+```dockerfile
+FROM postgres:16
+COPY init/ /docker-entrypoint-initdb.d/
+ENV PGDATA=/data/postgres
+RUN mkdir -p /data/postgres && chown -R postgres:postgres /data
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+  CMD pg_isready -U postgres || exit 1
+EXPOSE 5432
+```
+
+**Why this matters:**
+- Without this, data is stored inside the container and **LOST on every deployment**
+- The database container restarts and sees an "empty" data directory
+- MySQL/PostgreSQL reinitializes, wiping all data
+
+**NEVER use config files alone** - they can be overridden. Always use:
+- MySQL: `CMD ["mysqld", "--datadir=/data/mysql"]`
+- PostgreSQL: `ENV PGDATA=/data/postgres`
+
 ### Database Schema Changes (Migrations)
 
 **IMPORTANT:** Init scripts in `database/init/` only run on **first deployment** (when database is empty). After that, schema changes require migrations.
