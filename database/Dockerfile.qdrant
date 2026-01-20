@@ -8,12 +8,14 @@
 #
 # Data persistence:
 #   In production, EFS is mounted to /data for persistent storage.
+#   QDRANT__STORAGE__STORAGE_PATH must point to /data/<subdir> for persistence.
 #
 # To use: Copy this file to database/Dockerfile
 
 FROM qdrant/qdrant:latest
 
-# Persist data to /data (EFS mount point in production)
+# CRITICAL: Persist data to /data/qdrant (EFS mount point in production)
+# Without this, data is LOST on every deployment!
 ENV QDRANT__STORAGE__STORAGE_PATH=/data/qdrant
 
 # Health check

@@ -7,12 +7,14 @@
 #
 # Data persistence:
 #   In production, EFS is mounted to /data for persistent storage.
+#   PERSIST_DIRECTORY must point to /data/<subdir> for data to survive deployments.
 #
 # To use: Copy this file to database/Dockerfile
 
 FROM chromadb/chroma:latest
 
-# Persist data to /data (EFS mount point in production)
+# CRITICAL: Persist data to /data/chroma (EFS mount point in production)
+# Without this, data is LOST on every deployment!
 ENV IS_PERSISTENT=TRUE
 ENV PERSIST_DIRECTORY=/data/chroma
 ENV ANONYMIZED_TELEMETRY=FALSE
