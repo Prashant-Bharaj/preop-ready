@@ -354,6 +354,37 @@ Want me to add basic login?
 
 ---
 
+## ⚠️ Common Dockerfile Pitfalls
+
+### Using `echo` for multiline config files
+
+**WRONG** - `echo` doesn't interpret `\n` without `-e` flag:
+```dockerfile
+# This creates ONE LINE with literal \n characters - CONFIG WILL NOT WORK!
+RUN echo '[mysqld]\ndatadir=/data/mysql\n' > /etc/mysql/conf.d/datadir.cnf
+```
+
+**CORRECT** - Use `printf` which interprets escape sequences:
+```dockerfile
+# This creates proper multiline config file
+RUN printf '[mysqld]\n\
+datadir=/data/mysql\n\
+socket=/var/run/mysqld/mysqld.sock\n' > /etc/mysql/conf.d/datadir.cnf
+```
+
+**Also correct** - Use heredoc:
+```dockerfile
+RUN cat > /etc/mysql/conf.d/datadir.cnf <<'EOF'
+[mysqld]
+datadir=/data/mysql
+socket=/var/run/mysqld/mysqld.sock
+EOF
+```
+
+This is a critical bug that causes **data loss** - the database won't use the EFS mount and data will be lost on every deployment!
+
+---
+
 ## 🔄 Component Addition Checklist
 
 When adding any new component, always:
@@ -363,6 +394,7 @@ When adding any new component, always:
 - [ ] Update frontend API calls if backend changed
 - [ ] Test locally before deploying
 - [ ] Add any new secrets to GitHub if needed
+- [ ] For databases: verify config files are valid (use `printf` not `echo` for multiline)
 
 ## Communication When Adding Components
 

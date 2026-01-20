@@ -17,7 +17,13 @@ COPY init/ /docker-entrypoint-initdb.d/
 
 # Configure MySQL to use /data/mysql for storage
 # This is where EFS is mounted in production for persistence
-RUN echo '[mysqld]\ndatadir=/data/mysql\nsocket=/var/run/mysqld/mysqld.sock\n[client]\nsocket=/var/run/mysqld/mysqld.sock' > /etc/mysql/conf.d/datadir.cnf
+# NOTE: Must use printf (not echo) to properly interpret \n as newlines
+RUN printf '[mysqld]\n\
+datadir=/data/mysql\n\
+socket=/var/run/mysqld/mysqld.sock\n\
+\n\
+[client]\n\
+socket=/var/run/mysqld/mysqld.sock\n' > /etc/mysql/conf.d/datadir.cnf
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
