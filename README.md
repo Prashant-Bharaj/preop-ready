@@ -197,23 +197,22 @@ The AI will save your work and deploy it automatically!
 
 ### ⚠️ First Time Only: Get Whitelisted
 
-Before your first deployment, you need to be **approved by an admin**:
+Before your first deployment, your repository needs to be **whitelisted**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│  📧 CONTACT A PLATFORM ADMIN                                   │
+│  📧 Contact a Platform Admin                                    │
 │                                                                 │
-│  Send them:                                                     │
-│  • Your repository name (e.g., bayer-int/my-awesome-app)       │
-│  • Your Bayer email                                             │
+│  Send them your repository name:                                │
+│  • e.g., bayer-int/my-awesome-app                              │
 │                                                                 │
-│  They will whitelist your repo (one-time setup)                │
+│  They'll add it to the whitelist (takes ~5 minutes)            │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**This is a one-time step** - once approved, all future deployments are automatic!
+**This is a one-time step** - once whitelisted, all future deployments are automatic!
 
 ---
 
