@@ -1,10 +1,5 @@
 # Template Version Tracker
-# This file tracks which template version this project is based on.
-# AI uses this to check for and apply platform updates automatically.
-#
-# DO NOT DELETE THIS FILE - it helps keep your project up to date!
+# DO NOT DELETE - helps keep your project up to date!
 
-version: "1.0.0"
-template_repo: "bayer-int/dd-template-repository"
-created_at: ""
-last_update_check: ""
+version: "1.0.1"
+template_repo: "bayer-int/dd-template-repo"
