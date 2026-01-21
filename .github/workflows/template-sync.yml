@@ -1,0 +1,396 @@
+# =============================================================================
+# Template Sync Workflow (For Child Repos)
+# =============================================================================
+# This workflow checks for template updates and syncs platform files.
+# It runs in CHILD repos, not the template repo itself.
+#
+# Triggers:
+#   - Manual: "Actions" → "Check Template Updates" → "Run workflow"
+#   - Scheduled: Weekly on Monday 9 AM UTC (uncomment to enable)
+#   - Called from deploy workflow (optional integration)
+#
+# What it does:
+#   1. Compares local .template-version with template repo's version
+#   2. If update available, fetches all platform files
+#   3. Creates a PR with the changes (or commits directly if configured)
+#
+# =============================================================================
+
+name: Check Template Updates
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      auto_merge:
+        description: 'Auto-merge PR if no conflicts'
+        required: false
+        default: 'false'
+        type: boolean
+      direct_commit:
+        description: 'Commit directly to branch (skip PR)'
+        required: false
+        default: 'false'
+        type: boolean
+        
+  # Scheduled check - uncomment to enable
+  # schedule:
+  #   - cron: '0 9 * * 1'  # Weekly Monday 9 AM UTC
+  
+  # Can be called from other workflows (e.g., deploy)
+  workflow_call:
+    inputs:
+      auto_merge:
+        type: boolean
+        default: false
+      direct_commit:
+        type: boolean
+        default: false
+    outputs:
+      updated:
+        description: 'Whether an update was applied'
+        value: ${{ jobs.sync.outputs.updated }}
+      new_version:
+        description: 'The new template version'
+        value: ${{ jobs.sync.outputs.new_version }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  TEMPLATE_REPO: bayer-int/dd-template-repo
+  TEMPLATE_BRANCH: master
+
+jobs:
+  # Skip if this IS the template repo
+  check-repo:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          if [ "${{ github.repository }}" = "${{ env.TEMPLATE_REPO }}" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping - this IS the template repo"
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
+  sync:
+    name: Sync Template Files
+    needs: check-repo
+    if: needs.check-repo.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      updated: ${{ steps.result.outputs.updated }}
+      new_version: ${{ steps.check-version.outputs.template_version }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Check versions
+        id: check-version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get local version
+          if [ -f .template-version ]; then
+            LOCAL=$(grep "^version:" .template-version | cut -d'"' -f2)
+          else
+            LOCAL="0.0.0"
+          fi
+          echo "local_version=$LOCAL" >> $GITHUB_OUTPUT
+          echo "📦 Local version: $LOCAL"
+          
+          # Get template version
+          TEMPLATE=$(gh api repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml \
+            --jq '.content' | base64 -d | grep "^version:" | head -1 | cut -d'"' -f2)
+          echo "template_version=$TEMPLATE" >> $GITHUB_OUTPUT
+          echo "📦 Template version: $TEMPLATE"
+          
+          # Compare versions
+          if [ "$LOCAL" = "$TEMPLATE" ]; then
+            echo "✅ Already up to date!"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Update available: $LOCAL → $TEMPLATE"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Sync platform files
+        if: steps.check-version.outputs.needs_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Fetching platform files from template..."
+          
+          TEMPLATE_VERSION="${{ steps.check-version.outputs.template_version }}"
+          
+          # Helper function to fetch file from template
+          fetch_file() {
+            local path=$1
+            local dir=$(dirname "$path")
+            
+            # Create directory if needed
+            [ "$dir" != "." ] && mkdir -p "$dir"
+            
+            # Fetch file content
+            CONTENT=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
+              --jq '.content' 2>/dev/null | base64 -d)
+            
+            if [ -n "$CONTENT" ]; then
+              echo "$CONTENT" > "$path"
+              echo "  ✓ $path"
+              return 0
+            else
+              echo "  ⏭️ $path (not found in template)"
+              return 1
+            fi
+          }
+          
+          # Helper to fetch directory
+          fetch_dir() {
+            local path=$1
+            rm -rf "$path"
+            mkdir -p "$path"
+            
+            # Get list of files in directory
+            FILES=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
+              --jq '.[].path' 2>/dev/null || echo "")
+            
+            for file in $FILES; do
+              fetch_file "$file" || true
+            done
+          }
+          
+          echo ""
+          echo "📁 Syncing workflows..."
+          mkdir -p .github/workflows
+          fetch_file ".github/workflows/deploy.yml" || true
+          fetch_file ".github/workflows/template-sync.yml" || true
+          
+          echo ""
+          echo "📁 Syncing frontend templates..."
+          if [ -d frontend ]; then
+            fetch_file "frontend/Dockerfile.vanilla" || true
+            fetch_file "frontend/Dockerfile.react" || true
+          fi
+          
+          echo ""
+          echo "📁 Syncing backend templates..."
+          if [ -d backend ]; then
+            fetch_file "backend/Dockerfile.node" || true
+            fetch_file "backend/Dockerfile.python" || true
+          fi
+          
+          echo ""
+          echo "📁 Syncing database templates..."
+          mkdir -p database
+          fetch_file "database/Dockerfile.postgres" || true
+          fetch_file "database/Dockerfile.mysql" || true
+          fetch_file "database/Dockerfile.pgvector" || true
+          fetch_file "database/Dockerfile.chroma" || true
+          fetch_file "database/Dockerfile.qdrant" || true
+          
+          echo ""
+          echo "📁 Syncing AI instructions..."
+          fetch_file ".cursorrules" || true
+          fetch_dir ".clinerules" || true
+          
+          echo ""
+          echo "📁 Syncing dev container..."
+          mkdir -p .devcontainer
+          fetch_file ".devcontainer/devcontainer.json" || true
+          
+          echo ""
+          echo "📁 Syncing documentation..."
+          mkdir -p docs
+          fetch_file "docs/MIGRATION.md" || true
+          fetch_file "docs/EXAMPLES.md" || true
+          
+          echo ""
+          echo "📁 Syncing snippets..."
+          fetch_dir "snippets" || true
+          
+          echo ""
+          echo "📁 Syncing scripts..."
+          mkdir -p scripts
+          fetch_file "scripts/sync-from-template.sh" || true
+          chmod +x scripts/sync-from-template.sh 2>/dev/null || true
+          
+          echo ""
+          echo "📁 Syncing examples..."
+          mkdir -p examples
+          fetch_file "examples/eslint.config.js" || true
+          fetch_file "examples/ruff.toml" || true
+          
+          # Update version tracker
+          echo ""
+          echo "📝 Updating version tracker..."
+          cat > .template-version << EOF
+          # Template Version Tracker
+          # DO NOT DELETE - helps keep your project up to date!
+          
+          version: "$TEMPLATE_VERSION"
+          template_repo: "bayer-int/dd-template-repo"
+          last_sync: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          EOF
+          
+          echo ""
+          echo "✅ Sync complete!"
+          
+      - name: Merge .gitignore patterns
+        if: steps.check-version.outputs.needs_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f .gitignore ]; then
+            echo "📝 Merging .gitignore patterns..."
+            
+            # Fetch template .gitignore
+            TEMPLATE_GITIGNORE=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.gitignore?ref=${{ env.TEMPLATE_BRANCH }}" \
+              --jq '.content' 2>/dev/null | base64 -d || echo "")
+            
+            if [ -n "$TEMPLATE_GITIGNORE" ]; then
+              # Add missing patterns
+              while IFS= read -r pattern; do
+                [[ -z "$pattern" || "$pattern" =~ ^# ]] && continue
+                if ! grep -Fxq "$pattern" .gitignore 2>/dev/null; then
+                  echo "$pattern" >> .gitignore
+                  echo "  Added: $pattern"
+                fi
+              done <<< "$TEMPLATE_GITIGNORE"
+            fi
+          fi
+          
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📝 Changes detected:"
+            git status --short
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ No file changes needed"
+          fi
+          
+      - name: Commit directly (if configured)
+        if: steps.check-version.outputs.needs_update == 'true' && steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add -A
+          git commit -m "chore: sync platform files from template v${{ steps.check-version.outputs.template_version }}"
+          git push
+          
+          echo "✅ Changes committed directly"
+          
+      - name: Create Pull Request
+        if: steps.check-version.outputs.needs_update == 'true' && steps.changes.outputs.has_changes == 'true' && inputs.direct_commit != 'true'
+        id: create-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOCAL="${{ steps.check-version.outputs.local_version }}"
+          TEMPLATE="${{ steps.check-version.outputs.template_version }}"
+          BRANCH="template-sync/v$TEMPLATE"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "📝 Updating existing PR #$EXISTING_PR..."
+            git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH"
+            git add -A
+            git commit -m "chore: update platform files to v$TEMPLATE" --allow-empty
+            git push --force origin "$BRANCH"
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Creating new PR..."
+            git checkout -b "$BRANCH"
+            git add -A
+            git commit -m "chore: sync platform files from template v$TEMPLATE"
+            git push -u origin "$BRANCH"
+            
+            PR_URL=$(gh pr create \
+              --title "⬆️ Platform Update: v$LOCAL → v$TEMPLATE" \
+              --body "## 📦 Template Update Available
+
+          **Version:** \`$LOCAL\` → \`$TEMPLATE\`
+
+          ### What's Updated
+
+          Platform files only - **your code is NOT touched**:
+
+          | Category | Files |
+          |----------|-------|
+          | Workflows | \`.github/workflows/deploy.yml\`, \`template-sync.yml\` |
+          | Frontend | \`Dockerfile.vanilla\`, \`Dockerfile.react\` |
+          | Backend | \`Dockerfile.node\`, \`Dockerfile.python\` |
+          | Database | \`Dockerfile.postgres\`, \`mysql\`, \`pgvector\`, etc. |
+          | AI Rules | \`.cursorrules\`, \`.clinerules/\` |
+          | DevContainer | \`.devcontainer/devcontainer.json\` |
+          | Docs | \`MIGRATION.md\`, \`EXAMPLES.md\` |
+          | Snippets | \`snippets/\` |
+
+          ### Your Code is Safe ✅
+
+          These are **never modified**:
+          - \`frontend/src/\`, \`frontend/index.html\`
+          - \`backend/server.js\`, \`backend/main.py\`
+          - \`database/init/\`
+          - Your Dockerfiles (\`frontend/Dockerfile\`, \`backend/Dockerfile\`)
+
+          ---
+          🤖 Auto-generated by Template Sync" \
+              --head "$BRANCH")
+              
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "✅ Created PR: $PR_URL"
+          fi
+          
+      - name: Auto-merge PR
+        if: steps.create-pr.outputs.pr_number && inputs.auto_merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ steps.create-pr.outputs.pr_number }} --auto --squash || echo "⚠️ Auto-merge not available"
+          
+      - name: Set outputs
+        id: result
+        run: |
+          if [ "${{ steps.check-version.outputs.needs_update }}" = "true" ] && [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+          
+  summary:
+    name: Summary
+    needs: [check-repo, sync]
+    runs-on: ubuntu-latest
+    if: always() && needs.check-repo.outputs.should_run == 'true'
+    
+    steps:
+      - name: Summary
+        run: |
+          echo "## 📊 Template Sync Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.sync.outputs.updated }}" = "true" ]; then
+            echo "✅ **Update applied!** New version: v${{ needs.sync.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Already up to date**" >> $GITHUB_STEP_SUMMARY
+          fi

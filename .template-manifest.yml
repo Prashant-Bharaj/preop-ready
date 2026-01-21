@@ -1,22 +1,29 @@
 # =============================================================================
 # Template Manifest - Vibe Hackathon Platform
 # =============================================================================
-# This file defines which files should be auto-updated when template changes.
-# AI uses this to keep user projects in sync with platform improvements.
+# This file defines which files are synced to child repos.
+# Child repos use template-sync.yml to pull updates from template.
+#
+# ARCHITECTURE (Pull-based, scales to 50k+ repos):
+#   1. Template repo bumps version when platform files change
+#   2. Child repos have template-sync.yml workflow
+#   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
 version: "1.0.0"
-template_repo: "bayer-int/dd-template-repository"
-template_branch: "main"
+template_repo: "bayer-int/dd-template-repo"
+template_branch: "master"
 
 # -----------------------------------------------------------------------------
 # Files to auto-update (platform files, not user code)
 # These are safe to overwrite - users shouldn't modify them
 # -----------------------------------------------------------------------------
 auto_update:
-  # Deployment workflow - critical for platform compatibility
+  # Workflows - CRITICAL: includes the sync workflow itself
   - path: ".github/workflows/deploy.yml"
     description: "Deployment workflow"
+  - path: ".github/workflows/template-sync.yml"
+    description: "Template sync workflow (enables pull-based updates)"
     
   # Frontend Dockerfile templates
   - path: "frontend/Dockerfile.vanilla"
@@ -65,6 +72,10 @@ auto_update:
   - path: "snippets/"
     description: "Reusable code snippets"
     is_directory: true
+    
+  # Sync script for manual updates
+  - path: "scripts/sync-from-template.sh"
+    description: "Manual sync script (alternative to workflow)"
 
 # -----------------------------------------------------------------------------
 # Files to merge intelligently

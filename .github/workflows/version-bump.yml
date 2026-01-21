@@ -1,0 +1,144 @@
+# =============================================================================
+# Template Version Bump Workflow
+# =============================================================================
+# Auto-bumps version in .template-manifest.yml when platform files change.
+# Child repos check this version to know if updates are available.
+#
+# ARCHITECTURE (No releases needed):
+# ──────────────────────────────────
+#
+#   Template Repo                    Child Repos (50k)
+#        │                                │
+#   [push platform files]                 │
+#        │                                │
+#        ▼                                │
+#   [Auto-bump version in manifest]      │
+#        │                                │
+#        └──────────────────────────────► Child fetches manifest
+#                                         Compares versions
+#                                         Syncs if needed
+#
+# =============================================================================
+
+name: Bump Template Version
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      # Platform files that trigger version bump
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/template-sync.yml'
+      - 'frontend/Dockerfile.*'
+      - 'backend/Dockerfile.*'
+      - 'database/Dockerfile.*'
+      - '.cursorrules'
+      - '.clinerules/**'
+      - '.devcontainer/**'
+      - 'docs/MIGRATION.md'
+      - 'docs/EXAMPLES.md'
+      - 'snippets/**'
+      - 'scripts/sync-from-template.sh'
+      # Don't trigger on manifest itself (would cause loop)
+      
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Get current version
+        id: current
+        run: |
+          VERSION=$(grep "^version:" .template-manifest.yml | head -1 | cut -d'"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Current version: $VERSION"
+          
+      - name: Calculate new version
+        id: version
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          BUMP_TYPE="${{ inputs.bump_type || 'patch' }}"
+          
+          case $BUMP_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 New version: $NEW_VERSION"
+          
+      - name: Update manifest version
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          
+          # Update version in .template-manifest.yml
+          sed -i "s/^version: \".*\"/version: \"$NEW_VERSION\"/" .template-manifest.yml
+          
+          # Update .template-version
+          cat > .template-version << EOF
+          # Template Version Tracker
+          # DO NOT DELETE - helps keep your project up to date!
+          
+          version: "$NEW_VERSION"
+          template_repo: "bayer-int/dd-template-repo"
+          EOF
+          
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .template-manifest.yml .template-version
+            git commit -m "chore: bump template version to ${{ steps.version.outputs.new_version }} [skip ci]"
+            git push
+            echo "✅ Version bumped to ${{ steps.version.outputs.new_version }}"
+          else
+            echo "⏭️ No version change needed"
+          fi
+          
+      - name: Summary
+        run: |
+          echo "## 📦 Template Version Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**${{ steps.current.outputs.version }}** → **${{ steps.version.outputs.new_version }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Child repos will detect this update when they run \`template-sync.yml\`" >> $GITHUB_STEP_SUMMARY
