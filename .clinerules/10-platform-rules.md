@@ -72,16 +72,38 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Handle SPA routing (React, Vue, Angular)
     location / {
         try_files $uri $uri/ /index.html;
     }
 
+    # Prevent caching of HTML files (critical for SPA deployments)
+    # This ensures browsers always fetch the latest index.html which references
+    # the correct hashed JS/CSS files after each deployment
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+
+    # Health check endpoint (REQUIRED for deployment)
     location /health {
         return 200 'OK';
         add_header Content-Type text/plain;
     }
+
+    # Cache static assets with hashed filenames (safe to cache long-term)
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
 }
 ```
+
+**Why the cache headers matter:**
+- **HTML files (no-cache)**: Browsers always fetch the latest `index.html`, which references the correct JS/CSS files
+- **Static assets (1 year cache)**: JS/CSS files have content hashes in their names (e.g., `app.abc123.js`), so they're safe to cache
+- **Without this**: Users may see old content after deployments until they hard-refresh
 
 ### ❌ WRONG nginx.conf (WILL CRASH OR FAIL):
 
