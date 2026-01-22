@@ -63,7 +63,7 @@ your-repo/
 The `nginx.conf` file is copied to `/etc/nginx/conf.d/default.conf` inside the container.
 Files in `conf.d/` are INCLUDED inside nginx's main config, so they must ONLY contain server blocks.
 
-### ✅ CORRECT nginx.conf (Production):
+### ✅ CORRECT nginx.conf (Works in BOTH local and production):
 
 ```nginx
 server {
@@ -72,18 +72,42 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # DNS resolver for Docker (allows nginx to start even if backend doesn't exist)
+    # 127.0.0.11 is Docker's internal DNS server
+    resolver 127.0.0.11 valid=30s ipv6=off;
+    set $backend_upstream backend:3000;
+
     # Handle SPA routing (React, Vue, Angular)
     location / {
         try_files $uri $uri/ /index.html;
     }
 
     # Prevent caching of HTML files (critical for SPA deployments)
-    # This ensures browsers always fetch the latest index.html which references
-    # the correct hashed JS/CSS files after each deployment
     location ~* \.html$ {
         add_header Cache-Control "no-cache, no-store, must-revalidate";
         add_header Pragma "no-cache";
         add_header Expires "0";
+    }
+
+    # Proxy API requests to backend (for local docker-compose development)
+    # In production (ECS), Traefik handles this - using variable prevents nginx crash
+    location /api/ {
+        proxy_pass http://$backend_upstream/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Proxy Socket.IO requests (for local docker-compose development)
+    location /socket.io/ {
+        proxy_pass http://$backend_upstream/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
     }
 
     # Health check endpoint (REQUIRED for deployment)
@@ -100,10 +124,11 @@ server {
 }
 ```
 
-**Why the cache headers matter:**
-- **HTML files (no-cache)**: Browsers always fetch the latest `index.html`, which references the correct JS/CSS files
-- **Static assets (1 year cache)**: JS/CSS files have content hashes in their names (e.g., `app.abc123.js`), so they're safe to cache
-- **Without this**: Users may see old content after deployments until they hard-refresh
+**Key points:**
+- **resolver + variable**: Using `$backend_upstream` variable instead of hardcoded `backend:3000` prevents nginx from crashing in ECS where the hostname doesn't exist
+- **HTML no-cache**: Browsers always fetch the latest `index.html` after deployments
+- **Static assets cache**: JS/CSS with hashes (e.g., `app.abc123.js`) are safe to cache
+- **Works everywhere**: Same config works in docker-compose (local) and ECS (production)
 
 ### ❌ WRONG nginx.conf (WILL CRASH OR FAIL):
 
