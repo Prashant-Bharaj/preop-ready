@@ -1,4 +1,4 @@
-# 🔐 Step 5: Adding Secrets (API Keys, etc.)
+# 🔐 Adding Secrets (API Keys, etc.)
 
 ## When Do They Need This?
 

@@ -102,3 +102,7 @@ Let me check a few things...
 - Missing `EXPOSE` statement
 - Wrong port number
 - Build steps failing
+
+---
+
+See `10-platform-rules.md` for detailed technical requirements.

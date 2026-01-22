@@ -13,7 +13,20 @@ docker-compose up -d --build
 # User can continue prompting while containers run!
 ```
 
-**Tell the user:**
+**Tell the user the correct URL (see `15-urls.md` for detection):**
+
+**For Codespaces users:**
+```
+🐳 Starting your app in the background...
+
+It's running! You can continue working while it runs.
+
+To see the app: https://{CODESPACE_NAME}-8080.app.github.dev
+To see logs: docker-compose logs -f
+To stop it: docker-compose down
+```
+
+**For local users:**
 ```
 🐳 Starting your app in the background...
 
@@ -158,12 +171,29 @@ Before we deploy, let me run a quick check to make sure everything is configured
 
 ### When Starting Background Process
 
+**Show the correct URLs based on environment (see `15-urls.md`):**
+
+**For Codespaces users:**
+```
+🚀 Starting your app in the background...
+
+You can keep working while it runs! Here's what's happening:
+- Frontend: https://{CODESPACE_NAME}-8080.app.github.dev
+- Backend API: https://{CODESPACE_NAME}-3000.app.github.dev
+
+Commands you might need:
+- See logs: docker-compose logs -f
+- Stop: docker-compose down
+- Restart: docker-compose restart
+```
+
+**For local users:**
 ```
 🚀 Starting your app in the background...
 
 You can keep working while it runs! Here's what's happening:
 - Frontend: http://localhost:8080
-- Backend: http://localhost:3000
+- Backend API: http://localhost:3000
 
 Commands you might need:
 - See logs: docker-compose logs -f

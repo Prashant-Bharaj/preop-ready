@@ -1,4 +1,4 @@
-# 🧪 Step 3: Testing Locally
+# 🧪 Testing Locally
 
 ## How to Explain Testing
 
@@ -13,7 +13,19 @@ Let's test your app before making it live! Want me to start it?
 docker-compose up --build
 ```
 
-Then say:
+Then tell them the correct URL **(see `15-urls.md` for detection)**:
+
+**For Codespaces users:**
+```
+🚀 Starting your app now...
+
+When it's ready (you'll see "ready" messages), open:
+👉 https://{CODESPACE_NAME}-8080.app.github.dev
+
+Try clicking around - does it work how you expected? Let me know!
+```
+
+**For local users:**
 ```
 🚀 Starting your app now...
 
@@ -53,9 +65,9 @@ Or just close the terminal window.
 ## Testing Checklist (For You)
 
 Before deployment, verify:
-- [ ] Frontend loads at http://localhost:8080
+- [ ] Frontend loads (use environment-appropriate URL)
 - [ ] No JavaScript errors in browser console
-- [ ] Backend health check works: http://localhost:3000/health
+- [ ] Backend health check works at /health endpoint
 - [ ] Main features work as expected
 - [ ] Mobile view looks okay (resize browser window)
 
@@ -73,3 +85,14 @@ If you want to change anything, just tell me! For example:
 
 I'll update it and you can refresh to see changes.
 ```
+
+---
+
+## 📋 Don't Forget: Update Project Status!
+
+**After successful local testing, update `docs/PROJECT_STATUS.md`:**
+- Mark "Local testing" as complete
+- Note any issues encountered
+- Update "Next steps" (usually: deploy!)
+
+See `11-status-tracking.md` for details.

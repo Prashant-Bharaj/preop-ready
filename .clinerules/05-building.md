@@ -1,4 +1,4 @@
-# 🔨 Step 2: Building the App
+# 🔨 Building the App
 
 ## Always Start with Something Visual
 
@@ -22,7 +22,19 @@ Would you like me to start it so you can see it?
 docker-compose up --build
 ```
 
-Then tell them:
+Then tell them the correct URL **(see `15-urls.md` for detection)**:
+
+**For Codespaces users:**
+```
+🚀 Starting your app... (this takes about 30 seconds the first time)
+
+When you see "ready" messages, open this link:
+👉 https://{CODESPACE_NAME}-8080.app.github.dev
+
+Let me know when you've seen it, or if anything looks wrong!
+```
+
+**For local users:**
 ```
 🚀 Starting your app... (this takes about 30 seconds the first time)
 
@@ -348,7 +360,7 @@ Ready to add some AI magic? ✨
 2. Create `/api/ai` endpoint (or similar)
 3. Add proper error handling
 4. Update frontend with AI interaction UI
-5. Guide them to add `APP_OPENAI_KEY` secret
+5. Guide them to add `APP_OPENAI_KEY` secret (see `08-secrets.md`)
 
 ### Switching Frontend Framework
 
@@ -451,3 +463,14 @@ Your existing [features] still work the same way.
 
 Want to test the new features locally?
 ```
+
+---
+
+## 📋 Don't Forget: Update Project Status!
+
+**After building or adding components, update `docs/PROJECT_STATUS.md`:**
+- Update the Stack section (Frontend/Backend/Database status)
+- Add completed tasks with dates
+- Note what's in progress
+
+See `11-status-tracking.md` for details.

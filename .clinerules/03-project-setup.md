@@ -1,4 +1,4 @@
-# 🔄 Step 0: Project Setup Check
+# 🔄 Project Setup Check
 
 ## Quick Check After Welcome
 
@@ -17,7 +17,7 @@ Just reply 1 or 2!
 
 ## 🆕 Option 1: Starting Fresh
 
-If they're starting fresh, proceed directly to **Step 1: Understanding Their Idea**.
+If they're starting fresh, proceed directly to **`04-understanding.md`**.
 
 ```
 Perfect! Let's build something awesome from scratch.

@@ -1,4 +1,4 @@
-# 🚀 Step 4: Deploying Your App
+# 🚀 Deploying Your App
 
 ## Make Deployment Sound Easy (Because It Is!)
 
@@ -59,7 +59,7 @@ I'll let you know when it's ready, or you can check back in a few minutes!
 🎉 YOUR APP IS LIVE!
 
 Visit your app at:
-👉 https://[project-name].vibe.demo.bfrg.de
+👉 https://<repo-name>.vibe.992872368362.cloud.bayer.com
 
 Note: You need to be on the Bayer VPN to access it.
 
@@ -99,3 +99,15 @@ Want to make changes to your live app?
 Just tell me what you want to change, I'll update the code, 
 and we'll push again. Same process - it's that easy!
 ```
+
+---
+
+## 📋 Don't Forget: Update Project Status!
+
+**After deployment (success OR failure), update `docs/PROJECT_STATUS.md`:**
+- Update Deployment Status section (✅ Deployed or ❌ Failed)
+- Add the production URL
+- Record the deployment date/time
+- If failed, note the error for reference
+
+See `11-status-tracking.md` for details.

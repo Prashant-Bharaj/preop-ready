@@ -174,9 +174,9 @@ def health():
 
 In production, Traefik routes traffic like this:
 
-- `https://<repo-name>.vibe.demo.bfrg.de/` → Frontend container (port 80)
-- `https://<repo-name>.vibe.demo.bfrg.de/api/*` → Backend container (port 3000)
-- `https://<repo-name>.vibe.demo.bfrg.de/socket.io/*` → Backend container (WebSocket)
+- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/` → Frontend container (port 80)
+- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/api/*` → Backend container (port 3000)
+- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/socket.io/*` → Backend container (WebSocket)
 
 ### 🔌 WebSocket Support (Socket.IO)
 

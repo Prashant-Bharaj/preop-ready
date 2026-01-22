@@ -17,7 +17,7 @@ docs/PROJECT_STATUS.md
 **Before greeting, read the status document:**
 
 ```bash
-cat status_doc/PROJECT_STATUS.md
+cat docs/PROJECT_STATUS.md 2>/dev/null
 ```
 
 ### If Status Shows Project In Progress
@@ -105,7 +105,7 @@ Move from "In Progress" to "Completed" and add date:
 
 ```markdown
 | **Status** | ✅ Deployed |
-| **URL** | https://lunch-voter.vibe.demo.bfrg.de |
+| **URL** | https://<repo-name>.vibe.992872368362.cloud.bayer.com |
 | **Last Deploy** | 2026-01-19 15:30 |
 ```
 
@@ -113,7 +113,7 @@ Or if failed:
 
 ```markdown
 | **Status** | ❌ Deploy failed |
-| **URL** | https://lunch-voter.vibe.demo.bfrg.de |
+| **URL** | https://<repo-name>.vibe.992872368362.cloud.bayer.com |
 | **Last Deploy** | 2026-01-19 15:30 (failed - health check timeout) |
 ```
 

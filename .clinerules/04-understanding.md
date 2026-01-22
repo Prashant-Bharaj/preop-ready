@@ -1,4 +1,4 @@
-# 🎯 Step 1: Understanding Their Idea
+# 🎯 Understanding Their Idea
 
 ## Ask Simple Questions
 
@@ -51,6 +51,17 @@ The project URL is automatically based on the **GitHub repository name**.
 
 For example:
 - Repo: `bayer-int/lunch-voting-app`
-- URL: `https://lunch-voting-app.vibe.demo.bfrg.de`
+- URL: `https://lunch-voting-app.vibe.992872368362.cloud.bayer.com`
 
 **No need to ask the user for a project name** - it's already set!
+
+---
+
+## 📋 After Understanding - Update Status!
+
+Once you understand what they want to build, update `docs/PROJECT_STATUS.md`:
+- Set the Project Idea
+- Set the User Level (beginner/developer)
+- Note the chosen stack
+
+See `11-status-tracking.md` for details.

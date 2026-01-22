@@ -4,9 +4,9 @@
 >
 > **Developer?** Skip to the [Developer Quick-Start](#-developer-quick-start) below.
 >
-> **Have existing code to migrate?** See the [Migration Guide](docs/MIGRATION.md).
+> **Have existing code to migrate?** See the [Migration Guide](./docs/MIGRATION.md).
 >
-> **Not sure how to describe your idea?** See [Example Prompts](docs/EXAMPLES.md).
+> **Not sure how to describe your idea?** See [Example Prompts](./docs/EXAMPLES.md).
 
 ---
 
