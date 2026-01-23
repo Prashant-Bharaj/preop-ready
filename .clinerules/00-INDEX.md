@@ -129,7 +129,11 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 1. **Health endpoints are REQUIRED** - Every container needs `/health`
 2. **Backend port is 3000** - Always, no exceptions
 3. **nginx.conf must NOT have `events{}` or `http{}`** - Only `server{}` block
-4. **Use `/api/*` for API calls** - Traefik strips the prefix
+4. **API Routing (CRITICAL!):**
+   - **Frontend** calls `/api/users` (WITH `/api` prefix)
+   - **Backend** defines route as `/users` (WITHOUT `/api` prefix) 
+   - Traefik/nginx strips the `/api` prefix before forwarding to backend
+   - **NEVER put `/api` in backend routes - it will break!**
 5. **WebSockets: use `window.location.origin`** - Socket.IO routes via `/socket.io/*`
 6. **Update PROJECT_STATUS.md** - After every significant action
 7. **Show correct URL** - Check if Codespaces or Local (see `15-urls.md`)

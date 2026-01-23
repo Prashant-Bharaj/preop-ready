@@ -1,5 +1,48 @@
 # 🔨 Building the App
 
+---
+
+## 🚨🚨🚨 CRITICAL: API ROUTING RULES (READ THIS FIRST!) 🚨🚨🚨
+
+**BEFORE writing ANY backend code, you MUST understand this:**
+
+### The Rule:
+```
+Frontend calls:  fetch('/api/users')     ← WITH /api prefix
+                        ↓
+              Traefik/nginx strips /api
+                        ↓
+Backend receives:  GET /users            ← WITHOUT /api prefix
+```
+
+### Backend Routes - NEVER include `/api`:
+```javascript
+// ✅ CORRECT - Backend routes WITHOUT /api
+app.get('/users', (req, res) => { ... });      // Called via /api/users
+app.get('/health', (req, res) => { ... });     // Called via /api/health  
+app.post('/data', (req, res) => { ... });      // Called via /api/data
+
+// ❌ WRONG - NEVER do this!
+app.get('/api/users', (req, res) => { ... });  // Would need /api/api/users!
+```
+
+### Frontend Calls - ALWAYS include `/api`:
+```javascript
+// ✅ CORRECT - Frontend calls WITH /api
+fetch('/api/users')
+fetch('/api/data', { method: 'POST', body: JSON.stringify(data) })
+
+// ❌ WRONG - Don't call backend directly
+fetch('http://localhost:3000/users')
+```
+
+### Why?
+- **Locally**: nginx proxies `/api/*` to backend and strips `/api`
+- **Production**: Traefik routes `/api/*` to backend and strips `/api`
+- If you include `/api` in backend routes, nothing works!
+
+---
+
 ## Always Start with Something Visual
 
 Users get excited when they SEE something. Build the frontend first!
@@ -97,13 +140,80 @@ Only add a backend if they need:
 - Create `backend/server.js`
 - Copy `Dockerfile.node` → `backend/Dockerfile`
 
-### CRITICAL: Health Endpoint
-**ALWAYS include this** - deployment will fail without it:
+### 📋 COPY THIS TEMPLATE for backend/server.js:
 
 ```javascript
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// =============================================================================
+// ROUTES - Note: NO /api prefix! Frontend calls /api/X, backend defines /X
+// =============================================================================
+
+// Health check (REQUIRED - deployment fails without this!)
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+  res.json({ status: 'ok' });
 });
+
+// Example routes - Frontend calls fetch('/api/items'), backend receives '/items'
+app.get('/items', (req, res) => {
+  res.json({ items: [] });
+});
+
+app.post('/items', (req, res) => {
+  const { name } = req.body;
+  res.json({ message: `Created: ${name}` });
+});
+
+// =============================================================================
+// START SERVER - Must be port 3000!
+// =============================================================================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+### 📋 COPY THIS for backend/package.json:
+
+```json
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
+```
+
+### Frontend API Calls (in script.js or React component):
+
+```javascript
+// ✅ CORRECT - Always use /api prefix when calling from frontend
+async function getItems() {
+  const response = await fetch('/api/items');
+  return response.json();
+}
+
+async function createItem(name) {
+  const response = await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  return response.json();
+}
 ```
 
 ## Design Principles

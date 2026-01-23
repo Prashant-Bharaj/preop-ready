@@ -17,7 +17,8 @@
  *   const data = csvParser.parseString(csvString);
  * 
  * EXAMPLE:
- *   app.post('/api/import', upload.single('file'), async (req, res) => {
+ *   // Frontend: fetch('/api/import') → Backend receives: '/import'
+ *   app.post('/import', upload.single('file'), async (req, res) => {
  *     const data = await csvParser.parseFile(req.file.path);
  *     res.json({ rows: data.length });
  *   });

@@ -16,7 +16,8 @@
  *   const text = await pdfParser.extractText('document.pdf');
  * 
  * EXAMPLE:
- *   app.post('/api/parse-pdf', upload.single('file'), async (req, res) => {
+ *   // Frontend: fetch('/api/parse-pdf') → Backend receives: '/parse-pdf'
+ *   app.post('/parse-pdf', upload.single('file'), async (req, res) => {
  *     const text = await pdfParser.extractText(req.file.path);
  *     res.json({ text, length: text.length });
  *   });

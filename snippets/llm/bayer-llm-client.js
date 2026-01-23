@@ -22,7 +22,8 @@
  * EXAMPLE:
  *   const llm = require('./bayer-llm-client');
  *   
- *   app.post('/api/chat', async (req, res) => {
+ *   // Frontend: fetch('/api/chat') → Backend receives: '/chat'
+ *   app.post('/chat', async (req, res) => {
  *     const { message } = req.body;
  *     const response = await llm.complete(message);
  *     res.json({ response });

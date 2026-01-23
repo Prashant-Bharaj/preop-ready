@@ -14,21 +14,23 @@
  * 
  * USAGE:
  *   const upload = require('./upload-handler');
- *   app.post('/api/upload', upload.single('file'), (req, res) => {
+ *   // NOTE: Route is '/upload', NOT '/api/upload'
+ *   // Frontend calls fetch('/api/upload') → Backend receives '/upload'
+ *   app.post('/upload', upload.single('file'), (req, res) => {
  *     // File is in req.file.buffer (memory, not disk!)
  *     const content = req.file.buffer.toString('utf-8');
  *     res.json({ size: req.file.size });
  *   });
  * 
  * EXAMPLE:
- *   // Single file - access via req.file.buffer
- *   app.post('/api/import', upload.single('document'), (req, res) => {
+ *   // Single file - Frontend: fetch('/api/import') → Backend: '/import'
+ *   app.post('/import', upload.single('document'), (req, res) => {
  *     const data = parseCSV(req.file.buffer);
  *     res.json({ rows: data.length });
  *   });
  *   
- *   // Multiple files - access via req.files[].buffer
- *   app.post('/api/import-many', upload.array('files', 5), (req, res) => {
+ *   // Multiple files - Frontend: fetch('/api/import-many') → Backend: '/import-many'
+ *   app.post('/import-many', upload.array('files', 5), (req, res) => {
  *     req.files.forEach(file => console.log(file.buffer));
  *   });
  */

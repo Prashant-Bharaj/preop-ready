@@ -21,7 +21,9 @@
  * EXAMPLE:
  *   const ai = require('./openai-client');
  *   
- *   app.post('/api/ask', async (req, res) => {
+ *   // NOTE: Route is '/ask', NOT '/api/ask'
+ *   // Frontend calls fetch('/api/ask') → Traefik strips /api → Backend receives '/ask'
+ *   app.post('/ask', async (req, res) => {
  *     const { question } = req.body;
  *     const answer = await ai.complete(question);
  *     res.json({ answer });

@@ -13,12 +13,14 @@
  * 
  * USAGE:
  *   const download = require('./download-handler');
- *   app.get('/api/export', (req, res) => {
+ *   // Frontend: fetch('/api/export') → Backend receives: '/export'
+ *   app.get('/export', (req, res) => {
  *     download.sendCSV(res, data, 'export.csv');
  *   });
  * 
  * EXAMPLE:
- *   app.get('/api/export/users', async (req, res) => {
+ *   // Frontend: fetch('/api/export/users') → Backend receives: '/export/users'
+ *   app.get('/export/users', async (req, res) => {
  *     const users = await User.findAll();
  *     download.sendCSV(res, users, 'users.csv');
  *   });

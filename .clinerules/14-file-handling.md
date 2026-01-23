@@ -16,13 +16,16 @@ const csv = require('csv-parse/sync');
 // Keep file in memory - don't save
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.post('/api/import-csv', upload.single('file'), (req, res) => {
+// NOTE: Route is '/import-csv', NOT '/api/import-csv'
+// The /api prefix is added by frontend calls and stripped by Traefik/nginx
+app.post('/import-csv', upload.single('file'), (req, res) => {
   const content = req.file.buffer.toString('utf-8');
   const records = csv.parse(content, { columns: true });
   
   // Return parsed data - file is not stored, automatically cleaned up
   res.json({ data: records, count: records.length });
 });
+// Frontend calls: fetch('/api/import-csv', ...) → Backend receives: /import-csv
 ```
 
 ### Why Memory Over Storage?
@@ -79,7 +82,8 @@ Memory      EFS Storage
 ### Parse CSV
 
 ```javascript
-app.post('/api/import-csv', upload.single('file'), (req, res) => {
+// Frontend: fetch('/api/import-csv') → Backend receives: /import-csv
+app.post('/import-csv', upload.single('file'), (req, res) => {
   const content = req.file.buffer.toString('utf-8');
   const records = csv.parse(content, { columns: true });
   res.json({ data: records, count: records.length });
@@ -91,7 +95,8 @@ app.post('/api/import-csv', upload.single('file'), (req, res) => {
 ```javascript
 const pdfParse = require('pdf-parse');
 
-app.post('/api/parse-pdf', upload.single('file'), async (req, res) => {
+// Frontend: fetch('/api/parse-pdf') → Backend receives: /parse-pdf
+app.post('/parse-pdf', upload.single('file'), async (req, res) => {
   const pdfData = await pdfParse(req.file.buffer);
   res.json({ text: pdfData.text, pages: pdfData.numpages });
 });
@@ -102,7 +107,8 @@ app.post('/api/parse-pdf', upload.single('file'), async (req, res) => {
 ```javascript
 const sharp = require('sharp');
 
-app.post('/api/resize-image', upload.single('image'), async (req, res) => {
+// Frontend: fetch('/api/resize-image') → Backend receives: /resize-image
+app.post('/resize-image', upload.single('image'), async (req, res) => {
   const resized = await sharp(req.file.buffer)
     .resize(200, 200)
     .toBuffer();
@@ -114,7 +120,8 @@ app.post('/api/resize-image', upload.single('image'), async (req, res) => {
 ### Generate and Download
 
 ```javascript
-app.get('/api/export-csv', async (req, res) => {
+// Frontend: fetch('/api/export-csv') → Backend receives: /export-csv
+app.get('/export-csv', async (req, res) => {
   const data = await getData();
   const csv = generateCSV(data);
   
@@ -152,13 +159,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
+// Upload - Frontend: fetch('/api/upload') → Backend receives: /upload
+app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ filename: req.file.filename });
 });
 
-// Download
-app.get('/api/files/:filename', (req, res) => {
+// Download - Frontend: fetch('/api/files/xxx') → Backend receives: /files/xxx
+app.get('/files/:filename', (req, res) => {
   const filepath = path.join(UPLOAD_DIR, req.params.filename);
   if (fs.existsSync(filepath)) {
     res.download(filepath);

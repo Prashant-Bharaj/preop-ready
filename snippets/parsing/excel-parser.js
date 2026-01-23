@@ -16,7 +16,8 @@
  *   const sheets = excelParser.getSheetNames('data.xlsx');
  * 
  * EXAMPLE:
- *   app.post('/api/import-excel', upload.single('file'), async (req, res) => {
+ *   // Frontend: fetch('/api/import-excel') → Backend receives: '/import-excel'
+ *   app.post('/import-excel', upload.single('file'), async (req, res) => {
  *     const data = await excelParser.parseFile(req.file.path, { sheet: 'Sheet1' });
  *     res.json({ rows: data.length });
  *   });
