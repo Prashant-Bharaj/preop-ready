@@ -13,7 +13,11 @@
 #
 # To use: Copy this file to database/Dockerfile
 
-FROM postgres:16-alpine
+# IMPORTANT: Use postgres:16 (not alpine) because:
+# - Alpine uses UID 70 for postgres user
+# - Platform EFS access points use UID 999
+# - Standard image uses UID 999 which matches the platform
+FROM postgres:16
 
 # Copy initialization scripts (run on first start only)
 COPY init/ /docker-entrypoint-initdb.d/
