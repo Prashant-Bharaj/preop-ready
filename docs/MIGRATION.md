@@ -199,6 +199,7 @@ Your app will be live at: `https://<repo-name>.vibe.demo.bfrg.de`
 | Backend not accessible | Ensure backend listens on port 3000 |
 | API calls fail in production | Use `/api/*` URLs in frontend, define routes WITHOUT `/api` prefix in backend |
 | Build fails | Check Dockerfile is in the correct folder |
+| Database: "chown: Operation not permitted" | EFS doesn't support chown. Use `/data` directly as PGDATA/datadir, NOT `/data/postgres` or `/data/mysql`. Remove any `mkdir`/`chown` commands from database Dockerfile. |
 
 ---
 
