@@ -6,6 +6,7 @@ Only explain secrets if they want to use:
 - OpenAI / ChatGPT API
 - External services with API keys
 - Custom passwords or tokens
+- Credentials for third-party APIs (username/password pairs)
 
 ## Local Development (Quick Setup)
 
@@ -57,25 +58,42 @@ git push
 That's it! Your app can now use OpenAI securely.
 ```
 
-## Available Secret Names
+## Available Secret Names & Mapping
+
+⚠️ **CRITICAL: The `APP_` prefix is removed when secrets are injected into the container!**
 
 Tell them which secrets are supported:
 
-```
-You can add these secrets (use exact names):
+| GitHub Secret Name | Environment Variable in Container | Common Use |
+|--------------------|-----------------------------------|------------|
+| `APP_OPENAI_KEY` | `OPENAI_KEY` | OpenAI/ChatGPT API key |
+| `APP_API_KEY` | `API_KEY` | Generic API key |
+| `APP_API_SECRET` | `API_SECRET` | API secret/password |
+| `APP_DATABASE_URL` | `DATABASE_URL` | Custom database connection |
+| `APP_SECRET_1` | `SECRET_1` | Custom secret #1 (e.g., password) |
+| `APP_SECRET_2` | `SECRET_2` | Custom secret #2 (e.g., username) |
+| `APP_SECRET_3` | `SECRET_3` | Custom secret #3 (e.g., admin email) |
 
-| Secret Name | What It's For |
-|-------------|---------------|
-| APP_OPENAI_KEY | OpenAI/ChatGPT API key |
-| APP_API_KEY | Any generic API key |
-| APP_API_SECRET | API secret/password |
-| APP_DATABASE_URL | Custom database connection |
-| APP_SECRET_1 | Custom secret #1 |
-| APP_SECRET_2 | Custom secret #2 |
-| APP_SECRET_3 | Custom secret #3 |
+### Common Pattern: External API with Username/Password
+
+When the app needs to connect to an external API with credentials:
+
+| GitHub Secret | Maps To | Purpose |
+|---------------|---------|---------|
+| `APP_SECRET_1` | `SECRET_1` | Password |
+| `APP_SECRET_2` | `SECRET_2` | Username |
+| `APP_SECRET_3` | `SECRET_3` | Admin email or other config |
+
+**Example backend code pattern:**
+```javascript
+// Support both local env vars AND platform secrets
+const username = process.env.EXTERNAL_API_USERNAME || process.env.SECRET_2;
+const password = process.env.EXTERNAL_API_PASSWORD || process.env.SECRET_1;
 ```
 
 ## Using Secrets in Code
+
+### Basic Usage
 
 In the backend code, access secrets like this:
 
@@ -84,6 +102,88 @@ In the backend code, access secrets like this:
 const openaiKey = process.env.OPENAI_KEY;
 const apiKey = process.env.API_KEY;
 ```
+
+### ⚠️ IMPORTANT: Support Both Local and Platform Secrets
+
+When migrating existing apps, the code may use specific env var names (e.g., `EXTERNAL_MEAL_USERNAME`). 
+The platform only provides generic secrets (`SECRET_1`, `SECRET_2`, etc.).
+
+**Always add fallbacks in your code:**
+
+```javascript
+// Helper function to check multiple env var names
+const getEnv = (primary, fallback) => {
+  return process.env[primary] || (fallback ? process.env[fallback] : undefined);
+};
+
+// Usage - checks primary name first, falls back to platform secret
+const username = getEnv('EXTERNAL_MEAL_USERNAME', 'SECRET_2');
+const password = getEnv('EXTERNAL_MEAL_PASSWORD', 'SECRET_1');
+const adminEmail = getEnv('INITIAL_ADMIN_EMAIL', 'SECRET_3');
+```
+
+### Checking Configuration Status
+
+If your app has a status endpoint that shows if credentials are configured:
+
+```javascript
+// ❌ WRONG - Only checks one env var name
+const credentialsConfigured = !!(
+  process.env.EXTERNAL_API_USERNAME &&
+  process.env.EXTERNAL_API_PASSWORD
+);
+
+// ✅ CORRECT - Checks both local and platform secret names
+const username = process.env.EXTERNAL_API_USERNAME || process.env.SECRET_2;
+const password = process.env.EXTERNAL_API_PASSWORD || process.env.SECRET_1;
+const credentialsConfigured = !!(username && password);
+```
+
+## Auto-Injected Database Credentials
+
+⚠️ **If your project has a `database/Dockerfile`, the platform automatically injects these:**
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| `DATABASE_HOST` | Internal hostname (e.g., `myapp-db.vibe.local`) |
+| `DATABASE_NAME` | Database name (derived from repo name) |
+| `DATABASE_USER` | Auto-generated username |
+| `DATABASE_PASSWORD` | Auto-generated password |
+| `DATABASE_URL` | Full connection string |
+
+**You do NOT need to add database credentials as GitHub secrets!**
+
+Your database config should support both:
+```javascript
+function getDatabaseConfig() {
+  // Platform provides DATABASE_URL in production
+  if (process.env.DATABASE_URL) {
+    return { connectionString: process.env.DATABASE_URL };
+  }
+  
+  // Local development uses individual vars or defaults
+  return {
+    host: process.env.DATABASE_HOST || 'db',
+    port: parseInt(process.env.DATABASE_PORT || '5432'),
+    database: process.env.DATABASE_NAME || 'myapp',
+    user: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
+  };
+}
+```
+
+## Debugging Secrets
+
+If secrets aren't working in production:
+
+1. **Check GitHub Actions logs** - Look for secret injection messages
+2. **Add logging** (temporarily) to verify env vars are set:
+   ```javascript
+   console.log('SECRET_1 set:', !!process.env.SECRET_1);
+   console.log('SECRET_2 set:', !!process.env.SECRET_2);
+   ```
+3. **Verify secret names** - Must be exactly `APP_SECRET_1`, `APP_SECRET_2`, etc.
+4. **Re-push after adding secrets** - Secrets are only injected on new deployments
 
 ## Security Warning
 
@@ -95,3 +195,18 @@ If they try to put secrets in the code:
 If you do that, anyone who sees your code can steal it!
 Instead, let's add it as a secret (I'll show you how).
 ```
+
+## Hardcoding Non-Sensitive URLs
+
+API URLs (not credentials) can be safely hardcoded in code:
+
+```javascript
+// ✅ URLs are not sensitive - hardcode with optional override
+const DEFAULT_API_URL = 'https://api.example.com/data';
+const apiUrl = process.env.EXTERNAL_API_URL || DEFAULT_API_URL;
+
+// ❌ Credentials ARE sensitive - use secrets
+const apiKey = process.env.API_KEY; // From APP_API_KEY secret
+```
+
+This way the app works in production without needing to add the URL as a secret.

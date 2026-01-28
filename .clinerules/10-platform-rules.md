@@ -360,11 +360,44 @@ Add secrets in GitHub:
 1. Go to repo → Settings → Secrets → Actions
 2. Add secrets with `APP_` prefix
 
-| GitHub Secret | Available in Code As |
-|---------------|---------------------|
-| APP_OPENAI_KEY | `process.env.OPENAI_KEY` |
-| APP_API_KEY | `process.env.API_KEY` |
-| APP_DATABASE_URL | `process.env.DATABASE_URL` |
+⚠️ **CRITICAL: The `APP_` prefix is stripped when injected into containers!**
+
+| GitHub Secret | Available in Code As | Common Use |
+|---------------|---------------------|------------|
+| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI API key |
+| `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
+| `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
+| `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret (e.g., password) |
+| `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret (e.g., username) |
+| `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret (e.g., admin email) |
+
+### Auto-Injected Database Credentials
+
+⚠️ **If `database/Dockerfile` exists, these are auto-injected (NO GitHub secret needed):**
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| `DATABASE_HOST` | Internal hostname (e.g., `myapp-db.vibe.local`) |
+| `DATABASE_NAME` | Database name (derived from repo name) |
+| `DATABASE_USER` | Auto-generated username |
+| `DATABASE_PASSWORD` | Auto-generated password |
+| `DATABASE_URL` | Full connection string |
+
+### Code Pattern for Secrets
+
+When migrating apps, support both local env vars AND platform secrets:
+
+```javascript
+// Helper to check multiple env var names
+const getEnv = (primary, fallback) => 
+  process.env[primary] || (fallback ? process.env[fallback] : undefined);
+
+// Usage
+const username = getEnv('MY_API_USERNAME', 'SECRET_2');
+const password = getEnv('MY_API_PASSWORD', 'SECRET_1');
+```
+
+**See `08-secrets.md` for detailed examples.**
 
 ---
 

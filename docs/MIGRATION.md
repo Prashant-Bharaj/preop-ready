@@ -174,11 +174,48 @@ Then verify:
 - ✅ Backend health check at http://localhost:3000/health
 - ✅ API calls work (if applicable)
 
-### Step 7: Request Whitelist Access
+### Step 7: Handle Environment Variables & Secrets
+
+⚠️ **CRITICAL: Platform handles secrets differently than local development!**
+
+**Database credentials are auto-injected** (if you have `database/Dockerfile`):
+- `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_URL`
+- NO GitHub secrets needed for database!
+
+**For API keys and other secrets**, add to GitHub:
+1. Go to repo → Settings → Secrets → Actions
+2. Add secrets with `APP_` prefix (e.g., `APP_SECRET_1`)
+3. Access in code WITHOUT the `APP_` prefix (e.g., `process.env.SECRET_1`)
+
+| GitHub Secret | Available in Code As | Common Use |
+|---------------|---------------------|------------|
+| `APP_SECRET_1` | `SECRET_1` | Password |
+| `APP_SECRET_2` | `SECRET_2` | Username |
+| `APP_SECRET_3` | `SECRET_3` | Admin email |
+
+**Update your code to support both local and platform secrets:**
+
+```javascript
+// Helper function
+const getEnv = (primary, fallback) => 
+  process.env[primary] || (fallback ? process.env[fallback] : undefined);
+
+// Usage - checks local env var first, then platform secret
+const username = getEnv('MY_API_USERNAME', 'SECRET_2');
+const password = getEnv('MY_API_PASSWORD', 'SECRET_1');
+```
+
+**Hardcode non-sensitive URLs** (API endpoints are not secrets):
+```javascript
+const DEFAULT_API_URL = 'https://api.example.com/endpoint';
+const apiUrl = process.env.EXTERNAL_API_URL || DEFAULT_API_URL;
+```
+
+### Step 8: Request Whitelist Access
 
 Contact the Vibe Platform team to add your repository to the allowed list.
 
-### Step 8: Deploy
+### Step 9: Deploy
 
 ```bash
 git add .
@@ -199,7 +236,10 @@ Your app will be live at: `https://<repo-name>.vibe.demo.bfrg.de`
 | Backend not accessible | Ensure backend listens on port 3000 |
 | API calls fail in production | Use `/api/*` URLs in frontend, define routes WITHOUT `/api` prefix in backend |
 | Build fails | Check Dockerfile is in the correct folder |
-| Database: "chown: Operation not permitted" | EFS doesn't support chown. Use `/data` directly as PGDATA/datadir, NOT `/data/postgres` or `/data/mysql`. Remove any `mkdir`/`chown` commands from database Dockerfile. |
+| Database: "chown: Operation not permitted" | EFS doesn't support chown. Use `/data` directly as PGDATA/datadir, NOT `/data/postgres` or `/data/mysql`. Remove any `mkdir`/`chown` commands from database Dockerfile. Use `postgres:16` (UID 999), NOT `postgres:16-alpine` (UID 70). |
+| Secrets show "Not configured" | Platform maps `APP_*` secrets → remove `APP_` prefix. E.g., `APP_SECRET_1` becomes `SECRET_1`. Update code to check both: `process.env.MY_VAR \|\| process.env.SECRET_1` |
+| Database credentials not working | If you have `database/Dockerfile`, credentials are auto-injected. Use `DATABASE_URL` or individual `DATABASE_*` vars. NO GitHub secret needed! |
+| External API fails in production | Hardcode non-sensitive URLs in code (only credentials need secrets). Use pattern: `process.env.API_URL \|\| 'https://default-url.com'` |
 
 ---
 
