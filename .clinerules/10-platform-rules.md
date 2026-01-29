@@ -10,7 +10,8 @@ These rules MUST be followed or deployments will fail!
 your-repo/
 ├── frontend/              ← Required if you have a UI
 │   ├── Dockerfile         ← MUST exist (copy from Dockerfile.vanilla or .react)
-│   ├── nginx.conf         ← MUST exist
+│   ├── nginx.conf         ← MUST exist (production - NO proxy_pass)
+│   ├── nginx.local.conf   ← MUST exist (local dev - WITH proxy_pass)
 │   └── [your frontend code]
 │
 ├── backend/               ← Required if you have server logic
@@ -22,7 +23,7 @@ your-repo/
 │   └── init/
 │       └── init.sql       ← Database initialization (for SQL databases)
 │
-├── docker-compose.yml     ← For local development
+├── docker-compose.yml     ← For local development (mounts nginx.local.conf)
 └── .github/
     └── workflows/
         └── deploy.yml     ← Triggers deployment
@@ -63,19 +64,30 @@ your-repo/
 The `nginx.conf` file is copied to `/etc/nginx/conf.d/default.conf` inside the container.
 Files in `conf.d/` are INCLUDED inside nginx's main config, so they must ONLY contain server blocks.
 
-### ✅ CORRECT nginx.conf (Works in BOTH local and production):
+### How It Works: Two Config Files
+
+| File | Used By | Has API Proxy? |
+|------|---------|----------------|
+| `nginx.conf` | Production (ECS) | ❌ No - Traefik handles /api/* |
+| `nginx.local.conf` | Local dev (docker-compose) | ✅ Yes - proxies to backend:3000 |
+
+**Why two files?** In production, the `backend` hostname doesn't exist (containers are separate ECS tasks). If nginx.conf contains `proxy_pass http://backend:3000/`, nginx fails to start. The solution: production nginx only serves static files, local dev mounts a different config with proxy.
+
+### ✅ nginx.conf (Production - static files only):
 
 ```nginx
+# frontend/nginx.conf - PRODUCTION (deployed to ECS)
 server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
 
-    # DNS resolver for Docker (allows nginx to start even if backend doesn't exist)
-    # 127.0.0.11 is Docker's internal DNS server
-    resolver 127.0.0.11 valid=30s ipv6=off;
-    set $backend_upstream backend:3000;
+    # Health check endpoint (REQUIRED for deployment)
+    location /health {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
 
     # Handle SPA routing (React, Vue, Angular)
     location / {
@@ -89,33 +101,6 @@ server {
         add_header Expires "0";
     }
 
-    # Proxy API requests to backend (for local docker-compose development)
-    # In production (ECS), Traefik handles this - using variable prevents nginx crash
-    location /api/ {
-        proxy_pass http://$backend_upstream/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Proxy Socket.IO requests (for local docker-compose development)
-    location /socket.io/ {
-        proxy_pass http://$backend_upstream/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_read_timeout 86400;
-    }
-
-    # Health check endpoint (REQUIRED for deployment)
-    location /health {
-        return 200 'OK';
-        add_header Content-Type text/plain;
-    }
-
     # Cache static assets with hashed filenames (safe to cache long-term)
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         expires 1y;
@@ -124,11 +109,98 @@ server {
 }
 ```
 
+### ✅ nginx.local.conf (Local development - with API proxy):
+
+```nginx
+# frontend/nginx.local.conf - LOCAL DEVELOPMENT ONLY
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Health check endpoint
+    location /health {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
+    # Proxy API requests to backend (LOCAL only)
+    location /api/ {
+        proxy_pass http://backend:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Proxy Socket.IO/WebSocket requests (LOCAL only)
+    location /socket.io/ {
+        proxy_pass http://backend:3000/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400;
+    }
+
+    # Handle SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache headers (same as production)
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+### ✅ docker-compose.yml (Mount local config):
+
+```yaml
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount local nginx config with API proxy (production has no proxy)
+      - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+```
+
+### How Automatic Selection Works
+
+```
+PRODUCTION (git push):
+  1. Dockerfile runs: COPY nginx.conf /etc/nginx/conf.d/default.conf
+  2. nginx.conf (NO proxy) is baked into image
+  3. nginx starts successfully (no backend hostname to resolve)
+  4. Traefik handles /api/* routing to backend
+
+LOCAL DEV (docker-compose up):
+  1. Dockerfile runs: COPY nginx.conf /etc/nginx/conf.d/default.conf
+  2. docker-compose OVERRIDES it with volume mount
+  3. nginx.local.conf (WITH proxy) is used instead
+  4. nginx proxies /api/* to backend:3000 (Docker resolves hostname)
+```
+
 **Key points:**
-- **resolver + variable**: Using `$backend_upstream` variable instead of hardcoded `backend:3000` prevents nginx from crashing in ECS where the hostname doesn't exist
+- **No manual switching**: docker-compose volume mount automatically uses the local config
+- **Production safe**: nginx.conf has no `backend` hostname reference
+- **Local works**: nginx.local.conf proxies to backend:3000 via Docker DNS
 - **HTML no-cache**: Browsers always fetch the latest `index.html` after deployments
 - **Static assets cache**: JS/CSS with hashes (e.g., `app.abc123.js`) are safe to cache
-- **Works everywhere**: Same config works in docker-compose (local) and ECS (production)
 
 ### ❌ WRONG nginx.conf (WILL CRASH OR FAIL):
 
@@ -142,16 +214,14 @@ http {             # ❌ NOT ALLOWED in conf.d files!
 }
 ```
 
-### ⚠️ Don't Proxy to Backend in nginx.conf!
+### ⚠️ Never Put proxy_pass in Production nginx.conf!
 
-In **local docker-compose**, you can proxy `/api` and `/socket.io` to `http://backend:3000` because containers share a Docker network.
-
-In **production (ECS)**, this **WON'T WORK** because:
+In **production (ECS)**, `proxy_pass http://backend:3000/` **WON'T WORK** because:
 - Containers run as separate ECS tasks with no shared network
-- There's no `backend` hostname
+- There's no `backend` hostname - nginx fails to start
 - Traefik handles all routing to the backend
 
-**For production deployment, nginx should ONLY serve static files.** Remove any `proxy_pass` directives - they'll cause 502 errors.
+**The production nginx.conf should ONLY serve static files.** Keep proxy_pass in nginx.local.conf only.
 
 ---
 
@@ -283,25 +353,25 @@ app.get('/api/users', (req, res) => { ... });  // Would need /api/api/users to a
 
 ## 🐳 Docker Compose for Local Development
 
-Your `docker-compose.yml` should mirror production routing:
+Your `docker-compose.yml` must mount the local nginx config:
 
 ```yaml
 version: '3.8'
 
 services:
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     ports:
       - "8080:80"
+    volumes:
+      # IMPORTANT: Mount local nginx config with API proxy
+      # Production nginx.conf has no proxy (Traefik handles it)
+      - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     ports:
       - "3000:3000"
     environment:
@@ -316,9 +386,7 @@ services:
 
   # Optional database (same pattern: build from Dockerfile)
   database:
-    build:
-      context: ./database
-      dockerfile: Dockerfile
+    build: ./database
     environment:
       # For PostgreSQL:
       POSTGRES_DB: myapp
@@ -335,6 +403,8 @@ services:
 volumes:
   db-data:
 ```
+
+**⚠️ CRITICAL: The nginx.local.conf volume mount is required!** Without it, local API calls will fail because the production nginx.conf doesn't have proxy_pass.
 
 **Local URLs:**
 - Frontend: http://localhost:8080
@@ -407,7 +477,9 @@ Before deploying, verify ALL of these:
 
 ### Structure
 - [ ] `frontend/Dockerfile` exists (if frontend)
-- [ ] `frontend/nginx.conf` exists (if frontend)
+- [ ] `frontend/nginx.conf` exists (if frontend) - NO proxy_pass!
+- [ ] `frontend/nginx.local.conf` exists (if frontend) - WITH proxy_pass
+- [ ] `docker-compose.yml` mounts nginx.local.conf
 - [ ] `backend/Dockerfile` exists (if backend)
 - [ ] `database/Dockerfile` exists (if database)
 - [ ] `.github/workflows/deploy.yml` exists
@@ -444,10 +516,13 @@ Before deploying, verify ALL of these:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Container won't start | Invalid nginx.conf | Remove `events{}` and `http{}` blocks |
+| Container won't start | nginx.conf has `proxy_pass http://backend:3000/` | Use two-config approach: nginx.conf (no proxy) + nginx.local.conf (with proxy) |
 | Health check timeout | Missing /health endpoint | Add health endpoint to both FE and BE |
 | 502 Bad Gateway | Backend not on port 3000 | Ensure backend listens on 3000 |
-| 502 on API/WebSocket | nginx proxy_pass to backend | Remove proxy_pass - Traefik handles routing |
+| 502 on API/WebSocket | nginx proxy_pass to backend in production | Remove proxy_pass from nginx.conf - Traefik handles routing |
+| API calls fail (local) | nginx.local.conf not mounted | Add volume mount in docker-compose.yml |
 | API calls fail | Routes include /api prefix | Remove /api from backend routes |
+| 404 on /api/* (local) | Using nginx.conf instead of nginx.local.conf | Check docker-compose.yml has volume mount for nginx.local.conf |
 | WebSocket won't connect | Frontend uses wrong URL | Use `window.location.origin` for Socket.IO |
 | CORS errors | Backend missing CORS headers | Add CORS middleware to backend |
 | Build fails | Missing Dockerfile | Copy template Dockerfile to component |
