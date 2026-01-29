@@ -4,8 +4,10 @@
 # This workflow deploys your vibe coded project to the platform.
 #
 # Triggers:
-#   - Push to main/master branch (production deployment)
+#   - After CodeQL security scan completes on main/master (automatic)
 #   - Manual dispatch (for testing)
+#
+# Security: Deployment only proceeds if CodeQL passes!
 #
 # Your app URL will be: https://<repo-name>.vibe.992872368362.cloud.bayer.com
 # =============================================================================
@@ -13,15 +15,12 @@
 name: Deploy Vibe Project
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.clinerules/**'
-      - '.cursorrules'
+  # Trigger after CodeQL completes - ensures security scan passes before deploy
+  workflow_run:
+    workflows: ["CodeQL"]
+    branches: [main, master]
+    types: [completed]
+  # Manual trigger for testing (bypasses security check)
   workflow_dispatch:
 
 # Required for OIDC authentication to AWS
@@ -35,8 +34,12 @@ jobs:
   # ===========================================================================
   deploy:
     name: Deploy
-    # Skip deployment for the template repo itself - only deploy user projects
-    if: github.repository != 'bayer-int/dd-template-repository'
+    # Only deploy if:
+    # 1. Not the template repo itself
+    # 2. CodeQL passed (workflow_run trigger) OR manual dispatch
+    if: |
+      github.repository != 'bayer-int/dd-template-repository' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     uses: bayer-int/dd-platform-repository/.github/workflows/deploy-demo.yml@master
     with:
       # Project name is derived from repository name (lowercase, validated by platform)
