@@ -39,96 +39,124 @@ fi
 echo "Updating to version $LATEST_VERSION..."
 echo ""
 
-# Parse auto_update section and fetch each file
-# The manifest format is:
-# auto_update:
-#   - path: ".github/workflows/deploy.yml"
-#   - path: ".clinerules"
-#     is_directory: true
-#   - path: "frontend/Dockerfile.vanilla"
+# Function to fetch a single file
+fetch_file() {
+    local FILE_PATH="$1"
+    echo "Updating: $FILE_PATH"
+    
+    # Create parent directory if needed
+    mkdir -p "$(dirname "$FILE_PATH")"
+    
+    gh api "repos/$TEMPLATE_REPO/contents/$FILE_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FILE_PATH" 2>/dev/null || {
+        echo "  Warning: Could not fetch $FILE_PATH"
+        return 1
+    }
+    return 0
+}
 
+# Function to fetch a directory recursively
+fetch_directory() {
+    local DIR_PATH="$1"
+    # Remove trailing slash if present
+    DIR_PATH="${DIR_PATH%/}"
+    
+    echo "Updating directory: $DIR_PATH/"
+    
+    # Get list of items in directory
+    local DIR_CONTENTS=$(gh api "repos/$TEMPLATE_REPO/contents/$DIR_PATH" 2>/dev/null) || {
+        echo "  Warning: Could not list $DIR_PATH"
+        return 1
+    }
+    
+    # Create directory if needed
+    mkdir -p "$DIR_PATH"
+    
+    # Process each item
+    echo "$DIR_CONTENTS" | jq -r '.[] | "\(.type) \(.name)"' 2>/dev/null | while read -r TYPE NAME; do
+        local FULL_PATH="$DIR_PATH/$NAME"
+        
+        if [ "$TYPE" = "file" ]; then
+            echo "  - $FULL_PATH"
+            gh api "repos/$TEMPLATE_REPO/contents/$FULL_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FULL_PATH" 2>/dev/null || {
+                echo "    Warning: Could not fetch $FULL_PATH"
+            }
+        elif [ "$TYPE" = "dir" ]; then
+            # Recursively fetch subdirectory
+            fetch_directory "$FULL_PATH"
+        fi
+    done
+    return 0
+}
+
+# Parse the manifest using a simple state machine
+UPDATED_COUNT=0
+
+# Extract auto_update entries using grep/sed (more reliable than line-by-line parsing)
+# Find lines with "- path:" in auto_update section
 IN_AUTO_UPDATE=false
-UPDATED_FILES=()
+CURRENT_PATH=""
+CURRENT_IS_DIR=false
 
 while IFS= read -r line; do
-    # Check if we're entering auto_update section
-    if echo "$line" | grep -q "^auto_update:"; then
+    # Check for section markers
+    if echo "$line" | grep -qE "^auto_update:"; then
         IN_AUTO_UPDATE=true
         continue
     fi
     
-    # Check if we're leaving auto_update section (another top-level key)
-    if $IN_AUTO_UPDATE && echo "$line" | grep -q "^[a-z_]*:" && ! echo "$line" | grep -q "^[[:space:]]"; then
+    # Check for end of auto_update (new top-level section)
+    if $IN_AUTO_UPDATE && echo "$line" | grep -qE "^[a-z_]+:" && ! echo "$line" | grep -qE "^[[:space:]]"; then
+        # Process last entry before leaving section
+        if [ -n "$CURRENT_PATH" ]; then
+            if $CURRENT_IS_DIR; then
+                fetch_directory "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+            else
+                fetch_file "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+            fi
+        fi
         IN_AUTO_UPDATE=false
+        CURRENT_PATH=""
+        CURRENT_IS_DIR=false
         continue
     fi
     
-    # Skip if not in auto_update section
     if ! $IN_AUTO_UPDATE; then
         continue
     fi
     
-    # Extract path from "  - path: ..." line
-    if echo "$line" | grep -q "path:"; then
-        FILE_PATH=$(echo "$line" | sed 's/.*path:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' | tr -d '[:space:]')
-        
-        # Skip empty paths
-        if [ -z "$FILE_PATH" ]; then
-            continue
+    # Check for new entry (starts with "- path:")
+    if echo "$line" | grep -qE "^[[:space:]]*-[[:space:]]*path:"; then
+        # Process previous entry first
+        if [ -n "$CURRENT_PATH" ]; then
+            if $CURRENT_IS_DIR; then
+                fetch_directory "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+            else
+                fetch_file "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+            fi
         fi
         
-        # Check next line for is_directory flag
-        IS_DIR=false
+        # Extract new path
+        CURRENT_PATH=$(echo "$line" | sed 's/.*path:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' | tr -d '[:space:]')
+        CURRENT_IS_DIR=false
+        continue
     fi
     
-    # Check for is_directory flag
-    if echo "$line" | grep -q "is_directory:[[:space:]]*true"; then
-        IS_DIR=true
+    # Check for is_directory flag (belongs to current entry)
+    if echo "$line" | grep -qE "is_directory:[[:space:]]*true"; then
+        CURRENT_IS_DIR=true
+        continue
     fi
     
-    # If we have a path, fetch it
-    if [ -n "$FILE_PATH" ] && ! echo "$line" | grep -q "is_directory:"; then
-        if $IS_DIR; then
-            # Fetch directory contents
-            echo "Updating directory: $FILE_PATH/"
-            
-            # Get list of files in directory
-            DIR_FILES=$(gh api "repos/$TEMPLATE_REPO/contents/$FILE_PATH" --jq '.[].name' 2>/dev/null) || {
-                echo "  Warning: Could not list $FILE_PATH"
-                FILE_PATH=""
-                continue
-            }
-            
-            # Create directory if needed
-            mkdir -p "$FILE_PATH"
-            
-            # Fetch each file in directory
-            for FILENAME in $DIR_FILES; do
-                FULL_PATH="$FILE_PATH/$FILENAME"
-                echo "  - $FULL_PATH"
-                
-                gh api "repos/$TEMPLATE_REPO/contents/$FULL_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FULL_PATH" 2>/dev/null || {
-                    echo "    Warning: Could not fetch $FULL_PATH"
-                }
-                UPDATED_FILES+=("$FULL_PATH")
-            done
-        else
-            # Fetch single file
-            echo "Updating: $FILE_PATH"
-            
-            # Create parent directory if needed
-            mkdir -p "$(dirname "$FILE_PATH")"
-            
-            gh api "repos/$TEMPLATE_REPO/contents/$FILE_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FILE_PATH" 2>/dev/null || {
-                echo "  Warning: Could not fetch $FILE_PATH"
-            }
-            UPDATED_FILES+=("$FILE_PATH")
-        fi
-        
-        FILE_PATH=""
-        IS_DIR=false
-    fi
 done < "$TMP_MANIFEST"
+
+# Process final entry
+if [ -n "$CURRENT_PATH" ]; then
+    if $CURRENT_IS_DIR; then
+        fetch_directory "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+    else
+        fetch_file "$CURRENT_PATH" && ((UPDATED_COUNT++)) || true
+    fi
+fi
 
 # Update local version tracker
 cat > .template-version << EOF
@@ -142,5 +170,5 @@ EOF
 echo ""
 echo "UPDATE_COMPLETE|$LATEST_VERSION"
 echo ""
-echo "Updated ${#UPDATED_FILES[@]} files to version $LATEST_VERSION"
+echo "Updated files to version $LATEST_VERSION"
 echo "Your code (frontend/*, backend/*, database/init/*) was NOT touched."
