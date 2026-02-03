@@ -19,6 +19,10 @@
 name: Check Template Updates
 
 on:
+  # IMPORTANT: This workflow should ONLY run manually or via workflow_call
+  # It should NEVER run automatically on push - if you see it running on every commit,
+  # check that this file doesn't have a 'push:' trigger added accidentally
+  
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -63,7 +67,7 @@ env:
   TEMPLATE_BRANCH: master
 
 jobs:
-  # Skip if this IS the template repo
+  # Skip if this IS the template repo OR if triggered by push (shouldn't happen)
   check-repo:
     runs-on: ubuntu-latest
     outputs:
@@ -71,12 +75,21 @@ jobs:
     steps:
       - id: check
         run: |
+          # Skip if this IS the template repo
           if [ "${{ github.repository }}" = "${{ env.TEMPLATE_REPO }}" ]; then
             echo "should_run=false" >> $GITHUB_OUTPUT
             echo "⏭️ Skipping - this IS the template repo"
-          else
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          
+          # Skip if triggered by push (this workflow should only run manually or via workflow_call)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping - this workflow should only run manually (workflow_dispatch) or via workflow_call"
+            exit 0
+          fi
+          
+          echo "should_run=true" >> $GITHUB_OUTPUT
 
   sync:
     name: Sync Template Files

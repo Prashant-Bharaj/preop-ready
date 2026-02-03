@@ -1,10 +1,10 @@
 # =============================================================================
 # Vibe Coded Project Deployment Workflow
 # =============================================================================
-# This workflow deploys your vibe coded project to the appropriate platform:
+# This workflow deploys your vibe coded project to AWS ECS.
 #
-# - Frontend-only apps (no backend) → DevOps Docs (static hosting)
-# - Full-stack apps (with backend)  → AWS ECS (container hosting)
+# - Full-stack apps (with backend) → AWS ECS
+# - (DevOps Docs / static deployment is commented out below)
 #
 # Triggers:
 #   - After CodeQL security scan completes on main/master (automatic)
@@ -12,9 +12,7 @@
 #
 # Security: Deployment only proceeds if CodeQL passes!
 #
-# URLs:
-#   - Static apps: https://docs.int.bayer.com/-/<repo-name>/
-#   - ECS apps:    https://<repo-name>.vibe.992872368362.cloud.bayer.com
+# URL: https://<repo-name>.vibe.992872368362.cloud.bayer.com
 # =============================================================================
 
 name: Deploy Vibe Project
@@ -31,9 +29,7 @@ on:
 # Required permissions
 permissions:
   id-token: write
-  contents: write       # Required for publish-docs.yml
-  deployments: write    # Required for publish-docs.yml
-  pull-requests: write  # Required for publish-docs.yml (PR previews)
+  contents: read
 
 jobs:
   # ===========================================================================
@@ -117,21 +113,21 @@ jobs:
             fi
           fi
           
-          # Determine deployment type
+          # Determine deployment type (only AWS ECS is enabled; static/DevOps Docs is commented out)
           if [[ "$HAS_BACKEND" == "true" ]]; then
             DEPLOYMENT_TYPE="ecs"
             echo ""
             echo "📦 Deployment: ECS (has backend)"
           elif [[ "$FRONTEND_TYPE" != "none" ]]; then
-            DEPLOYMENT_TYPE="static"
             echo ""
-            echo "📄 Deployment: Static/DevOps Docs (frontend-only)"
+            echo "❌ ERROR: Only AWS ECS deployment is enabled."
+            echo "   Add a backend (backend/Dockerfile) to deploy."
+            echo "   (Static/DevOps Docs deployment is currently disabled in this workflow.)"
+            exit 1
           else
             echo ""
             echo "❌ ERROR: No deployable content found!"
-            echo "   Need either:"
-            echo "   - frontend/ folder with index.html (static site)"
-            echo "   - backend/Dockerfile (ECS deployment)"
+            echo "   Need backend/Dockerfile for ECS deployment."
             exit 1
           fi
           
@@ -148,76 +144,57 @@ jobs:
           echo "has-backend=$HAS_BACKEND" >> $GITHUB_OUTPUT
 
   # ===========================================================================
-  # Build React/SPA Frontend (if applicable)
+  # DevOps Docs / Static deployment (COMMENTED OUT - only AWS ECS is active)
   # ===========================================================================
-  build-static:
-    name: 📦 Build Frontend
-    runs-on: ubuntu-latest
-    needs: detect
-    if: needs.detect.outputs.deployment-type == 'static' && needs.detect.outputs.frontend-type == 'react'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: |
-          # Use npm ci if lock file exists (faster), otherwise npm install
-          if [ -f "package-lock.json" ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Build
-        working-directory: frontend
-        run: npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
-
-  # ===========================================================================
-  # Deploy Static Site to DevOps Docs
-  # ===========================================================================
-  deploy-static:
-    name: 🚀 Deploy to DevOps Docs
-    runs-on: ubuntu-latest
-    needs: [detect, build-static]
-    # Run if static deployment, and either:
-    # - build-static succeeded (React)
-    # - build-static was skipped (Vanilla)
-    if: |
-      always() &&
-      needs.detect.outputs.deployment-type == 'static' &&
-      (needs.build-static.result == 'success' || needs.build-static.result == 'skipped')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifact (React only)
-        if: needs.detect.outputs.frontend-type == 'react'
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist
-
-      - name: Deploy to DevOps Docs
-        uses: bayer-int/actions-workflows/.github/workflows/publish-docs.yml@main
-        with:
-          # For React: use artifact we just downloaded to dist/
-          # For Vanilla: use frontend/ directory directly
-          artifact: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || '' }}
-          dir: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || 'frontend' }}
-          invalidate: true
-          preview: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.run_id || '' }}
+  # build-static:
+  #   name: 📦 Build Frontend
+  #   runs-on: ubuntu-latest
+  #   needs: detect
+  #   if: needs.detect.outputs.deployment-type == 'static' && needs.detect.outputs.frontend-type == 'react'
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - name: Install dependencies
+  #       working-directory: frontend
+  #       run: |
+  #         if [ -f "package-lock.json" ]; then npm ci; else npm install; fi
+  #     - name: Build
+  #       working-directory: frontend
+  #       run: npm run build
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: frontend-dist
+  #         path: frontend/dist/
+  #
+  # deploy-static:
+  #   name: 🚀 Deploy to DevOps Docs
+  #   runs-on: ubuntu-latest
+  #   needs: [detect, build-static]
+  #   if: |
+  #     always() &&
+  #     needs.detect.outputs.deployment-type == 'static' &&
+  #     (needs.build-static.result == 'success' || needs.build-static.result == 'skipped')
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Download artifact (React only)
+  #       if: needs.detect.outputs.frontend-type == 'react'
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: frontend-dist
+  #         path: dist
+  #     - name: Deploy to DevOps Docs
+  #       uses: bayer-int/actions-workflows/.github/workflows/publish-docs.yml@main
+  #       with:
+  #         artifact: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || '' }}
+  #         dir: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || 'frontend' }}
+  #         invalidate: true
+  #         preview: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.run_id || '' }}
 
   # ===========================================================================
   # Deploy to ECS (Full-Stack Apps)
@@ -252,45 +229,26 @@ jobs:
   summary:
     name: 📋 Deployment Summary
     runs-on: ubuntu-latest
-    needs: [gate, detect, deploy-static, deploy-ecs]
+    needs: [gate, detect, deploy-ecs]
     if: always() && needs.gate.outputs.should-deploy == 'true' && needs.detect.result == 'success'
     steps:
       - name: Generate summary
         env:
-          DEPLOYMENT_TYPE: ${{ needs.detect.outputs.deployment-type }}
-          FRONTEND_TYPE: ${{ needs.detect.outputs.frontend-type }}
           REPO_NAME: ${{ github.event.repository.name }}
-          STATIC_RESULT: ${{ needs.deploy-static.result }}
           ECS_RESULT: ${{ needs.deploy-ecs.result }}
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** Full-Stack (AWS ECS)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [[ "$DEPLOYMENT_TYPE" == "static" ]]; then
-            echo "**Type:** Static Site (DevOps Docs)" >> $GITHUB_STEP_SUMMARY
-            echo "**Frontend:** $FRONTEND_TYPE" >> $GITHUB_STEP_SUMMARY
+          if [[ "$ECS_RESULT" == "success" ]]; then
+            echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
-            if [[ "$STATIC_RESULT" == "success" ]]; then
-              echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "**URL:** https://docs.int.bayer.com/-/${REPO_NAME}/" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-              echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
-            fi
+            echo "**URL:** https://${REPO_NAME}.vibe.992872368362.cloud.bayer.com" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Type:** Full-Stack (AWS ECS)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            if [[ "$ECS_RESULT" == "success" ]]; then
-              echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "**URL:** https://${REPO_NAME}.vibe.992872368362.cloud.bayer.com" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-              echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
-            fi
+            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
