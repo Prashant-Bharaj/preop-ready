@@ -35,6 +35,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 | `14-file-handling.md` | **App file uploads** | Memory vs persistent storage |
 | `15-urls.md` | **Showing URLs** | Codespaces vs Local vs Production |
 | `16-ai-file-input.md` | **Files for AI** | User giving files to AI assistant |
+| `17-user-identity.md` | **User identity** | Get logged-in user from OIDC headers |
 
 ---
 

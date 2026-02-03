@@ -6,13 +6,27 @@
 
 | File | Description | Status |
 |------|-------------|--------|
+| `user-identity.js` | Get logged-in user from OIDC headers (Node.js) | ✅ Ready |
+| `user-identity.py` | Get logged-in user from OIDC headers (Python) | ✅ Ready |
 | `bayer-sso.js` | Bayer SSO integration | 🔜 TODO |
 | `jwt-handler.js` | JWT token management | 🔜 TODO |
 | `basic-auth.js` | Simple username/password | 🔜 TODO |
 
-## For Hackathons
+## User Identity (Recommended for Hackathons)
 
-For hackathon projects, consider using simple authentication:
+**The platform automatically authenticates users via Azure AD through AWS ALB.**
+
+No authentication code needed! User identity is passed via HTTP headers:
+- `x-amzn-oidc-data` - JWT with user claims (sub, email, name)
+- `x-amzn-oidc-identity` - User's unique ID
+
+Use the `user-identity.js` or `user-identity.py` snippets to extract this info.
+
+See `.clinerules/17-user-identity.md` for full documentation.
+
+## For Custom Authentication
+
+For hackathon projects that need custom auth:
 - Basic username/password stored in database
 - Session-based login
 

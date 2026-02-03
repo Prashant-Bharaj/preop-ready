@@ -27,6 +27,7 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 | `.clinerules/14-file-handling.md` | App file uploads - memory vs persistent |
 | `.clinerules/15-urls.md` | Codespaces vs Local vs Production URLs |
 | `.clinerules/16-ai-file-input.md` | User giving files to AI to analyze |
+| `.clinerules/17-user-identity.md` | Get logged-in user (OIDC headers) |
 
 ---
 
@@ -143,6 +144,22 @@ Wait 3-5 minutes. URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 | **App needs file upload** | Use memory storage (default) or `/data` for persistence | `14-file-handling.md` |
 
 **`context/` folder is gitignored** - safe for requirements docs, example data, design mockups.
+
+---
+
+## 👤 User Identity (Personalization)
+
+**AWS ALB automatically provides logged-in user info via headers - no auth code needed!**
+
+```javascript
+// Read from x-amzn-oidc-data header (JWT)
+const user = req.user; // After middleware
+// user.userId, user.email, user.name available
+```
+
+- **Production**: Real user from Azure AD (automatic)
+- **Local dev**: Falls back to test user
+- See `17-user-identity.md` and `snippets/auth/user-identity.js`
 
 ---
 

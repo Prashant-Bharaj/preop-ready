@@ -51,6 +51,8 @@
 
 | Snippet | Language | File | Description | Status |
 |---------|----------|------|-------------|--------|
+| User Identity | JS | `auth/user-identity.js` | Get logged-in user from OIDC headers | ✅ Ready |
+| User Identity | Python | `auth/user-identity.py` | Get logged-in user (FastAPI/Flask) | ✅ Ready |
 | Bayer SSO | JS | `auth/bayer-sso.js` | Integrate with Bayer SSO | 🔜 TODO |
 | JWT Handler | JS | `auth/jwt-handler.js` | JWT token management | 🔜 TODO |
 | Basic Auth | JS | `auth/basic-auth.js` | Simple username/password | 🔜 TODO |

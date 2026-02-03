@@ -13,6 +13,7 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 - `14-file-handling.md` - App file uploads (memory vs persistent)
 - `15-urls.md` - URL reference
 - `16-ai-file-input.md` - User giving files to AI
+- `17-user-identity.md` - Get logged-in user (OIDC)
 
 ---
 
@@ -171,6 +172,21 @@ Production URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 | **App needs file upload** | Use memory storage or `/data` | `14-file-handling.md` |
 
 **`context/` folder is gitignored** - safe for requirements docs, example data, mockups.
+
+---
+
+## 👤 User Identity (Personalization)
+
+AWS ALB provides logged-in user info via `x-amzn-oidc-data` header (JWT).
+
+```javascript
+// After middleware: req.user.userId, req.user.email, req.user.name
+app.get('/profile', (req, res) => res.json({ name: req.user.name }));
+```
+
+- **Production**: Real Azure AD user (automatic)
+- **Local**: Falls back to test user
+- See `17-user-identity.md` for full implementation
 
 ---
 
