@@ -189,6 +189,7 @@ jobs:
   # ===========================================================================
   deploy-static:
     name: 🚀 Deploy to DevOps Docs
+    runs-on: ubuntu-latest
     needs: [detect, build-static]
     # Run if static deployment, and either:
     # - build-static succeeded (React)
