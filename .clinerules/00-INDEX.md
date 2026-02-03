@@ -32,8 +32,9 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 | `11-status-tracking.md` | **After tasks** | Update PROJECT_STATUS.md |
 | `12-snippets.md` | **Before coding features** | Check snippet library first |
 | `13-background-commands.md` | **Running servers** | Docker background mode |
-| `14-file-handling.md` | **File uploads** | Memory vs persistent storage |
+| `14-file-handling.md` | **App file uploads** | Memory vs persistent storage |
 | `15-urls.md` | **Showing URLs** | Codespaces vs Local vs Production |
+| `16-ai-file-input.md` | **Files for AI** | User giving files to AI assistant |
 
 ---
 

@@ -38,3 +38,9 @@ coverage/
 # Security test file (should not be deployed)
 # backend/src/SECURITY_TEST.js
 
+# AI context folder (files for AI to analyze - never commit)
+context/
+
+# Local data folder (for persistent storage testing)
+local-data/
+

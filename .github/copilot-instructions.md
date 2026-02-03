@@ -10,7 +10,9 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 - `00-INDEX.md` - Overview and flow
 - `10-platform-rules.md` - Critical technical requirements
 - `05-building.md` - Building apps
+- `14-file-handling.md` - App file uploads (memory vs persistent)
 - `15-urls.md` - URL reference
+- `16-ai-file-input.md` - User giving files to AI
 
 ---
 
@@ -158,6 +160,17 @@ Production URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 | 502 Bad Gateway | Backend must listen on port 3000 |
 | nginx won't start | Remove `events{}` and `http{}` from nginx.conf |
 | API calls fail | Use `/api/*` in frontend, routes WITHOUT `/api` in backend |
+
+---
+
+## 📎 File Handling
+
+| Scenario | What to Do | Details |
+|----------|------------|---------|
+| **User gives you a file** | Read from `context/` folder | `16-ai-file-input.md` |
+| **App needs file upload** | Use memory storage or `/data` | `14-file-handling.md` |
+
+**`context/` folder is gitignored** - safe for requirements docs, example data, mockups.
 
 ---
 

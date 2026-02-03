@@ -24,8 +24,9 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 | `.clinerules/11-status-tracking.md` | Updating PROJECT_STATUS.md |
 | `.clinerules/12-snippets.md` | Code snippet library |
 | `.clinerules/13-background-commands.md` | Docker background mode |
-| `.clinerules/14-file-handling.md` | Memory vs persistent storage |
+| `.clinerules/14-file-handling.md` | App file uploads - memory vs persistent |
 | `.clinerules/15-urls.md` | Codespaces vs Local vs Production URLs |
+| `.clinerules/16-ai-file-input.md` | User giving files to AI to analyze |
 
 ---
 
@@ -131,6 +132,17 @@ Wait 3-5 minutes. URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 - [ ] Backend has `/health` endpoint on port 3000
 - [ ] Tested locally with `docker-compose up --build`
 - [ ] `docs/PROJECT_STATUS.md` updated
+
+---
+
+## 📎 File Handling Quick Reference
+
+| Scenario | What to Do | Details |
+|----------|------------|---------|
+| **User gives AI a file** | Upload to `context/` folder, tell AI to read it | `16-ai-file-input.md` |
+| **App needs file upload** | Use memory storage (default) or `/data` for persistence | `14-file-handling.md` |
+
+**`context/` folder is gitignored** - safe for requirements docs, example data, design mockups.
 
 ---
 
