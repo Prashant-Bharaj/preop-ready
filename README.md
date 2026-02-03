@@ -40,10 +40,16 @@ backend/           → Express/FastAPI (port 3000)
 database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 ```
 
-### Routing (Traefik)
+### Deployment Types (Auto-Detected!)
+| Project Type | Detection | URL |
+|-------------|-----------|-----|
+| **Frontend-only** (Vanilla/React) | No `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo>/` |
+| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
+
+### Routing (Full-Stack/ECS only)
 ```
-https://[project].vibe.demo.bfrg.de      → frontend
-https://[project].vibe.demo.bfrg.de/api  → backend (stripped)
+https://[project].vibe.992872368362.cloud.bayer.com      → frontend
+https://[project].vibe.992872368362.cloud.bayer.com/api  → backend (stripped)
 ```
 
 ### Required: Health Endpoint
@@ -69,10 +75,13 @@ docker-compose down             # Stop
 
 ### Deploy
 ```bash
-# First time: Contact admin to whitelist your repo
+# First time: Contact admin to whitelist your repo in variables.tf
 git add . && git commit -m "feat: description" && git push
 # → GitHub Actions builds & deploys (~3-5 min)
-# → https://[project-name].vibe.demo.bfrg.de (VPN required)
+
+# URL depends on project type:
+# Frontend-only: https://docs.int.bayer.com/-/[repo-name]/
+# Full-stack:    https://[repo-name].vibe.992872368362.cloud.bayer.com
 ```
 
 ### Secrets (GitHub → Settings → Secrets → Actions)
@@ -149,7 +158,12 @@ Happy with your app? Just tell the AI:
 The AI will save your work and deploy it automatically!
 
 **Wait 3-5 minutes**, then visit your live site:
-> `https://YOUR-REPO-NAME.vibe.992872368362.cloud.bayer.com`
+
+**Your URL depends on your project type:**
+| Project Type | URL |
+|-------------|-----|
+| Frontend-only (no backend) | `https://docs.int.bayer.com/-/YOUR-REPO-NAME/` |
+| Full-stack (has backend) | `https://YOUR-REPO-NAME.vibe.992872368362.cloud.bayer.com` |
 
 *(Requires Bayer VPN)*
 
@@ -239,16 +253,15 @@ When you say **"Let's deploy!"**, here's what happens:
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────┐                       │
-│  │  3️⃣  GitHub Actions starts          │  ← Automatic!        │
-│  │     • Builds your app               │    (3-5 mins)        │
-│  │     • Creates containers            │                       │
-│  │     • Deploys to cloud              │                       │
+│  │  3️⃣  GitHub Actions detects type    │  ← Automatic!        │
+│  │     • Frontend-only → Static deploy │    (3-5 mins)        │
+│  │     • Has backend → ECS deploy      │                       │
 │  └─────────────────────────────────────┘                       │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────┐                       │
 │  │  4️⃣  YOUR APP IS LIVE! 🎉           │                       │
-│  │     https://your-app.vibe.demo...   │                       │
+│  │     (URL depends on project type)   │                       │
 │  └─────────────────────────────────────┘                       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
