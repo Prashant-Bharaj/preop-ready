@@ -1,7 +1,10 @@
 # =============================================================================
 # Vibe Coded Project Deployment Workflow
 # =============================================================================
-# This workflow deploys your vibe coded project to the platform.
+# This workflow deploys your vibe coded project to the appropriate platform:
+#
+# - Frontend-only apps (no backend) → DevOps Docs (static hosting)
+# - Full-stack apps (with backend)  → AWS ECS (container hosting)
 #
 # Triggers:
 #   - After CodeQL security scan completes on main/master (automatic)
@@ -9,7 +12,9 @@
 #
 # Security: Deployment only proceeds if CodeQL passes!
 #
-# Your app URL will be: https://<repo-name>.vibe.992872368362.cloud.bayer.com
+# URLs:
+#   - Static apps: https://docs.int.bayer.com/-/<repo-name>/
+#   - ECS apps:    https://<repo-name>.vibe.992872368362.cloud.bayer.com
 # =============================================================================
 
 name: Deploy Vibe Project
@@ -23,23 +28,152 @@ on:
   # Manual trigger for testing (bypasses security check)
   workflow_dispatch:
 
-# Required for OIDC authentication to AWS
+# Required permissions
 permissions:
   id-token: write
   contents: read
 
 jobs:
   # ===========================================================================
-  # Deploy using Platform Workflow
+  # Detect Project Stack
   # ===========================================================================
-  deploy:
-    name: Deploy
-    # Only deploy if:
+  detect:
+    name: 🔍 Detect Stack
+    runs-on: ubuntu-latest
+    # Only run if:
     # 1. Not the template repo itself
     # 2. CodeQL passed (workflow_run trigger) OR manual dispatch
     if: |
       github.repository != 'bayer-int/dd-template-repository' &&
+      github.repository != 'bayer-int/dd-template-repo' &&
       (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    outputs:
+      deployment-type: ${{ steps.detect.outputs.deployment-type }}
+      frontend-type: ${{ steps.detect.outputs.frontend-type }}
+      has-backend: ${{ steps.detect.outputs.has-backend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect project stack
+        id: detect
+        run: |
+          echo "🔍 Detecting project stack..."
+          echo ""
+          
+          # Check for backend
+          HAS_BACKEND="false"
+          if [[ -f "backend/Dockerfile" ]] && grep -qE "^FROM " "backend/Dockerfile" 2>/dev/null; then
+            HAS_BACKEND="true"
+            echo "✅ Backend detected (backend/Dockerfile with valid FROM)"
+          else
+            echo "❌ No backend detected"
+          fi
+          
+          # Check for frontend and its type
+          FRONTEND_TYPE="none"
+          if [[ -d "frontend" ]]; then
+            if [[ -f "frontend/package.json" ]]; then
+              FRONTEND_TYPE="react"
+              echo "✅ React/SPA frontend detected (has package.json)"
+            elif [[ -f "frontend/index.html" ]]; then
+              FRONTEND_TYPE="vanilla"
+              echo "✅ Vanilla frontend detected (HTML/CSS/JS)"
+            fi
+          fi
+          
+          # Determine deployment type
+          if [[ "$HAS_BACKEND" == "true" ]]; then
+            DEPLOYMENT_TYPE="ecs"
+            echo ""
+            echo "📦 Deployment: ECS (has backend)"
+          elif [[ "$FRONTEND_TYPE" != "none" ]]; then
+            DEPLOYMENT_TYPE="static"
+            echo ""
+            echo "📄 Deployment: Static/DevOps Docs (frontend-only)"
+          else
+            echo ""
+            echo "❌ ERROR: No deployable content found!"
+            echo "   Need either:"
+            echo "   - frontend/ folder with index.html (static site)"
+            echo "   - backend/Dockerfile (ECS deployment)"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=============================================="
+          echo "📋 Detection Results:"
+          echo "   deployment-type=$DEPLOYMENT_TYPE"
+          echo "   frontend-type=$FRONTEND_TYPE"
+          echo "   has-backend=$HAS_BACKEND"
+          echo "=============================================="
+          
+          echo "deployment-type=$DEPLOYMENT_TYPE" >> $GITHUB_OUTPUT
+          echo "frontend-type=$FRONTEND_TYPE" >> $GITHUB_OUTPUT
+          echo "has-backend=$HAS_BACKEND" >> $GITHUB_OUTPUT
+
+  # ===========================================================================
+  # Build React/SPA Frontend (if applicable)
+  # ===========================================================================
+  build-static:
+    name: 📦 Build Frontend
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.deployment-type == 'static' && needs.detect.outputs.frontend-type == 'react'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+  # ===========================================================================
+  # Deploy Static Site to DevOps Docs
+  # ===========================================================================
+  deploy-static:
+    name: 🚀 Deploy to DevOps Docs
+    needs: [detect, build-static]
+    # Run if static deployment, and either:
+    # - build-static succeeded (React)
+    # - build-static was skipped (Vanilla)
+    if: |
+      always() &&
+      needs.detect.outputs.deployment-type == 'static' &&
+      (needs.build-static.result == 'success' || needs.build-static.result == 'skipped')
+    uses: bayer-int/actions-workflows/.github/workflows/publish-docs.yml@main
+    with:
+      # For React: use artifact from build step
+      # For Vanilla: use frontend/ directory directly
+      artifact: ${{ needs.detect.outputs.frontend-type == 'react' && 'frontend-dist' || '' }}
+      dir: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || 'frontend' }}
+      invalidate: true
+      preview: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.run_id || '' }}
+
+  # ===========================================================================
+  # Deploy to ECS (Full-Stack Apps)
+  # ===========================================================================
+  deploy-ecs:
+    name: 🚀 Deploy to ECS
+    needs: detect
+    if: needs.detect.outputs.deployment-type == 'ecs'
     uses: bayer-int/dd-platform-repository/.github/workflows/deploy-demo.yml@master
     with:
       # Project name is derived from repository name (lowercase, validated by platform)
@@ -59,3 +193,54 @@ jobs:
       APP_SECRET_1: ${{ secrets.APP_SECRET_1 }}
       APP_SECRET_2: ${{ secrets.APP_SECRET_2 }}
       APP_SECRET_3: ${{ secrets.APP_SECRET_3 }}
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: 📋 Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [detect, deploy-static, deploy-ecs]
+    if: always() && needs.detect.result == 'success'
+    steps:
+      - name: Generate summary
+        env:
+          DEPLOYMENT_TYPE: ${{ needs.detect.outputs.deployment-type }}
+          FRONTEND_TYPE: ${{ needs.detect.outputs.frontend-type }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          STATIC_RESULT: ${{ needs.deploy-static.result }}
+          ECS_RESULT: ${{ needs.deploy-ecs.result }}
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "$DEPLOYMENT_TYPE" == "static" ]]; then
+            echo "**Type:** Static Site (DevOps Docs)" >> $GITHUB_STEP_SUMMARY
+            echo "**Frontend:** $FRONTEND_TYPE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [[ "$STATIC_RESULT" == "success" ]]; then
+              echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**URL:** https://docs.int.bayer.com/-/${REPO_NAME}/" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+              echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "**Type:** Full-Stack (AWS ECS)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [[ "$ECS_RESULT" == "success" ]]; then
+              echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**URL:** https://${REPO_NAME}.vibe.992872368362.cloud.bayer.com" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+              echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Accessible via Bayer network/VPN*" >> $GITHUB_STEP_SUMMARY

@@ -47,16 +47,19 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 
 ## ⚠️ Critical Rules (Always Remember)
 
-1. **Health endpoints are REQUIRED** - Every container needs `/health`
-2. **Backend port is 3000** - Always, no exceptions
-3. **nginx.conf must NOT have `events{}` or `http{}`** - Only `server{}` block
-4. **API Routing (MOST COMMON MISTAKE!):**
+1. **Deployment type is AUTO-DETECTED:**
+   - Has `backend/Dockerfile` → ECS (full platform)
+   - Frontend-only → DevOps Docs (static hosting)
+   - **Show the correct URL based on project type!**
+2. **Health endpoints are REQUIRED** (ECS only) - Every container needs `/health`
+3. **Backend port is 3000** - Always, no exceptions (ECS only)
+4. **nginx.conf must NOT have `events{}` or `http{}`** - Only `server{}` block (ECS only)
+5. **API Routing (MOST COMMON MISTAKE - ECS only):**
    - Frontend calls: `fetch('/api/users')` ← WITH `/api`
    - Backend defines: `app.get('/users')` ← WITHOUT `/api`
    - **NEVER put `/api` in backend routes - it breaks everything!**
-5. **WebSockets: use `window.location.origin`** - Socket.IO routes via `/socket.io/*`
-6. **Update PROJECT_STATUS.md** - After every significant action
-7. **Show correct URL** - Check if Codespaces or Local
+6. **WebSockets: use `window.location.origin`** - Socket.IO routes via `/socket.io/*` (ECS only)
+7. **Update PROJECT_STATUS.md** - After every significant action
 8. **Security is REQUIRED** (see `18-security.md`):
    - NGINX security headers (`server_tokens off`, X-Frame-Options, etc.)
    - Non-root user in Dockerfiles (`USER appuser`)
@@ -88,11 +91,30 @@ If user says "developer", "dev", "2", or uses technical terms:
 frontend/     → nginx (port 80) - static or React
 backend/      → Express/FastAPI (port 3000)
 database/     → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
+```
 
-Routing (Traefik):
-  https://<repo>.vibe.992872368362.cloud.bayer.com     → frontend
-  https://<repo>.vibe.992872368362.cloud.bayer.com/api/* → backend (stripped)
-  https://<repo>.vibe.992872368362.cloud.bayer.com/socket.io/* → backend (WebSocket)
+---
+
+## 🚀 Deployment (Auto-Detected!)
+
+The platform automatically detects your project type:
+
+| Project Type | Detection | URL |
+|-------------|-----------|-----|
+| **Frontend-only** (Vanilla/React) | No `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo>/` |
+| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
+
+```bash
+git add . && git commit -m "feat: description" && git push
+```
+
+Wait 3-5 minutes. **Show the correct URL based on project type!**
+
+### Full-Stack Routing (ECS/Traefik):
+```
+https://<repo>.vibe.992872368362.cloud.bayer.com      → frontend
+https://<repo>.vibe.992872368362.cloud.bayer.com/api/* → backend (stripped)
+https://<repo>.vibe.992872368362.cloud.bayer.com/socket.io/* → backend (WebSocket)
 ```
 
 ---
@@ -111,16 +133,6 @@ docker-compose down            # Stop
 
 ---
 
-## 🚀 Deployment
-
-```bash
-git add . && git commit -m "feat: description" && git push
-```
-
-Wait 3-5 minutes. URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
-
----
-
 ## 🔐 Secrets
 
 | GitHub Secret | Use in Code |
@@ -133,9 +145,16 @@ Wait 3-5 minutes. URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 
 ## 📋 Pre-Deployment Checklist
 
+### For Frontend-Only (Static/DevOps Docs):
+- [ ] `frontend/index.html` exists (Vanilla) OR `frontend/package.json` exists (React)
+- [ ] NO `backend/Dockerfile` (or deployment will use ECS instead)
+- [ ] React: Has build script in package.json (`npm run build` → `dist/`)
+- [ ] `docs/PROJECT_STATUS.md` updated
+
+### For Full-Stack (ECS):
 - [ ] `frontend/Dockerfile` exists
 - [ ] `frontend/nginx.conf` exists (with `/health`, NO `events{}` or `http{}`)
-- [ ] `backend/Dockerfile` exists (if backend)
+- [ ] `backend/Dockerfile` exists
 - [ ] Backend has `/health` endpoint on port 3000
 - [ ] Tested locally with `docker-compose up --build`
 - [ ] `docs/PROJECT_STATUS.md` updated
@@ -153,9 +172,9 @@ Wait 3-5 minutes. URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 
 ---
 
-## 👤 User Identity (Personalization)
+## 👤 User Identity (Full-Stack Apps Only)
 
-**AWS ALB automatically provides logged-in user info via headers - no auth code needed!**
+**For ECS deployments with backend**: AWS ALB provides logged-in user info via headers.
 
 ```javascript
 // Read from x-amzn-oidc-data header (JWT)
@@ -166,6 +185,8 @@ const user = req.user; // After middleware
 - **Production**: Real user from Azure AD (automatic)
 - **Local dev**: Falls back to test user
 - See `17-user-identity.md` and `snippets/auth/user-identity.js`
+
+**Note**: Static apps (DevOps Docs) use Azure AD auth but don't have access to user identity headers in frontend code.
 
 ---
 
