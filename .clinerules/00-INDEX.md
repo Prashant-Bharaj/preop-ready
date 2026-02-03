@@ -36,6 +36,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 | `15-urls.md` | **Showing URLs** | Codespaces vs Local vs Production |
 | `16-ai-file-input.md` | **Files for AI** | User giving files to AI assistant |
 | `17-user-identity.md` | **User identity** | Get logged-in user from OIDC headers |
+| `18-security.md` | **Security** | Headers, non-root, input validation, SQL |
 
 ---
 
@@ -139,6 +140,11 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 5. **WebSockets: use `window.location.origin`** - Socket.IO routes via `/socket.io/*`
 6. **Update PROJECT_STATUS.md** - After every significant action
 7. **Show correct URL** - Check if Codespaces or Local (see `15-urls.md`)
+8. **Security is REQUIRED** - See `18-security.md`:
+   - NGINX security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+   - Non-root container user in Dockerfiles
+   - Validate ALL user inputs server-side
+   - Use parameterized queries (NO string concatenation for SQL!)
 
 ---
 

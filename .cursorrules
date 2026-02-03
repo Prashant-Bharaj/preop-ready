@@ -28,6 +28,7 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 | `.clinerules/15-urls.md` | Codespaces vs Local vs Production URLs |
 | `.clinerules/16-ai-file-input.md` | User giving files to AI to analyze |
 | `.clinerules/17-user-identity.md` | Get logged-in user (OIDC headers) |
+| `.clinerules/18-security.md` | **SECURITY** - Headers, non-root, validation |
 
 ---
 
@@ -56,6 +57,11 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 5. **WebSockets: use `window.location.origin`** - Socket.IO routes via `/socket.io/*`
 6. **Update PROJECT_STATUS.md** - After every significant action
 7. **Show correct URL** - Check if Codespaces or Local
+8. **Security is REQUIRED** (see `18-security.md`):
+   - NGINX security headers (`server_tokens off`, X-Frame-Options, etc.)
+   - Non-root user in Dockerfiles (`USER appuser`)
+   - Validate ALL inputs server-side
+   - Parameterized SQL queries only (NO string concatenation!)
 
 ---
 
@@ -160,6 +166,33 @@ const user = req.user; // After middleware
 - **Production**: Real user from Azure AD (automatic)
 - **Local dev**: Falls back to test user
 - See `17-user-identity.md` and `snippets/auth/user-identity.js`
+
+---
+
+## 🔒 Security (REQUIRED)
+
+**All generated code MUST include:**
+
+```nginx
+# nginx.conf - Security headers
+server_tokens off;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+```
+
+```dockerfile
+# Dockerfile - Non-root user
+USER appuser
+```
+
+```javascript
+// SQL - Parameterized queries ONLY
+pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+// ❌ NEVER: `SELECT * FROM users WHERE id = ${userId}`
+```
+
+See `18-security.md` for full details.
 
 ---
 

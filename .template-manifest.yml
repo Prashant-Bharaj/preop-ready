@@ -10,7 +10,7 @@
 #   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
-version: "1.0.13"
+version: "1.0.14"
 template_repo: "bayer-int/dd-template-repo"
 template_branch: "master"
 
@@ -27,15 +27,22 @@ auto_update:
     
   # Frontend Dockerfile templates
   - path: "frontend/Dockerfile.vanilla"
-    description: "Vanilla HTML/CSS/JS Dockerfile template"
+    description: "Vanilla HTML/CSS/JS Dockerfile template (secure, non-root)"
   - path: "frontend/Dockerfile.react"
-    description: "React/Vite Dockerfile template"
+    description: "React/Vite Dockerfile template (secure, non-root)"
+    
+  # Nginx configuration templates (with security headers)
+  - path: "frontend/nginx.conf"
+    description: "Production nginx config template (security headers included)"
+    note: "Users should copy this when setting up frontend"
+  - path: "frontend/nginx.local.conf"
+    description: "Local dev nginx config template (with API proxy)"
     
   # Backend Dockerfile templates
   - path: "backend/Dockerfile.node"
-    description: "Node.js backend Dockerfile template"
+    description: "Node.js backend Dockerfile template (secure, non-root)"
   - path: "backend/Dockerfile.python"
-    description: "Python backend Dockerfile template"
+    description: "Python backend Dockerfile template (secure, non-root)"
     
   # Database Dockerfile templates
   - path: "database/Dockerfile.postgres"
@@ -53,10 +60,16 @@ auto_update:
     
   # AI instructions - always use latest guidance
   - path: ".cursorrules"
-    description: "AI assistant instructions"
+    description: "AI assistant instructions (Cursor)"
+  - path: ".github/copilot-instructions.md"
+    description: "AI assistant instructions (GitHub Copilot)"
   - path: ".clinerules/"
-    description: "AI assistant instructions (Cline)"
+    description: "AI assistant detailed rules"
     is_directory: true
+    
+  # AI context folder (for giving files to AI)
+  - path: "context/.gitkeep"
+    description: "Folder for files to share with AI assistant"
     
   # Development environment
   - path: ".devcontainer/devcontainer.json"
@@ -96,15 +109,22 @@ merge_update:
 # -----------------------------------------------------------------------------
 check_only:
   - path: "frontend/nginx.conf"
-    description: "Nginx configuration"
+    description: "User's nginx configuration"
     check_for:
       - "/health endpoint exists"
       - "No events{} or http{} blocks"
+      - "Security headers present (server_tokens off, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)"
       
   - path: "frontend/Dockerfile"
     description: "User's frontend Dockerfile"
     check_for:
       - "nginx.conf copied to conf.d/default.conf"
+      - "Non-root user (USER appuser or similar)"
+      
+  - path: "backend/Dockerfile"
+    description: "User's backend Dockerfile"
+    check_for:
+      - "Non-root user (USER appuser or similar)"
 
 # -----------------------------------------------------------------------------
 # Files to never touch (user code and status)
@@ -121,9 +141,12 @@ ignore:
   - "backend/requirements.txt"
   - "backend/package.json"
   - "backend/Dockerfile"        # User's chosen backend Dockerfile
+  - "backend/src/**"            # User's backend source code
+  - "backend/middleware/**"     # User's middleware (may include identity etc)
   - "database/Dockerfile"       # User's chosen database Dockerfile
   - "database/init/**"          # User's database init scripts
   - "docs/PROJECT_STATUS.md"    # User's project status - never overwrite!
+  - "context/**"                # User's AI analysis files (gitignored anyway)
   - ".env"
   - "*.log"
 
@@ -131,6 +154,20 @@ ignore:
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "1.0.14":
+    date: "2026-02-03"
+    changes:
+      - "Security hardening: NGINX security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, server_tokens off)"
+      - "Security hardening: Non-root container user in all Dockerfiles"
+      - "Added 18-security.md with input validation and SQL injection prevention"
+      - "Added 17-user-identity.md for OIDC user identity extraction"
+      - "Added 16-ai-file-input.md for giving files to AI assistant"
+      - "Added context/ folder for AI file analysis (gitignored)"
+      - "Added security snippets: input-validation.js, parameterized-queries.js"
+      - "Added auth snippets: user-identity.js, user-identity.py"
+      - "Updated .github/copilot-instructions.md with security rules"
+      - "Updated pre-deployment checklist with security requirements"
+      
   "1.0.0":
     date: "2026-01-19"
     changes:

@@ -14,6 +14,7 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 - `15-urls.md` - URL reference
 - `16-ai-file-input.md` - User giving files to AI
 - `17-user-identity.md` - Get logged-in user (OIDC)
+- `18-security.md` - **SECURITY** - Headers, non-root, validation
 
 ---
 
@@ -57,6 +58,7 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 4. **API calls use `/api/*`** - Traefik strips the prefix
 5. **WebSockets use `window.location.origin`** - Routes via `/socket.io/*`
 6. **Update `docs/PROJECT_STATUS.md`** - After every task
+7. **Security REQUIRED** - See `18-security.md`
 
 ---
 
@@ -187,6 +189,21 @@ app.get('/profile', (req, res) => res.json({ name: req.user.name }));
 - **Production**: Real Azure AD user (automatic)
 - **Local**: Falls back to test user
 - See `17-user-identity.md` for full implementation
+
+---
+
+## 🔒 Security (REQUIRED)
+
+**ALL code must include:**
+
+| Area | Requirement |
+|------|-------------|
+| **NGINX** | `server_tokens off;` + X-Frame-Options, X-Content-Type-Options, X-XSS-Protection headers |
+| **Dockerfile** | Non-root user (`USER appuser`) |
+| **Inputs** | Validate ALL user inputs server-side |
+| **Database** | Parameterized queries ONLY - NO string concatenation! |
+
+See `18-security.md` for full implementation details.
 
 ---
 

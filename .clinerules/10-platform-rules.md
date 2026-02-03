@@ -83,6 +83,14 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # ============================================
+    # SECURITY HEADERS - REQUIRED!
+    # ============================================
+    server_tokens off;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
     # Health check endpoint (REQUIRED for deployment)
     location /health {
         return 200 'OK';
@@ -118,6 +126,14 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    # ============================================
+    # SECURITY HEADERS - REQUIRED!
+    # ============================================
+    server_tokens off;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
 
     # Health check endpoint
     location /health {
@@ -501,6 +517,13 @@ Before deploying, verify ALL of these:
 - [ ] Copied template to `database/Dockerfile`
 - [ ] Backend has `DATABASE_HOST` env var configured
 - [ ] For SQL: `database/init/init.sql` has schema
+
+### 🔒 Security (REQUIRED)
+- [ ] nginx.conf has security headers (`server_tokens off`, X-Frame-Options, etc.)
+- [ ] Dockerfiles run as non-root user (`USER appuser`)
+- [ ] All user inputs validated server-side
+- [ ] Database queries use parameterized statements (NO string concatenation!)
+- [ ] No hardcoded secrets in code
 
 ### Local Test
 - [ ] `docker-compose up --build` works

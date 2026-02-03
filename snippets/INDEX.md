@@ -57,6 +57,16 @@
 | JWT Handler | JS | `auth/jwt-handler.js` | JWT token management | 🔜 TODO |
 | Basic Auth | JS | `auth/basic-auth.js` | Simple username/password | 🔜 TODO |
 
+### 🔒 Security
+
+> ⚠️ **REQUIRED**: All projects MUST follow security best practices. See `.clinerules/18-security.md`
+
+| Snippet | Language | File | Description | Status |
+|---------|----------|------|-------------|--------|
+| Input Validation | JS | `security/input-validation.js` | Server-side input validation (express-validator) | ✅ Ready |
+| Parameterized Queries | JS | `security/parameterized-queries.js` | Safe SQL queries (PostgreSQL/MySQL) | ✅ Ready |
+| Input Validation | Python | `security/input-validation.py` | Server-side validation (Pydantic) | 🔜 TODO |
+
 ### 🎨 UI Components (React)
 
 | Snippet | Language | File | Description | Status |
