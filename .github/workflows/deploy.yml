@@ -197,14 +197,26 @@ jobs:
       always() &&
       needs.detect.outputs.deployment-type == 'static' &&
       (needs.build-static.result == 'success' || needs.build-static.result == 'skipped')
-    uses: bayer-int/actions-workflows/.github/workflows/publish-docs.yml@main
-    with:
-      # For React: use artifact from build step
-      # For Vanilla: use frontend/ directory directly
-      artifact: ${{ needs.detect.outputs.frontend-type == 'react' && 'frontend-dist' || '' }}
-      dir: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || 'frontend' }}
-      invalidate: true
-      preview: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.run_id || '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifact (React only)
+        if: needs.detect.outputs.frontend-type == 'react'
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Deploy to DevOps Docs
+        uses: bayer-int/actions-workflows/.github/workflows/publish-docs.yml@main
+        with:
+          # For React: use artifact we just downloaded to dist/
+          # For Vanilla: use frontend/ directory directly
+          artifact: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || '' }}
+          dir: ${{ needs.detect.outputs.frontend-type == 'react' && 'dist' || 'frontend' }}
+          invalidate: true
+          preview: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.run_id || '' }}
 
   # ===========================================================================
   # Deploy to ECS (Full-Stack Apps)
