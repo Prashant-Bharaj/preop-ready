@@ -1,15 +1,12 @@
 # 🚀 Deploying Your App
 
-## Deployment (two paths — automatic)
+## Deployment (ECS only)
 
-The workflow detects your project and deploys accordingly. **Frontend-only** uses DevOps Docs (no AWS cost); **full-stack** uses AWS ECS.
+The workflow deploys to AWS ECS. Projects need a backend to deploy.
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
-| **Frontend-only** (Vanilla or React, no backend) | No valid `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo-name>/` |
 | **Full-stack** (has backend) | `backend/Dockerfile` exists | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
-
-You don’t need to configure anything: push triggers the right path. Frontend-only apps are published via the official DevOps Docs workflow (same as devops-docs-example) to save AWS budget.
 
 ## Make Deployment Sound Easy (Because It Is!)
 
@@ -66,16 +63,13 @@ I'll let you know when it's ready, or you can check back in a few minutes!
 
 ## When It's Done
 
-- **Frontend-only:** `https://docs.int.bayer.com/-/<repo-name>/`
-- **Full-stack:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
-
 ```
 🎉 YOUR APP IS LIVE!
 
 Visit your app at:
-👉 [use the URL above based on project type]
+👉 https://<repo-name>.vibe.992872368362.cloud.bayer.com
 
-Note: ECS URL needs Bayer network (VPN). DevOps Docs URL may have different access rules.
+Note: You need to be on the Bayer network (VPN) to access it.
 
 Share this link with your team - they can use it right away!
 
@@ -84,8 +78,7 @@ Want to make any changes? Just tell me and we'll update it.
 
 ## How to Know Which URL to Show
 
-- **No backend** (only frontend/) → **URL:** `https://docs.int.bayer.com/-/<repo-name>/`
-- **Has backend** (backend/Dockerfile) → **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+Deployment is ECS only. **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 
 ## If Deployment Fails
 

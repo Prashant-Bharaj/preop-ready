@@ -125,6 +125,7 @@ Create these files:
 ### For Interactive Apps (React)
 Create these files:
 - `frontend/package.json` with React + Vite
+- `frontend/vite.config.js` (or use your preferred Vite config)
 - `frontend/src/App.jsx` - main component
 - Copy `Dockerfile.react` → `frontend/Dockerfile`
 
