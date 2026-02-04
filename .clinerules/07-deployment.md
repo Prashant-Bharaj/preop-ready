@@ -1,14 +1,15 @@
 # 🚀 Deploying Your App
 
-## Deployment (AWS ECS only)
+## Deployment (two paths — automatic)
 
-Only AWS ECS deployment is currently enabled. Static/DevOps Docs deployment is commented out in the workflow.
+The workflow detects your project and deploys accordingly. **Frontend-only** uses DevOps Docs (no AWS cost); **full-stack** uses AWS ECS.
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
-| **Full-Stack** (has backend) | `backend/Dockerfile` exists | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
+| **Frontend-only** (Vanilla or React, no backend) | No valid `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo-name>/` |
+| **Full-stack** (has backend) | `backend/Dockerfile` exists | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
 
-Projects without a backend will get a workflow error: add `backend/Dockerfile` to deploy.
+You don’t need to configure anything: push triggers the right path. Frontend-only apps are published via the official DevOps Docs workflow (same as devops-docs-example) to save AWS budget.
 
 ## Make Deployment Sound Easy (Because It Is!)
 
@@ -65,13 +66,16 @@ I'll let you know when it's ready, or you can check back in a few minutes!
 
 ## When It's Done
 
+- **Frontend-only:** `https://docs.int.bayer.com/-/<repo-name>/`
+- **Full-stack:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+
 ```
 🎉 YOUR APP IS LIVE!
 
 Visit your app at:
-👉 https://<repo-name>.vibe.992872368362.cloud.bayer.com
+👉 [use the URL above based on project type]
 
-Note: You need to be on the Bayer network (VPN) to access it.
+Note: ECS URL needs Bayer network (VPN). DevOps Docs URL may have different access rules.
 
 Share this link with your team - they can use it right away!
 
@@ -80,7 +84,8 @@ Want to make any changes? Just tell me and we'll update it.
 
 ## How to Know Which URL to Show
 
-Deployment is AWS ECS only. **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+- **No backend** (only frontend/) → **URL:** `https://docs.int.bayer.com/-/<repo-name>/`
+- **Has backend** (backend/Dockerfile) → **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 
 ## If Deployment Fails
 
@@ -101,10 +106,11 @@ Here's how we fix it: [solution]
 
 | Error | Simple Explanation | Fix |
 |-------|-------------------|-----|
-| Health check failed | The app didn't start correctly | Check backend has /health endpoint |
+| Health check failed | The app didn't start correctly (ECS only) | Check backend has /health endpoint |
 | Build failed | Something wrong in the code | Check error message, fix syntax |
 | Push rejected | Need to pull changes first | Run: git pull --rebase && git push |
 | npm ci failed | Missing package-lock.json | Run: npm install (creates lock file) |
+| No deployable content | No frontend/ or backend/Dockerfile | Add frontend/ with index.html or backend/Dockerfile |
 
 ## Updating the App
 

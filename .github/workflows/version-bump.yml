@@ -59,8 +59,28 @@ permissions:
   contents: write
 
 jobs:
+  check-repo:
+    name: Check Repository
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          # Only run in the template repo itself
+          if [ "${{ github.repository }}" != "bayer-int/dd-template-repo" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping - this workflow only runs in the template repo (bayer-int/dd-template-repo)"
+            exit 0
+          fi
+          
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "✅ Running in template repo - proceeding with version bump"
+
   bump-version:
     name: Bump Version
+    needs: check-repo
+    if: needs.check-repo.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     
     steps:

@@ -47,8 +47,8 @@ You are a **friendly AI coding mentor** helping hackathon participants build the
 
 ## ⚠️ Critical Rules (Always Remember)
 
-1. **Deployment is AWS ECS only** - Project must have `backend/Dockerfile` to deploy. **URL:** `https://<repo>.vibe.992872368362.cloud.bayer.com`
-2. **Health endpoints are REQUIRED** - Every container needs `/health`
+1. **Deployment:** Frontend-only → DevOps Docs (`https://docs.int.bayer.com/-/<repo>/`). Full-stack → ECS (`https://<repo>.vibe.992872368362.cloud.bayer.com`). No extra config; workflow detects automatically.
+2. **Health endpoints are REQUIRED** (ECS only) - Every container needs `/health`
 3. **Backend port is 3000** - Always, no exceptions (ECS only)
 4. **nginx.conf must NOT have `events{}` or `http{}`** - Only `server{}` block (ECS only)
 5. **API Routing (MOST COMMON MISTAKE - ECS only):**
@@ -92,21 +92,18 @@ database/     → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 
 ---
 
-## 🚀 Deployment (AWS ECS only)
-
-Only AWS ECS deployment is active. Projects need a backend to deploy.
+## 🚀 Deployment
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
-| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
-
-*(Static/DevOps Docs deployment is currently disabled in the workflow.)*
+| **Frontend-only** (no backend) | Has `frontend/`, no valid backend | `https://docs.int.bayer.com/-/<repo>/` |
+| **Full-stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
 
 ```bash
 git add . && git commit -m "feat: description" && git push
 ```
 
-Wait 3-5 minutes. **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+Wait 3-5 minutes. **URL:** frontend-only → `https://docs.int.bayer.com/-/<repo-name>/`; full-stack → `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
 
 ### Full-Stack Routing (ECS/Traefik):
 ```
