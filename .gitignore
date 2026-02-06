@@ -44,3 +44,6 @@ context/
 # Local data folder (for persistent storage testing)
 local-data/
 
+# Chat UI runtime data (secrets, transcripts, cline config)
+.chat/
+
