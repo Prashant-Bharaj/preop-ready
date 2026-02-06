@@ -2,10 +2,13 @@
 
 ## Deployment (ECS only)
 
-The workflow deploys to AWS ECS. Projects need a backend to deploy.
+The workflow deploys to AWS ECS. Projects need at least a `frontend/Dockerfile` or `backend/Dockerfile`.
+
+**Important:** The repository must be whitelisted before it can deploy. If the repo is not whitelisted, deployment will fail with "Unauthorized repository". To whitelist a new repo, add it to `github_allowed_deploy_repos` in the infrastructure repo's `variables.tf` and apply Terraform.
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
+| **Frontend-only** | `frontend/Dockerfile` exists (no backend) | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
 | **Full-stack** (has backend) | `backend/Dockerfile` exists | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
 
 ## Make Deployment Sound Easy (Because It Is!)
@@ -99,7 +102,8 @@ Here's how we fix it: [solution]
 
 | Error | Simple Explanation | Fix |
 |-------|-------------------|-----|
-| Health check failed | The app didn't start correctly (ECS only) | Check backend has /health endpoint |
+| Unauthorized repository | Repo not whitelisted for deployment | Add repo to `github_allowed_deploy_repos` in infrastructure repo's `variables.tf` |
+| Health check failed | The app didn't start correctly (ECS only) | Check frontend/backend has /health endpoint |
 | Build failed | Something wrong in the code | Check error message, fix syntax |
 | Push rejected | Need to pull changes first | Run: git pull --rebase && git push |
 | npm ci failed | Missing package-lock.json | Run: npm install (creates lock file) |

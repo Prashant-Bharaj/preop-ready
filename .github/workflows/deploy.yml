@@ -51,7 +51,7 @@ jobs:
           echo "should-deploy=true" >> $GITHUB_OUTPUT
 
   # ---------------------------------------------------------------------------
-  # Deploy to ECS (full-stack; project must have backend/Dockerfile for success)
+  # Deploy to ECS (frontend-only or full-stack; needs frontend/Dockerfile or backend/Dockerfile)
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy to ECS
