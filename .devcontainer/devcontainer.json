@@ -46,10 +46,6 @@
     }
   },
 
-  "postCreateCommand": "docker build -t chat-ui ./chat && echo '🎉 Welcome to Vibe Hackathon! Your dev environment is ready.'",
-
-  "postStartCommand": "docker rm -f chat-ui 2>/dev/null; docker run -d --name chat-ui -p 8888:8888 -v \"$(pwd):/workspace\" -v /var/run/docker.sock:/var/run/docker.sock chat-ui && git pull --ff-only 2>/dev/null || true",
-
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 
   "portsAttributes": {
