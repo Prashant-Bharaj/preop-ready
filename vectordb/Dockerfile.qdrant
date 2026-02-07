@@ -1,0 +1,25 @@
+# Qdrant - Vector Database
+# High-performance vector search engine
+# Great for production AI/ML applications
+#
+# REST API: http://localhost:6333
+# gRPC API: localhost:6334
+# Python client: qdrant_client.QdrantClient(host="vectordb", port=6333)
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   QDRANT__STORAGE__STORAGE_PATH must point to /data/<subdir> for persistence.
+#
+# To use: Copy this file to vectordb/Dockerfile
+
+FROM qdrant/qdrant:latest
+
+# CRITICAL: Persist data to /data/qdrant (EFS mount point in production)
+# Without this, data is LOST on every deployment!
+ENV QDRANT__STORAGE__STORAGE_PATH=/data/qdrant
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:6333/readyz || exit 1
+
+EXPOSE 6333 6334

@@ -1,0 +1,26 @@
+# ChromaDB - Vector Database
+# Perfect for AI/ML applications, RAG, semantic search
+# Simple API, great for prototypes and hackathons
+#
+# Connection: http://localhost:8000
+# Python client: chromadb.HttpClient(host="vectordb", port=8000)
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   PERSIST_DIRECTORY must point to /data/<subdir> for data to survive deployments.
+#
+# To use: Copy this file to vectordb/Dockerfile
+
+FROM chromadb/chroma:latest
+
+# CRITICAL: Persist data to /data/chroma (EFS mount point in production)
+# Without this, data is LOST on every deployment!
+ENV IS_PERSISTENT=TRUE
+ENV PERSIST_DIRECTORY=/data/chroma
+ENV ANONYMIZED_TELEMETRY=FALSE
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8000/api/v1/heartbeat || exit 1
+
+EXPOSE 8000
