@@ -68,6 +68,7 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 frontend/     → nginx (port 80)
 backend/      → Express/FastAPI (port 3000)
 database/     → PostgreSQL/MySQL (optional)
+vectordb/     → Independent vector DB (optional, dual-DB)
 
 Traefik routing:
   /         → frontend

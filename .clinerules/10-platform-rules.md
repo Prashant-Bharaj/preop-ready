@@ -18,10 +18,15 @@ your-repo/
 │   ├── Dockerfile         ← MUST exist (copy from Dockerfile.node or .python)
 │   └── [your backend code]
 │
-├── database/              ← Optional
+├── database/              ← Optional (relational database)
 │   ├── Dockerfile         ← MUST exist if using database (copy from templates)
 │   └── init/
 │       └── init.sql       ← Database initialization (for SQL databases)
+│
+├── vectordb/              ← Optional (vector database, independent from database/)
+│   ├── Dockerfile         ← MUST exist if using vector DB (copy from templates)
+│   └── init/
+│       └── init.sql       ← Vector DB initialization (for pgvector)
 │
 ├── docker-compose.yml     ← For local development (mounts nginx.local.conf)
 └── .github/
@@ -29,7 +34,7 @@ your-repo/
         └── deploy.yml     ← Triggers deployment
 ```
 
-### Database Templates Available
+### Database Templates Available (`database/`)
 | Template | Use Case |
 |----------|----------|
 | `Dockerfile.postgres` | Standard SQL database (recommended) |
@@ -37,6 +42,17 @@ your-repo/
 | `Dockerfile.pgvector` | PostgreSQL with vector search (AI apps) |
 | `Dockerfile.chroma` | ChromaDB vector database |
 | `Dockerfile.qdrant` | Qdrant vector database |
+
+### Vector Database Templates Available (`vectordb/`)
+Use `vectordb/` when you need a **second, independent** database for vector operations alongside a relational `database/`.
+
+| Template | Use Case |
+|----------|----------|
+| `Dockerfile.pgvector` | PostgreSQL with pgvector (vector extension enabled by default) |
+| `Dockerfile.chroma` | ChromaDB vector database |
+| `Dockerfile.qdrant` | Qdrant vector database |
+
+**Dual-database setup:** `database/Dockerfile.postgres` + `vectordb/Dockerfile.chroma` gives you SQL + vector search as separate services.
 
 ### 💾 Database Data Persistence
 
@@ -52,6 +68,8 @@ your-repo/
 | MySQL | `/data/mysql` |
 | ChromaDB | `/data/chroma` |
 | Qdrant | `/data/qdrant` |
+
+**Vector DB (`vectordb/`)** uses the same paths but on a separate EFS access point (`/projects/{project}/vectordb-data`).
 
 ⚠️ **Init scripts only run once!** Files in `database/init/` are executed on the **first deployment only** (when the database is empty). Subsequent deployments won't re-run them.
 
@@ -416,8 +434,20 @@ services:
     volumes:
       - db-data:/data
 
+  # Optional vector database (independent from database/)
+  # vectordb:
+  #   build: ./vectordb
+  #   environment:
+  #     # For pgvector:
+  #     POSTGRES_DB: vectors
+  #     POSTGRES_USER: vectordb_user
+  #     POSTGRES_PASSWORD: localdev123
+  #   volumes:
+  #     - vectordb-data:/data
+
 volumes:
   db-data:
+  # vectordb-data:
 ```
 
 **⚠️ CRITICAL: The nginx.local.conf volume mount is required!** Without it, local API calls will fail because the production nginx.conf doesn't have proxy_pass.
@@ -469,6 +499,18 @@ Add secrets in GitHub:
 | `DATABASE_PASSWORD` | Auto-generated password |
 | `DATABASE_URL` | Full connection string |
 
+### Auto-Injected Vector Database Credentials
+
+⚠️ **If `vectordb/Dockerfile` exists, these are auto-injected (NO GitHub secret needed):**
+
+| Environment Variable | Description |
+|---------------------|-------------|
+| `VECTORDB_HOST` | Internal hostname (e.g., `myapp-vectordb.vibe.local`) |
+| `VECTORDB_PORT` | Port (5432 for pgvector, 6333 for Qdrant, 8000 for Chroma) |
+| `VECTORDB_NAME` | Database name (pgvector only) |
+| `VECTORDB_USER` | Auto-generated username (pgvector only) |
+| `VECTORDB_PASSWORD` | Auto-generated password (pgvector only) |
+
 ### Code Pattern for Secrets
 
 When migrating apps, support both local env vars AND platform secrets:
@@ -517,6 +559,11 @@ Before deploying, verify ALL of these:
 - [ ] Copied template to `database/Dockerfile`
 - [ ] Backend has `DATABASE_HOST` env var configured
 - [ ] For SQL: `database/init/init.sql` has schema
+
+### Vector Database (if used)
+- [ ] Copied template to `vectordb/Dockerfile`
+- [ ] Backend has `VECTORDB_HOST` env var configured
+- [ ] For pgvector: `vectordb/init/init.sql` has `CREATE EXTENSION vector`
 
 ### 🔒 Security (REQUIRED)
 - [ ] nginx.conf has security headers (`server_tokens off`, X-Frame-Options, etc.)

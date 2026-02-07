@@ -154,6 +154,40 @@ if [[ -d "backend" ]]; then
     done
 fi
 
+# Check vectordb structure (optional, for dual-database setups)
+if [[ -d "vectordb" ]]; then
+    info "Vector database folder detected (dual-database setup)"
+
+    if [[ -f "vectordb/Dockerfile" ]]; then
+        pass "vectordb/Dockerfile exists"
+
+        if grep -q "^FROM " vectordb/Dockerfile; then
+            pass "vectordb/Dockerfile has valid FROM instruction"
+        else
+            fail "vectordb/Dockerfile is invalid" "Add a FROM instruction (copy from vectordb/Dockerfile.chroma, .qdrant, or .pgvector)"
+        fi
+
+        # Check if pgvector and init.sql has CREATE EXTENSION
+        if grep -q "pgvector" vectordb/Dockerfile; then
+            if [[ -f "vectordb/init/init.sql" ]]; then
+                if grep -q "CREATE EXTENSION" vectordb/init/init.sql; then
+                    pass "vectordb/init/init.sql enables vector extension"
+                else
+                    warn "vectordb/init/init.sql should have: CREATE EXTENSION IF NOT EXISTS vector;"
+                fi
+            else
+                warn "vectordb/init/init.sql missing - pgvector needs init script with CREATE EXTENSION"
+            fi
+        fi
+    else
+        fail "vectordb/Dockerfile missing" "Copy Dockerfile.chroma, .qdrant, or .pgvector to vectordb/Dockerfile"
+    fi
+
+    if [[ ! -d "backend" ]]; then
+        warn "vectordb/ exists but no backend/ - backend is needed to connect to the vector database"
+    fi
+fi
+
 # -----------------------------------------------------------------------------
 header "🔧 Configuration Files"
 # -----------------------------------------------------------------------------

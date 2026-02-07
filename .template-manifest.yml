@@ -10,7 +10,7 @@
 #   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
-version: "1.0.21"
+version: "1.1.0"
 template_repo: "bayer-int/dd-template-repo"
 template_branch: "master"
 
@@ -57,7 +57,17 @@ auto_update:
     description: "Qdrant vector database template"
   - path: "database/env.example"
     description: "Database environment example"
-    
+
+  # Vector Database Dockerfile templates
+  - path: "vectordb/Dockerfile.pgvector"
+    description: "pgvector vector database template"
+  - path: "vectordb/Dockerfile.chroma"
+    description: "ChromaDB vector database template"
+  - path: "vectordb/Dockerfile.qdrant"
+    description: "Qdrant vector database template"
+  - path: "vectordb/env.example"
+    description: "Vector database environment example"
+
   # AI instructions - always use latest guidance
   - path: ".cursorrules"
     description: "AI assistant instructions (Cursor)"
@@ -145,6 +155,8 @@ ignore:
   - "backend/middleware/**"     # User's middleware (may include identity etc)
   - "database/Dockerfile"       # User's chosen database Dockerfile
   - "database/init/**"          # User's database init scripts
+  - "vectordb/Dockerfile"       # User's chosen vector database Dockerfile
+  - "vectordb/init/**"          # User's vector database init scripts
   - "docs/PROJECT_STATUS.md"    # User's project status - never overwrite!
   - "context/**"                # User's AI analysis files (gitignored anyway)
   - ".env"
@@ -154,6 +166,15 @@ ignore:
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "1.1.0":
+    date: "2026-02-06"
+    changes:
+      - "Added vectordb/ folder for dual-database support (relational + vector)"
+      - "New templates: vectordb/Dockerfile.chroma, vectordb/Dockerfile.qdrant, vectordb/Dockerfile.pgvector"
+      - "Platform deploy-demo.yml supports independent vectordb service"
+      - "Backend receives VECTORDB_* environment variables when vectordb/ is present"
+      - "Updated clinerules, .cursorrules, copilot-instructions with vectordb documentation"
+
   "1.0.14":
     date: "2026-02-03"
     changes:

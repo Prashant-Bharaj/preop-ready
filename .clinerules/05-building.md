@@ -104,7 +104,7 @@ backend/               ← Server (saves data, APIs)
 ├── Dockerfile.node    ← Template for Node.js
 └── Dockerfile.python  ← Template for Python
 
-database/              ← Data storage (optional)
+database/              ← Data storage (optional, relational)
 ├── Dockerfile         ← Copy from one of the templates below
 ├── Dockerfile.postgres  ← PostgreSQL (recommended)
 ├── Dockerfile.mysql     ← MySQL
@@ -112,6 +112,13 @@ database/              ← Data storage (optional)
 ├── Dockerfile.chroma    ← ChromaDB vector database
 ├── Dockerfile.qdrant    ← Qdrant vector database
 └── init/init.sql        ← Database initialization scripts
+
+vectordb/              ← Vector database (optional, independent from database/)
+├── Dockerfile         ← Copy from one of the templates below
+├── Dockerfile.pgvector  ← PostgreSQL + pgvector (vector extension auto-enabled)
+├── Dockerfile.chroma    ← ChromaDB vector database
+├── Dockerfile.qdrant    ← Qdrant vector database
+└── init/init.sql        ← Vector DB initialization (for pgvector)
 ```
 
 ## Building Frontend
@@ -452,6 +459,43 @@ schema changes:
 
 Want me to add a migration for your change?
 ```
+
+### Adding a Vector Database (Dual-Database Setup)
+
+**User says:** "I need vector search AND a regular database" / "Add embeddings alongside my SQL data"
+
+Use the `vectordb/` folder for a **second, independent** database dedicated to vector operations:
+
+```
+I'll set up a dedicated vector database alongside your existing database:
+- Your relational data stays in database/ (PostgreSQL/MySQL)
+- Vector embeddings go in vectordb/ (Chroma/Qdrant/pgvector)
+- They run as completely separate services
+```
+
+**Decision guide:**
+
+| Scenario | Use |
+|----------|-----|
+| Only need vectors, no relational DB | Put vector DB in `database/` |
+| Need SQL + vectors in same DB | Use `database/Dockerfile.pgvector` |
+| Need SQL + separate vector service | `database/Dockerfile.postgres` + `vectordb/Dockerfile.chroma` |
+| Need two independent Postgres instances | `database/Dockerfile.postgres` + `vectordb/Dockerfile.pgvector` |
+
+**Setup steps:**
+```bash
+# Pick your vector DB:
+cp vectordb/Dockerfile.chroma vectordb/Dockerfile      # Simple, Python-native
+cp vectordb/Dockerfile.qdrant vectordb/Dockerfile      # High-performance
+cp vectordb/Dockerfile.pgvector vectordb/Dockerfile    # SQL-based vectors
+```
+
+**Backend receives these env vars automatically:**
+- `VECTORDB_HOST` — hostname of the vector DB service
+- `VECTORDB_PORT` — port (8000 for Chroma, 6333 for Qdrant, 5432 for pgvector)
+- `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD` — credentials (pgvector only)
+
+**Update docker-compose.yml** with the vectordb service for local dev.
 
 ### Adding OpenAI / AI Features
 
