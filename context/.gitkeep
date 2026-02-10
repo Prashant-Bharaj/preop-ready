@@ -1,0 +1,10 @@
+# This folder is for files you want the AI to analyze
+# 
+# Examples:
+#   - Requirements documents
+#   - Example data files (CSV, Excel)
+#   - Design mockups
+#   - Reference code
+#
+# This folder is GITIGNORED - files here are never committed.
+# See .clinerules/16-ai-file-input.md for details.

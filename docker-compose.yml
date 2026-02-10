@@ -29,7 +29,8 @@ services:
       - app-network
 
   # --------------------------------------------------------------------------
-  # BACKEND
+  # BACKEND (REMOVE THIS ENTIRE BLOCK FOR FRONTEND-ONLY APPS)
+  # Also remove "depends_on: backend" from frontend service above
   # --------------------------------------------------------------------------
   backend:
     build: ./backend
@@ -48,7 +49,7 @@ services:
       - app-network
 
   # --------------------------------------------------------------------------
-  # DATABASE (MySQL - default)
+  # DATABASE (REMOVE THIS ENTIRE BLOCK FOR FRONTEND-ONLY APPS)
   # --------------------------------------------------------------------------
   # AI will switch to PostgreSQL if needed (replace entire db block)
   db:
