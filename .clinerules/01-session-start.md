@@ -39,14 +39,20 @@
 
 ## 3️⃣ Read Project Status
 
-**Check if this is a returning user:**
+**Check if this is a returning user or a brand new project:**
 
 ```bash
 cat docs/PROJECT_STATUS.md 2>/dev/null
 ```
 
-- If status shows work done → This is a returning user
-- If status is fresh/empty → This is a new user
+**This is a NEW user if ALL of these are true:**
+- Frontend, Backend, Database status are all "Not started"
+- Completed Tasks says "No tasks completed yet"
+- Session History says "Not yet started"
+
+**This is a RETURNING user if ANY field has been changed** from the defaults above (e.g., a stack is selected, tasks are listed, session history has entries).
+
+A PROJECT_STATUS.md with default template content = NEW user. Don't be fooled by the file existing — check the actual values.
 
 ---
 
