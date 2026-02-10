@@ -39,12 +39,9 @@ your-repo/
 |----------|----------|
 | `Dockerfile.postgres` | Standard SQL database (recommended) |
 | `Dockerfile.mysql` | MySQL database |
-| `Dockerfile.pgvector` | PostgreSQL with vector search (AI apps) |
-| `Dockerfile.chroma` | ChromaDB vector database |
-| `Dockerfile.qdrant` | Qdrant vector database |
 
 ### Vector Database Templates Available (`vectordb/`)
-Use `vectordb/` when you need a **second, independent** database for vector operations alongside a relational `database/`.
+Use `vectordb/` for **all vector database needs** — whether standalone or alongside a relational `database/`.
 
 | Template | Use Case |
 |----------|----------|
@@ -56,22 +53,20 @@ Use `vectordb/` when you need a **second, independent** database for vector oper
 
 ### 💾 Database Data Persistence
 
-**Data is NOT erased between deployments!** The platform uses AWS EFS (Elastic File System) for persistent storage.
+**Data is NOT erased between deployments!** The platform mounts EFS at `/data` in each database container. All templates are pre-configured to store data there.
 
-- EFS is mounted to `/data` inside the database container
-- All database templates are pre-configured to store data in `/data`
-- Data survives container restarts, redeployments, and scaling
+| Service | Data Directory | EFS Access Point |
+|---------|---------------|-----------------|
+| PostgreSQL (`database/`) | `/data/postgres` | `/projects/{project}/db-data` |
+| MySQL (`database/`) | `/data/mysql` | `/projects/{project}/db-data` |
+| pgvector (`vectordb/`) | `/data/postgres` | `/projects/{project}/vectordb-data` |
+| ChromaDB (`vectordb/`) | `/data/chroma` | `/projects/{project}/vectordb-data` |
+| Qdrant (`vectordb/`) | `/data/qdrant` | `/projects/{project}/vectordb-data` |
+| App file uploads | `/data/uploads` | (backend EFS) |
 
-| Database | Data Directory |
-|----------|---------------|
-| PostgreSQL | `/data/postgres` |
-| MySQL | `/data/mysql` |
-| ChromaDB | `/data/chroma` |
-| Qdrant | `/data/qdrant` |
+⚠️ **Init scripts only run once!** Files in `database/init/` and `vectordb/init/` execute on **first deployment only**.
 
-**Vector DB (`vectordb/`)** uses the same paths but on a separate EFS access point (`/projects/{project}/vectordb-data`).
-
-⚠️ **Init scripts only run once!** Files in `database/init/` are executed on the **first deployment only** (when the database is empty). Subsequent deployments won't re-run them.
+**For detailed Dockerfile examples and critical persistence configuration (CMD flags, PGDATA), see `05-building.md` § Database Persistence Requirements.**
 
 ---
 
@@ -256,6 +251,15 @@ In **production (ECS)**, `proxy_pass http://backend:3000/` **WON'T WORK** becaus
 - Traefik handles all routing to the backend
 
 **The production nginx.conf should ONLY serve static files.** Keep proxy_pass in nginx.local.conf only.
+
+### ⚠️ Frontend-Only Apps (No Backend)
+
+For **frontend-only** projects:
+- **Production `nginx.conf`**: Already correct — no proxy_pass, serves static files only ✅
+- **Local `nginx.local.conf`**: Must NOT have `proxy_pass` blocks. Copy `nginx.conf` as `nginx.local.conf` (they're identical for frontend-only).
+- **`docker-compose.yml`**: Must NOT reference a `backend` service. Remove `depends_on: backend` from the frontend service, and delete the backend/db service blocks entirely.
+
+If you leave proxy_pass blocks pointing to `http://backend:3000/` with no backend service, nginx will fail to resolve the hostname and won't start.
 
 ---
 
@@ -481,8 +485,12 @@ Add secrets in GitHub:
 | GitHub Secret | Available in Code As | Common Use |
 |---------------|---------------------|------------|
 | `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI API key |
+| `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Custom database connection string |
 | `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
 | `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
+| `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing key |
+| `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook validation secret |
+| `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Data encryption key |
 | `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret (e.g., password) |
 | `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret (e.g., username) |
 | `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret (e.g., admin email) |
@@ -565,7 +573,7 @@ Before deploying, verify ALL of these:
 - [ ] Backend has `VECTORDB_HOST` env var configured
 - [ ] For pgvector: `vectordb/init/init.sql` has `CREATE EXTENSION vector`
 
-### 🔒 Security (REQUIRED)
+### 🔒 Security (REQUIRED) — See `18-security.md` for full details
 - [ ] nginx.conf has security headers (`server_tokens off`, X-Frame-Options, etc.)
 - [ ] Dockerfiles run as non-root user (`USER appuser`)
 - [ ] All user inputs validated server-side

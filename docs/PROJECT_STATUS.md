@@ -6,10 +6,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Project Idea** | _Not yet defined_ |
-| **User Level** | _Not yet determined_ |
-| **Created** | _Auto-filled on first update_ |
-| **Last Updated** | _Auto-filled on each update_ |
+| **Project Idea** | _Awaiting user input_ |
+| **User Level** | beginner |
+| **Created** | 2026-02-07 |
+| **Last Updated** | 2026-02-07 12:40 |
 
 ## 🏗️ Current Stack
 
@@ -24,7 +24,7 @@
 | Field | Value |
 |-------|-------|
 | **Status** | ⬜ Not deployed |
-| **URL** | _Will be: https://REPO-NAME.vibe.demo.bfrg.de_ |
+| **URL** | _Will be: https://dd-template-repository.vibe.992872368362.cloud.bayer.com_ |
 | **Last Deploy** | - |
 
 ---
@@ -33,39 +33,17 @@
 
 _No tasks completed yet._
 
-<!-- Example format:
-- [x] Created homepage with navigation (2026-01-19)
-- [x] Added voting form component (2026-01-19)
-- [x] Backend API endpoint /api/votes (2026-01-19)
--->
-
 ## 🔄 Currently In Progress
 
 _Nothing in progress._
-
-<!-- Example format:
-- [ ] Implementing user authentication
-- [ ] Adding results visualization
--->
 
 ## 📋 Planned / Discussed
 
 _No planned features yet._
 
-<!-- Example format:
-- [ ] Add AI-powered suggestions
-- [ ] Mobile responsive design
-- [ ] Export data feature
--->
-
 ## ⚠️ Known Issues
 
 _No known issues._
-
-<!-- Example format:
-- ⚠️ Voting form doesn't validate empty submissions
-- ⚠️ Mobile layout needs adjustment
--->
 
 ---
 

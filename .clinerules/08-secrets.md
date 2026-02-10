@@ -62,17 +62,7 @@ That's it! Your app can now use OpenAI securely.
 
 ⚠️ **CRITICAL: The `APP_` prefix is removed when secrets are injected into the container!**
 
-Tell them which secrets are supported:
-
-| GitHub Secret Name | Environment Variable in Container | Common Use |
-|--------------------|-----------------------------------|------------|
-| `APP_OPENAI_KEY` | `OPENAI_KEY` | OpenAI/ChatGPT API key |
-| `APP_API_KEY` | `API_KEY` | Generic API key |
-| `APP_API_SECRET` | `API_SECRET` | API secret/password |
-| `APP_DATABASE_URL` | `DATABASE_URL` | Custom database connection |
-| `APP_SECRET_1` | `SECRET_1` | Custom secret #1 (e.g., password) |
-| `APP_SECRET_2` | `SECRET_2` | Custom secret #2 (e.g., username) |
-| `APP_SECRET_3` | `SECRET_3` | Custom secret #3 (e.g., admin email) |
+**See `10-platform-rules.md` § Environment Variables for the full secrets table** (GitHub secret name → env var in container → common uses).
 
 ### Common Pattern: External API with Username/Password
 
@@ -141,17 +131,9 @@ const credentialsConfigured = !!(username && password);
 
 ## Auto-Injected Database Credentials
 
-⚠️ **If your project has a `database/Dockerfile`, the platform automatically injects these:**
+⚠️ **Database and vector database credentials are auto-injected — NO GitHub secrets needed!**
 
-| Environment Variable | Description |
-|---------------------|-------------|
-| `DATABASE_HOST` | Internal hostname (e.g., `myapp-db.vibe.local`) |
-| `DATABASE_NAME` | Database name (derived from repo name) |
-| `DATABASE_USER` | Auto-generated username |
-| `DATABASE_PASSWORD` | Auto-generated password |
-| `DATABASE_URL` | Full connection string |
-
-**You do NOT need to add database credentials as GitHub secrets!**
+**See `10-platform-rules.md` § Environment Variables for the full list of auto-injected `DATABASE_*` and `VECTORDB_*` environment variables.**
 
 Your database config should support both:
 ```javascript

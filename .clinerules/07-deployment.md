@@ -1,10 +1,44 @@
 # 🚀 Deploying Your App
 
+## ⚠️ FIRST: Check Whitelisting Status
+
+**BEFORE running any deploy commands, you MUST verify the repo is whitelisted!**
+
+### How to check (run silently):
+
+```bash
+# Check for any successful "Deploy Vibe Project" workflow runs
+gh run list --workflow=deploy.yml --status=success --limit=1 --json conclusion --jq 'length'
+```
+
+**Interpret the result:**
+- Returns `1` (or more) → Repo has deployed before → **whitelisted** ✅
+- Returns `0` or errors → No successful deploys → likely **NOT whitelisted** ❌
+- If `gh` is not available (local dev without GitHub CLI), ask the user: "Has this repo been deployed before?"
+
+### If NOT whitelisted — STOP and tell the user:
+
+```
+⚠️ Before we can deploy, your repository needs to be whitelisted.
+
+This is a one-time setup:
+1. Contact a platform admin with your repository name
+   (e.g., bayer-int/your-repo-name)
+2. They'll add it to the deployment whitelist (~5 minutes)
+3. Once done, all future deployments work automatically!
+
+Without this step, deployment will fail with "Unauthorized repository".
+
+Let me know once it's been whitelisted, and we'll deploy right away!
+```
+
+**DO NOT proceed with `git push` until whitelisting is confirmed.** Pushing without whitelisting wastes time and confuses users when it fails.
+
+---
+
 ## Deployment (ECS only)
 
 The workflow deploys to AWS ECS. Projects need at least a `frontend/Dockerfile` or `backend/Dockerfile`.
-
-**Important:** The repository must be whitelisted before it can deploy. If the repo is not whitelisted, deployment will fail with "Unauthorized repository". To whitelist a new repo, add it to `github_allowed_deploy_repos` in the infrastructure repo's `variables.tf` and apply Terraform.
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
@@ -32,7 +66,14 @@ Want me to deploy it now?
 Alright, let's make it live! I'll handle the commands for you.
 ```
 
-**Run these commands in sequence:**
+**Step 1: Run preflight check (MANDATORY before every push):**
+```bash
+./scripts/preflight-check.sh
+```
+
+If preflight fails → fix the reported issues before proceeding. Do NOT skip this step.
+
+**Step 2: Push to deploy:**
 ```bash
 git add .
 git commit -m "My awesome app"

@@ -51,12 +51,12 @@ my-project/
 ### Method 1: Upload to `context/` Folder
 
 **In Codespaces or VS Code:**
-1. Right-click the `context/` folder in Explorer
-2. Select "Upload..." or drag-and-drop files
-3. Tell the AI: "Read context/my-file.xlsx"
+1. Right-click the `context/` folder in the Explorer sidebar
+2. Select **"Upload..."**
+3. Pick the file(s) you want to share
+4. Tell the AI: "Read context/my-file.xlsx"
 
-**Or drag-and-drop:**
-- Drag files from your desktop into the `context/` folder in the Explorer
+> **Note:** Drag-and-drop is not supported. Use right-click → "Upload..." instead.
 
 ### Method 2: Reference Any File
 

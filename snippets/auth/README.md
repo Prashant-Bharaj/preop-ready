@@ -4,13 +4,10 @@
 
 ## Available Snippets
 
-| File | Description | Status |
-|------|-------------|--------|
-| `user-identity.js` | Get logged-in user from OIDC headers (Node.js) | ✅ Ready |
-| `user-identity.py` | Get logged-in user from OIDC headers (Python) | ✅ Ready |
-| `bayer-sso.js` | Bayer SSO integration | 🔜 TODO |
-| `jwt-handler.js` | JWT token management | 🔜 TODO |
-| `basic-auth.js` | Simple username/password | 🔜 TODO |
+| File | Description |
+|------|-------------|
+| `user-identity.js` | Get logged-in user from OIDC headers (Node.js) |
+| `user-identity.py` | Get logged-in user from OIDC headers (Python) |
 
 ## User Identity (Recommended for Hackathons)
 

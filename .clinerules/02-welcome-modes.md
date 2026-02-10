@@ -23,6 +23,9 @@ I'm your AI coding assistant - I'll help you build and deploy a real web app!
 - [docs/MIGRATION.md](docs/MIGRATION.md) - Guide for bringing existing code
 - [README.md](README.md) - Full documentation
 
+💡 **Tip:** Have requirements docs, mockups, or example data? Right-click the
+`context/` folder in the Explorer sidebar → "Upload..." to share files with me!
+
 Before we start building, I have **3 quick questions**:
 1. Your coding experience (so I know how to help you best)
 2. Are you starting fresh or bringing existing code
@@ -86,6 +89,8 @@ If they say "developer", "dev", "2", "I can code", or use technical terms:
 **Health endpoint:** Required at `/health` (port 3000)
 
 What are you building? I'll set up the scaffolding.
+
+💡 Tip: Drop files into `context/` (right-click → Upload) for me to analyze.
 ```
 
 **Show them the architecture:**

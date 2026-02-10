@@ -97,6 +97,7 @@ git add . && git commit -m "feat: description" && git push
 - **Database:** Copy one of these to `database/Dockerfile`:
   - `Dockerfile.postgres` - Standard SQL database (recommended)
   - `Dockerfile.mysql` - MySQL database
+- **Vector DB:** Copy one of these to `vectordb/Dockerfile`:
   - `Dockerfile.pgvector` - PostgreSQL + vector search (AI apps)
   - `Dockerfile.chroma` - ChromaDB vector database
   - `Dockerfile.qdrant` - Qdrant vector database

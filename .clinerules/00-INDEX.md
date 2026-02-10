@@ -145,6 +145,11 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
    - Non-root container user in Dockerfiles
    - Validate ALL user inputs server-side
    - Use parameterized queries (NO string concatenation for SQL!)
+9. **Sharing files WITH the AI** - Users right-click `context/` folder → "Upload..." to share files for analysis. See `16-ai-file-input.md`
+10. **All persistent data must use `/data`** - Databases, vector DBs, and file uploads all store in `/data/<subdir>`. Anything outside `/data` is lost on redeployment. See `10-platform-rules.md` § Persistence and `14-file-handling.md`
+11. **Check whitelisting before deploy** - Repo must be whitelisted first. See `07-deployment.md`
+12. **Run preflight check before every push** - Always run `./scripts/preflight-check.sh` before `git push`. It validates Dockerfiles, nginx config, and health endpoints. Fix all issues before pushing. See `07-deployment.md`
+13. **Frontend-only apps need cleanup** - Remove backend/db from docker-compose.yml and proxy from nginx.local.conf. See `05-building.md`
 
 ---
 
@@ -178,9 +183,6 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 
 ## 📋 Checklist Before Deployment
 
-- [ ] `frontend/Dockerfile` exists
-- [ ] `frontend/nginx.conf` exists (with `/health`)
-- [ ] `backend/Dockerfile` exists (if backend)
-- [ ] Backend has `/health` endpoint on port 3000
 - [ ] Tested locally with `docker-compose up --build`
 - [ ] `docs/PROJECT_STATUS.md` updated
+- [ ] `./scripts/preflight-check.sh` passes (validates Dockerfiles, nginx, health endpoints)

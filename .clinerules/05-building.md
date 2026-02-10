@@ -2,44 +2,14 @@
 
 ---
 
-## 🚨🚨🚨 CRITICAL: API ROUTING RULES (READ THIS FIRST!) 🚨🚨🚨
+## 🚨 CRITICAL: API Routing Rules
 
-**BEFORE writing ANY backend code, you MUST understand this:**
-
-### The Rule:
-```
-Frontend calls:  fetch('/api/users')     ← WITH /api prefix
-                        ↓
-              Traefik/nginx strips /api
-                        ↓
-Backend receives:  GET /users            ← WITHOUT /api prefix
-```
-
-### Backend Routes - NEVER include `/api`:
-```javascript
-// ✅ CORRECT - Backend routes WITHOUT /api
-app.get('/users', (req, res) => { ... });      // Called via /api/users
-app.get('/health', (req, res) => { ... });     // Called via /api/health  
-app.post('/data', (req, res) => { ... });      // Called via /api/data
-
-// ❌ WRONG - NEVER do this!
-app.get('/api/users', (req, res) => { ... });  // Would need /api/api/users!
-```
-
-### Frontend Calls - ALWAYS include `/api`:
-```javascript
-// ✅ CORRECT - Frontend calls WITH /api
-fetch('/api/users')
-fetch('/api/data', { method: 'POST', body: JSON.stringify(data) })
-
-// ❌ WRONG - Don't call backend directly
-fetch('http://localhost:3000/users')
-```
-
-### Why?
-- **Locally**: nginx proxies `/api/*` to backend and strips `/api`
-- **Production**: Traefik routes `/api/*` to backend and strips `/api`
-- If you include `/api` in backend routes, nothing works!
+> **Frontend calls `/api/*` → Traefik/nginx strips `/api` → Backend receives `/*`**
+>
+> - Backend routes: **NO** `/api` prefix (e.g., `app.get('/users', ...)`)
+> - Frontend calls: **WITH** `/api` prefix (e.g., `fetch('/api/users')`)
+>
+> **Full details, examples, and common mistakes: see `10-platform-rules.md` § API Routing.**
 
 ---
 
@@ -65,27 +35,7 @@ Would you like me to start it so you can see it?
 docker-compose up --build
 ```
 
-Then tell them the correct URL **(see `15-urls.md` for detection)**:
-
-**For Codespaces users:**
-```
-🚀 Starting your app... (this takes about 30 seconds the first time)
-
-When you see "ready" messages, open this link:
-👉 https://{CODESPACE_NAME}-8080.app.github.dev
-
-Let me know when you've seen it, or if anything looks wrong!
-```
-
-**For local users:**
-```
-🚀 Starting your app... (this takes about 30 seconds the first time)
-
-When you see "ready" messages, open this link:
-👉 http://localhost:8080
-
-Let me know when you've seen it, or if anything looks wrong!
-```
+Then **show the correct URL based on environment** (see `15-urls.md` for detection and formats). Tell them the app takes ~30 seconds the first time.
 
 ## Project Structure (For Your Reference)
 
@@ -105,12 +55,9 @@ backend/               ← Server (saves data, APIs)
 └── Dockerfile.python  ← Template for Python
 
 database/              ← Data storage (optional, relational)
-├── Dockerfile         ← Copy from one of the templates below
+├── Dockerfile         ← Copy from Dockerfile.postgres or .mysql
 ├── Dockerfile.postgres  ← PostgreSQL (recommended)
 ├── Dockerfile.mysql     ← MySQL
-├── Dockerfile.pgvector  ← PostgreSQL + vector search (AI apps)
-├── Dockerfile.chroma    ← ChromaDB vector database
-├── Dockerfile.qdrant    ← Qdrant vector database
 └── init/init.sql        ← Database initialization scripts
 
 vectordb/              ← Vector database (optional, independent from database/)
@@ -135,6 +82,42 @@ Create these files:
 - `frontend/vite.config.js` (or use your preferred Vite config)
 - `frontend/src/App.jsx` - main component
 - Copy `Dockerfile.react` → `frontend/Dockerfile`
+
+## ⚠️ Frontend-Only Apps — CRITICAL CLEANUP
+
+**If building a frontend-only app (NO backend), you MUST clean up the template files:**
+
+### 1. docker-compose.yml — REMOVE backend and db services
+
+Use this minimal version for frontend-only apps:
+
+```yaml
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+```
+
+**Delete:** the `backend`, `db` services, `depends_on`, `networks`, and `volumes` blocks.
+
+### 2. nginx.local.conf — REMOVE proxy blocks
+
+For frontend-only apps, `nginx.local.conf` should be **identical to `nginx.conf`** (no proxy_pass needed). Either:
+- Copy `nginx.conf` as `nginx.local.conf`: `cp frontend/nginx.conf frontend/nginx.local.conf`
+- Or remove the `/api/` and `/socket.io/` proxy blocks from `nginx.local.conf`
+
+**If you leave proxy_pass blocks pointing to `backend:3000` and there's no backend service, nginx will fail to start!**
+
+### 3. Production nginx.conf — Already correct
+
+The production `nginx.conf` has no proxy blocks, so it works for frontend-only apps as-is. No changes needed.
+
+---
 
 ## Building Backend (Only If Needed)
 
@@ -310,17 +293,16 @@ Your data will persist even when the app restarts!
 
 | Use Case | Template | Notes |
 |----------|----------|-------|
-| Most web apps | `Dockerfile.postgres` | Recommended default |
-| Familiar with MySQL | `Dockerfile.mysql` | Traditional choice |
-| AI app with embeddings | `Dockerfile.pgvector` | PostgreSQL + vector search |
-| Simple vector search | `Dockerfile.chroma` | Easy to use, Python-native |
-| High-performance vectors | `Dockerfile.qdrant` | Production-grade vector DB |
+| Most web apps | `database/Dockerfile.postgres` | Recommended default |
+| Familiar with MySQL | `database/Dockerfile.mysql` | Traditional choice |
+
+For **vector databases** (AI/embeddings), use the `vectordb/` folder instead — see "Adding a Vector Database" below.
 
 **Setup steps:**
 ```bash
 # Pick one:
-cp database/Dockerfile.postgres database/Dockerfile    # SQL database
-cp database/Dockerfile.chroma database/Dockerfile      # Vector database for AI
+cp database/Dockerfile.postgres database/Dockerfile    # PostgreSQL (recommended)
+cp database/Dockerfile.mysql database/Dockerfile       # MySQL
 ```
 
 ### ⚠️ CRITICAL: Database Persistence Requirements
@@ -477,8 +459,7 @@ I'll set up a dedicated vector database alongside your existing database:
 
 | Scenario | Use |
 |----------|-----|
-| Only need vectors, no relational DB | Put vector DB in `database/` |
-| Need SQL + vectors in same DB | Use `database/Dockerfile.pgvector` |
+| Only need vectors, no relational DB | Use `vectordb/` folder (no `database/` needed) |
 | Need SQL + separate vector service | `database/Dockerfile.postgres` + `vectordb/Dockerfile.chroma` |
 | Need two independent Postgres instances | `database/Dockerfile.postgres` + `vectordb/Dockerfile.pgvector` |
 

@@ -1,6 +1,21 @@
 # 🔄 Project Setup Check
 
-## Quick Check After Welcome
+## ⚠️ Skip Conditions (check BEFORE asking)
+
+**DO NOT ask the fresh/migrated question if ANY of these are true:**
+
+- `docs/PROJECT_STATUS.md` has stack info (Frontend or Backend status is not "Not started")
+- `frontend/Dockerfile` or `backend/Dockerfile` contains a valid `FROM` instruction (i.e., is a real Dockerfile, not just comments)
+- `frontend/src/` or `frontend/index.html` contains user code
+- This is a returning session (user has previous session history)
+
+**If any condition is true** → this is a returning user or a project already in progress. Skip this step entirely and continue where they left off (read PROJECT_STATUS.md for context).
+
+**Only ask for brand new projects** with empty/default PROJECT_STATUS.md and no existing code.
+
+---
+
+## Quick Check After Welcome (new projects only)
 
 **After detecting their experience level, ask this simple question:**
 

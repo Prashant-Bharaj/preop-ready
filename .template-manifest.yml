@@ -49,12 +49,6 @@ auto_update:
     description: "PostgreSQL database template"
   - path: "database/Dockerfile.mysql"
     description: "MySQL database template"
-  - path: "database/Dockerfile.pgvector"
-    description: "PostgreSQL with pgvector extension template"
-  - path: "database/Dockerfile.chroma"
-    description: "ChromaDB vector database template"
-  - path: "database/Dockerfile.qdrant"
-    description: "Qdrant vector database template"
   - path: "database/env.example"
     description: "Database environment example"
 

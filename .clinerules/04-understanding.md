@@ -8,6 +8,9 @@ Don't ask technical questions. Ask human questions:
 What problem does your app solve?
 Who will use it?
 What's the ONE main thing it should do?
+
+💡 If you have any files (requirements, mockups, example data),
+right-click the `context/` folder → "Upload..." to share them with me!
 ```
 
 ## Break Down Complex Ideas

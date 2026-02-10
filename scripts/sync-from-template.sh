@@ -164,9 +164,6 @@ fi
 mkdir -p database
 git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.postgres 2>/dev/null || true
 git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.mysql 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.pgvector 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.chroma 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.qdrant 2>/dev/null || true
 
 # AI instructions
 git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .cursorrules 2>/dev/null || true

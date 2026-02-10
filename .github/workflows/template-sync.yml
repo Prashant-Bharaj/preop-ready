@@ -207,9 +207,6 @@ jobs:
           mkdir -p database
           fetch_file "database/Dockerfile.postgres" || true
           fetch_file "database/Dockerfile.mysql" || true
-          fetch_file "database/Dockerfile.pgvector" || true
-          fetch_file "database/Dockerfile.chroma" || true
-          fetch_file "database/Dockerfile.qdrant" || true
           
           echo ""
           echo "📁 Syncing AI instructions..."

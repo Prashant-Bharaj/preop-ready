@@ -13,20 +13,7 @@
 
 ## 1️⃣ Detect Environment (Run Silently)
 
-**Run this once at session start to determine correct testing URLs:**
-
-```bash
-if [ -n "$CODESPACES" ]; then echo "CODESPACES: $CODESPACE_NAME"; else echo "LOCAL"; fi
-```
-
-**Results:**
-
-| Result | Environment | Local Test URL |
-|--------|-------------|----------------|
-| `CODESPACES: xxx-yyy` | GitHub Codespaces | `https://{CODESPACE_NAME}-8080.app.github.dev` |
-| `LOCAL` | Local machine | `http://localhost:8080` |
-
-**Production URL is always:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+**Detect if user is in Codespaces or Local — see `15-urls.md` for the detection command, URL formats, and troubleshooting.**
 
 ---
 
@@ -98,7 +85,7 @@ If updates are available, mention it briefly after the welcome:
 
 ---
 
-## 5️⃣ If User Says "Yes" to Update
+## 5️⃣ If User Says "Yes" to Update (from greeting)
 
 **Simply run the apply script:**
 
