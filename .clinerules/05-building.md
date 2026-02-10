@@ -13,6 +13,20 @@
 
 ---
 
+## ⚠️ FIRST: Configure docker-compose.yml for Your Architecture
+
+**BEFORE creating any code files, update `docker-compose.yml` to match the chosen stack:**
+
+| Architecture | Action |
+|-------------|--------|
+| **Frontend-only** (no backend) | Remove `backend`, `db` services, `depends_on`, `networks`, `volumes`. Keep only the `frontend` service. See "Frontend-Only Apps" section below. |
+| **Frontend + Backend** (no database) | Remove `db` service and its `depends_on`. Keep `frontend` and `backend`. |
+| **Full-stack** (frontend + backend + database) | Keep all services. Switch MySQL/PostgreSQL as needed. |
+
+**Do this FIRST** — if you run `docker-compose up` with services that reference missing Dockerfiles, the build will fail.
+
+---
+
 ## Always Start with Something Visual
 
 Users get excited when they SEE something. Build the frontend first!

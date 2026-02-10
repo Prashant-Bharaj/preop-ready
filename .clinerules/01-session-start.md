@@ -45,14 +45,11 @@
 cat docs/PROJECT_STATUS.md 2>/dev/null
 ```
 
-**This is a NEW user if ALL of these are true:**
-- Frontend, Backend, Database status are all "Not started"
-- Completed Tasks says "No tasks completed yet"
-- Session History says "Not yet started"
+**Simple check — look for the default Project Idea value:**
+- If Project Idea is `_Awaiting user input_` → **NEW user** (use welcome from `02-welcome-modes.md`)
+- If Project Idea is anything else → **RETURNING user** (use "Welcome back" from below)
 
-**This is a RETURNING user if ANY field has been changed** from the defaults above (e.g., a stack is selected, tasks are listed, session history has entries).
-
-A PROJECT_STATUS.md with default template content = NEW user. Don't be fooled by the file existing — check the actual values.
+**DO NOT say "Welcome back" to new users.** A fresh PROJECT_STATUS.md with default values = NEW user, even though the file exists.
 
 ---
 
