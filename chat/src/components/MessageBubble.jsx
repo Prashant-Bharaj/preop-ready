@@ -1,179 +1,198 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { CopyIcon, CheckIcon } from './Icon.jsx';
+import { timeAgo } from '../lib/time.js';
 
-const CODE_FENCE_RE = /```[\s\S]*?```/g;
-const DIFF_LINE_RE = /^(\+\+\+|---|@@).*$/gm;
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
 
-function containsTechnicalContent(text) {
-  CODE_FENCE_RE.lastIndex = 0;
-  DIFF_LINE_RE.lastIndex = 0;
-  return CODE_FENCE_RE.test(text) || DIFF_LINE_RE.test(text);
-}
-
-function splitContent(text) {
-  const segments = [];
-  let lastIdx = 0;
-
-  for (const match of text.matchAll(/```[\s\S]*?```/g)) {
-    if (match.index > lastIdx) {
-      segments.push({ type: 'text', content: text.slice(lastIdx, match.index) });
-    }
-    segments.push({ type: 'code', content: match[0] });
-    lastIdx = match.index + match[0].length;
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
-  if (lastIdx < text.length) {
-    const remaining = text.slice(lastIdx);
-    if (/^(\+\+\+|---|@@)/m.test(remaining)) {
-      const lines = remaining.split('\n');
-      let normalBuf = [];
-      let diffBuf = [];
-      let inDiff = false;
-
-      for (const line of lines) {
-        const isDiffLine = /^(\+\+\+|---|@@|\+[^+]|-[^-])/.test(line);
-        if (isDiffLine) {
-          if (!inDiff && normalBuf.length) {
-            segments.push({ type: 'text', content: normalBuf.join('\n') });
-            normalBuf = [];
-          }
-          inDiff = true;
-          diffBuf.push(line);
-        } else {
-          if (inDiff && diffBuf.length) {
-            segments.push({ type: 'code', content: diffBuf.join('\n') });
-            diffBuf = [];
-          }
-          inDiff = false;
-          normalBuf.push(line);
-        }
-      }
-      if (diffBuf.length) segments.push({ type: 'code', content: diffBuf.join('\n') });
-      if (normalBuf.length) segments.push({ type: 'text', content: normalBuf.join('\n') });
-    } else {
-      segments.push({ type: 'text', content: remaining });
-    }
-  }
-
-  return segments;
-}
-
-function TechnicalBlock({ content, label }) {
-  const [expanded, setExpanded] = useState(false);
   return (
-    <details className="technical-block" open={expanded} onToggle={(e) => setExpanded(e.target.open)}>
-      <summary>{label || 'Technical output (expand)'}</summary>
-      <pre>{content}</pre>
-    </details>
+    <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} aria-label="Copy code">
+      {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
   );
 }
 
-function AssistantText({ text }) {
-  if (!text?.trim()) return null;
+function CodeBlock({ children }) {
+  const codeRef = useRef(null);
+  const text = String(children?.props?.children || '').replace(/\n$/, '');
+  const lang = (children?.props?.className || '').replace('language-', '');
+  const isLong = text.split('\n').length > 8;
 
-  if (containsTechnicalContent(text)) {
-    const segments = splitContent(text);
+  useEffect(() => {
+    if (codeRef.current && window.hljs) {
+      window.hljs.highlightElement(codeRef.current);
+    }
+  }, [text]);
+
+  if (isLong) {
     return (
-      <div className="bubble bubble-assistant">
-        <div className="bubble-content">
-          {segments.map((seg, i) =>
-            seg.type === 'code'
-              ? <TechnicalBlock key={i} content={seg.content} />
-              : <span key={i}>{seg.content}</span>
-          )}
-        </div>
+      <div className="code-block-wrapper">
+        <CopyButton text={text} />
+        <details className="technical-block">
+          <summary>{lang || 'Code'} ({text.split('\n').length} lines — click to expand)</summary>
+          <pre>
+            <code ref={codeRef} className={lang ? `language-${lang}` : ''}>
+              {text}
+            </code>
+          </pre>
+        </details>
       </div>
     );
   }
 
   return (
-    <div className="bubble bubble-assistant">
-      <div className="bubble-content">{text}</div>
+    <div className="code-block-wrapper">
+      <CopyButton text={text} />
+      <pre className="code-small">
+        <code ref={codeRef} className={lang ? `language-${lang}` : ''}>
+          {text}
+        </code>
+      </pre>
     </div>
   );
 }
 
+const markdownComponents = {
+  pre({ children }) {
+    return <CodeBlock>{children}</CodeBlock>;
+  },
+};
+
+function MarkdownText({ text }) {
+  if (!text?.trim()) return null;
+  return (
+    <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      {text}
+    </Markdown>
+  );
+}
+
+function FileNotification({ text }) {
+  try {
+    const info = JSON.parse(text);
+    if (info.tool === 'write_to_file' || info.tool === 'replace_in_file') {
+      const parts = (info.path || '').split('/');
+      const shortPath = parts.length > 2 ? parts.slice(-2).join('/') : info.path;
+      const action = info.tool === 'write_to_file' ? 'created' : 'modified';
+      return (
+        <div className="file-notification">
+          <span className="file-icon">{action === 'created' ? '+' : '~'}</span>
+          <span className="file-path">{shortPath}</span>
+          <span className="file-action">{action}</span>
+        </div>
+      );
+    }
+    if (['read_file', 'list_files', 'search_files', 'list_code_definition_names'].includes(info.tool)) {
+      return null;
+    }
+    return (
+      <div className="bubble bubble-system">
+        <details className="technical-block">
+          <summary>{info.tool}: {info.path || ''} (expand)</summary>
+          <pre>{info.content || text}</pre>
+        </details>
+      </div>
+    );
+  } catch {
+    return (
+      <div className="bubble bubble-system">
+        <details className="technical-block">
+          <summary>Tool operation (expand)</summary>
+          <pre>{text}</pre>
+        </details>
+      </div>
+    );
+  }
+}
+
 export default function MessageBubble({ type, payload }) {
-  // User messages
+  const ts = payload?.ts;
+
   if (type === 'user') {
-    if (payload.source === 'system') return null; // hide bootstrap prompt
+    if (payload.source === 'system') return null;
     return (
       <div className="bubble bubble-user">
         <div className="bubble-content">{payload.message}</div>
+        {ts && <div className="bubble-timestamp">{timeAgo(ts)}</div>}
       </div>
     );
   }
 
-  // Structured Cline JSON events
   if (type === 'cline') {
     const { say, ask, text } = payload;
 
-    // Assistant text response (main content the user sees)
     if (say === 'text' || say === 'completion_result') {
-      return <AssistantText text={text} />;
+      if (!text?.trim()) return null;
+      return (
+        <div className="bubble bubble-assistant">
+          <div className="bubble-content markdown-body">
+            <MarkdownText text={text} />
+          </div>
+          {ts && <div className="bubble-timestamp">{timeAgo(ts)}</div>}
+        </div>
+      );
     }
 
-    // Command being executed
     if (say === 'command') {
       return (
         <div className="bubble bubble-system">
-          <TechnicalBlock content={`$ ${text}`} label="Command executed (expand)" />
+          <details className="technical-block">
+            <summary>Command executed (expand)</summary>
+            <pre>{`$ ${text}`}</pre>
+          </details>
         </div>
       );
     }
 
-    // Tool use (file read/write/etc.)
     if (say === 'tool') {
-      let label = 'Tool operation (expand)';
-      let content = text;
-      try {
-        const toolInfo = JSON.parse(text);
-        label = `${toolInfo.tool}: ${toolInfo.path || ''} (expand)`;
-        content = toolInfo.content || text;
-      } catch { /* use raw text */ }
-      return (
-        <div className="bubble bubble-system">
-          <TechnicalBlock content={content} label={label} />
-        </div>
-      );
+      return <FileNotification text={text} />;
     }
 
-    // Task progress
     if (say === 'task_progress') {
       return (
         <div className="bubble bubble-progress">
-          <div className="bubble-content">{text}</div>
+          <div className="bubble-content markdown-body">
+            <MarkdownText text={text} />
+          </div>
         </div>
       );
     }
 
-    // Command output
     if (ask === 'command_output') {
       if (!text?.trim()) return null;
       return (
         <div className="bubble bubble-system">
-          <TechnicalBlock content={text} label="Command output (expand)" />
+          <details className="technical-block">
+            <summary>Command output (expand)</summary>
+            <pre>{text}</pre>
+          </details>
         </div>
       );
     }
 
-    // Skip noisy internal events (task echo, api_req_started, etc.)
     return null;
   }
 
-  // Legacy raw stdout fallback (non-JSON lines from Cline)
   if (type === 'stdout') {
     const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
     if (!text.trim()) return null;
     return (
       <div className="bubble bubble-assistant">
-        <div className="bubble-content">{text}</div>
+        <div className="bubble-content markdown-body">
+          <MarkdownText text={text} />
+        </div>
       </div>
     );
-  }
-
-  // Session status
-  if (type === 'status') {
-    return <div className="bubble bubble-status">Status: {payload.status}</div>;
   }
 
   return null;

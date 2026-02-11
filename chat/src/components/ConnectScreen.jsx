@@ -30,7 +30,7 @@ export default function ConnectScreen({ onConnected }) {
         setError(result.error || 'Failed to save configuration.');
       }
     } catch {
-      setError('Could not connect to the runner service.');
+      setError('Could not connect to the runner service. Make sure the server is running.');
     } finally {
       setSaving(false);
     }
@@ -39,10 +39,17 @@ export default function ConnectScreen({ onConnected }) {
   return (
     <div className="connect-screen">
       <div className="connect-card">
-        <h1>Connect to LLM</h1>
-        <p className="subtitle">
-          Enter your OpenAI-compatible endpoint credentials to start chatting.
-        </p>
+        <div className="connect-header">
+          <span className="connect-emoji" role="img" aria-label="key">🔑</span>
+          <h1>Connect to AI</h1>
+          <p className="subtitle">
+            Enter your AI endpoint credentials to start building.
+          </p>
+        </div>
+
+        <div className="connect-help">
+          💡 You'll need an OpenAI-compatible API endpoint and key. Ask your team lead if you're not sure where to find these.
+        </div>
 
         <form onSubmit={handleSubmit}>
           <label>
@@ -53,6 +60,7 @@ export default function ConnectScreen({ onConnected }) {
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               required
+              aria-required="true"
             />
           </label>
 
@@ -64,6 +72,7 @@ export default function ConnectScreen({ onConnected }) {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               required
+              aria-required="true"
             />
           </label>
 
@@ -77,7 +86,7 @@ export default function ConnectScreen({ onConnected }) {
             />
           </label>
 
-          {error && <div className="error-msg">{error}</div>}
+          {error && <div className="error-msg" role="alert">{error}</div>}
 
           <button type="submit" disabled={saving}>
             {saving ? 'Connecting...' : 'Connect'}

@@ -21,11 +21,10 @@ export function attachWebSocket(server) {
   wss.on('connection', (ws) => {
     const sessionId = ws.sessionId;
 
-    // Replay recent transcript
+    // Send recent transcript as a single batch so the frontend can
+    // replace (not append) its events array — prevents duplication on reconnect.
     const history = readTail(sessionId, 200);
-    for (const event of history) {
-      safeSend(ws, event);
-    }
+    safeSend(ws, { type: 'history_batch', events: history });
 
     const handler = (evtSessionId, event) => {
       if (evtSessionId === sessionId) safeSend(ws, event);

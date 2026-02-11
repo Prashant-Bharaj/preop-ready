@@ -6,9 +6,30 @@ import path from 'node:path';
 import { getCredentials } from './auth.js';
 import { redact, setSensitiveStrings } from './redact.js';
 import { appendEvent, readTail } from './transcript.js';
+import { upsertSession, listSessions } from './session-index.js';
 import { WORKSPACE_DIR, CLINE_DIR, BOOTSTRAP_PATH } from './paths.js';
+import {
+  initMiddleware,
+  refreshEnvContext,
+  gatherEnvContext,
+  buildPromptFromSpec,
+  buildBootstrapPrompt,
+  verifyAppHealth,
+  buildErrorPrompt,
+  canRetry,
+  routeMessage,
+} from './middleware/index.js';
 
 let activeSession = null;
+let middlewareReady = false;
+
+// Initialize middleware (env context) in background
+initMiddleware().then(() => {
+  middlewareReady = true;
+}).catch(err => {
+  console.error('[session] Middleware init failed (non-fatal):', err.message);
+  middlewareReady = true; // still allow requests, will use fallback
+});
 
 export const sessionEvents = new EventEmitter();
 sessionEvents.setMaxListeners(50);
@@ -179,6 +200,16 @@ function runClineTask(sessionId, prompt, { clineTaskId = null } = {}) {
           // Skip internal meta events
           if (clineEvent.say === 'user_feedback') continue;
 
+          // Track if docker commands are being run (for response verification)
+          if (clineEvent.say === 'command') {
+            const cmdText = typeof clineEvent.text === 'string' ? clineEvent.text : '';
+            if (cmdText.includes('docker-compose') || cmdText.includes('docker compose') || cmdText.includes('docker build')) {
+              if (activeSession?.id === sessionId) {
+                activeSession.ranDockerCommands = true;
+              }
+            }
+          }
+
           const event = appendEvent(sessionId, 'cline', clineEvent);
           sessionEvents.emit('event', sessionId, event);
         } catch {
@@ -256,13 +287,18 @@ export function mountSessionRoutes(app) {
       }
 
       const sessionId = randomUUID();
+      const now = Date.now();
       activeSession = {
         id: sessionId,
         clineTaskId: null,
+        routerConversationId: null,
         status: 'working',
         currentProc: null,
-        startedAt: Date.now(),
+        startedAt: now,
       };
+
+      // Persist to session index
+      upsertSession({ sessionId, createdAt: now, lastMessageAt: now });
 
       // Respond immediately so the UI can connect WebSocket
       res.json({ sessionId });
@@ -275,14 +311,21 @@ export function mountSessionRoutes(app) {
 
       // Run bootstrap prompt asynchronously (events stream via WebSocket)
       try {
-        const bootstrap = readFileSync(BOOTSTRAP_PATH, 'utf-8');
+        const bootstrapContent = readFileSync(BOOTSTRAP_PATH, 'utf-8');
+        const creds = getCredentials();
+
+        // Build enriched bootstrap with environment context
+        const envContext = await gatherEnvContext();
+        const fullBootstrap = buildBootstrapPrompt(bootstrapContent, envContext, creds);
+
         appendEvent(sessionId, 'user', { message: '[BOOTSTRAP]', source: 'system' });
 
-        const result = await runClineTask(sessionId, bootstrap);
+        const result = await runClineTask(sessionId, fullBootstrap);
         if (activeSession?.id === sessionId) {
           activeSession.clineTaskId = result.clineTaskId;
           activeSession.status = 'idle';
           activeSession.currentProc = null;
+          upsertSession({ sessionId, clineTaskId: result.clineTaskId, lastMessageAt: Date.now() });
         }
 
         const event = appendEvent(sessionId, 'status', { status: 'idle' });
@@ -324,26 +367,114 @@ export function mountSessionRoutes(app) {
       ts: Date.now(), type: 'user', payload: { message },
     });
 
+    // Update session index (set title from first real user message)
+    upsertSession({
+      sessionId: session.id,
+      title: message.slice(0, 80),
+      lastMessageAt: Date.now(),
+    });
+
     // Respond immediately
     res.json({ ok: true });
 
-    // Run cline task asynchronously
+    // Run message through assistant router, then Cline
     try {
       session.status = 'working';
+      session.ranDockerCommands = false;
+      session.retryCount = session.retryCount || 0;
       sessionEvents.emit('event', session.id, {
         ts: Date.now(), type: 'status', payload: { status: 'working' },
       });
 
-      const result = await runClineTask(session.id, message, {
+      // ── Step 1: Route through assistant LLM ──
+      let enrichedMessage = message;
+      if (middlewareReady) {
+        try {
+          const envContext = await refreshEnvContext();
+          const routerResult = await routeMessage(message, envContext, {
+            conversationId: session.routerConversationId,
+          });
+
+          // Persist conversation ID for multi-turn clarification
+          session.routerConversationId = routerResult.conversationId;
+
+          if (routerResult.action === 'clarify') {
+            // Router needs more info — relay question to user, go idle
+            console.log('[session] Router requests clarification');
+            const clarifyEvent = appendEvent(session.id, 'cline', {
+              say: 'text',
+              text: routerResult.message,
+            });
+            sessionEvents.emit('event', session.id, clarifyEvent);
+
+            session.status = 'idle';
+            session.currentProc = null;
+            upsertSession({ sessionId: session.id, lastMessageAt: Date.now() });
+            const idleEvent = appendEvent(session.id, 'status', { status: 'idle' });
+            sessionEvents.emit('event', session.id, idleEvent);
+            return; // Wait for user's next message
+          }
+
+          // Router says "execute" — build enriched Cline prompt from spec
+          if (routerResult.message) {
+            const summaryEvent = appendEvent(session.id, 'cline', {
+              say: 'text',
+              text: routerResult.message,
+            });
+            sessionEvents.emit('event', session.id, summaryEvent);
+          }
+
+          enrichedMessage = buildPromptFromSpec(routerResult, envContext);
+          console.log('[session] Router → execute: %d → %d chars, rules=[%s]',
+            message.length, enrichedMessage.length, routerResult.rules?.join(', ') || 'none');
+
+          // Reset router conversation after execution dispatch
+          // (next user message starts a fresh routing conversation)
+          session.routerConversationId = null;
+        } catch (err) {
+          console.error('[session] Router failed (falling back to raw message):', err.message);
+          // Fall back to sending raw message to Cline
+        }
+      }
+
+      // ── Step 2: Execute via Cline ──
+      const result = await runClineTask(session.id, enrichedMessage, {
         clineTaskId: session.clineTaskId,
       });
 
       if (activeSession?.id === session.id) {
         if (!session.clineTaskId && result.clineTaskId) {
           session.clineTaskId = result.clineTaskId;
+          upsertSession({ sessionId: session.id, clineTaskId: result.clineTaskId });
         }
+
+        // ── Step 3: Verify app health after docker tasks ──
+        if (session.ranDockerCommands && middlewareReady) {
+          try {
+            const health = await verifyAppHealth();
+            if (!health.healthy && canRetry(session)) {
+              console.log('[session] Health check failed, auto-retrying (%d/%d)', session.retryCount + 1, 2);
+              session.retryCount++;
+              const errorPrompt = buildErrorPrompt(health);
+              await runClineTask(session.id, errorPrompt, {
+                clineTaskId: session.clineTaskId,
+              });
+            } else if (!health.healthy) {
+              console.log('[session] Health check failed after max retries, notifying user');
+              const errorEvent = appendEvent(session.id, 'cline', {
+                say: 'text',
+                text: `The application has issues after the changes:\n${health.errors.join('\n')}\n\nPlease describe the problem and I'll help fix it.`,
+              });
+              sessionEvents.emit('event', session.id, errorEvent);
+            }
+          } catch (err) {
+            console.error('[session] Health verification failed (non-fatal):', err.message);
+          }
+        }
+
         session.status = 'idle';
         session.currentProc = null;
+        upsertSession({ sessionId: session.id, lastMessageAt: Date.now() });
       }
 
       const event = appendEvent(session.id, 'status', { status: 'idle' });
@@ -374,5 +505,60 @@ export function mountSessionRoutes(app) {
     const tail = parseInt(req.query.tail) || 100;
     const events = readTail(req.params.sessionId, tail);
     res.json({ events });
+  });
+
+  // ── Session list & resume ──
+
+  app.get('/api/sessions', (_req, res) => {
+    res.json({ sessions: listSessions() });
+  });
+
+  app.post('/api/session/:sessionId/resume', async (req, res) => {
+    try {
+      const creds = getCredentials();
+      if (!creds) {
+        return res.status(400).json({ error: 'Missing config' });
+      }
+
+      const { sessionId } = req.params;
+
+      // If this session is already active, just return it
+      if (activeSession?.id === sessionId) {
+        return res.json({ sessionId });
+      }
+
+      // Kill any currently active session
+      if (activeSession?.currentProc) {
+        try { activeSession.currentProc.kill(); } catch { /* already dead */ }
+      }
+
+      // Look up the clineTaskId from the index
+      const sessions = listSessions();
+      const entry = sessions.find(s => s.sessionId === sessionId);
+      const clineTaskId = entry?.clineTaskId || null;
+
+      setSensitiveStrings([creds.apiKey]);
+      try {
+        configureClineAuth(creds);
+      } catch (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      activeSession = {
+        id: sessionId,
+        clineTaskId,
+        routerConversationId: null,
+        status: 'idle',
+        currentProc: null,
+        startedAt: entry?.createdAt || Date.now(),
+      };
+
+      res.json({ sessionId });
+    } catch (err) {
+      console.error('[session] Resume failed:', err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to resume session: ' + err.message });
+      }
+    }
   });
 }
