@@ -8,7 +8,7 @@
  */
 
 export { gatherEnvContext, refreshEnvContext, getCachedEnvContext } from './env-context.js';
-export { buildBootstrapPrompt, buildPromptFromSpec } from './prompt-builder.js';
+export { buildBootstrapPrompt, buildPromptFromSpec, buildScopedPrompt } from './prompt-builder.js';
 export { verifyAppHealth, buildErrorPrompt, shouldVerify, canRetry } from './response-verifier.js';
 export { routeMessage } from './router.js';
 

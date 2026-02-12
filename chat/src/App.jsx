@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getAuthStatus, startSession, savePreferences, listSessions, resumeSession } from './lib/api.js';
 import ConnectScreen from './components/ConnectScreen.jsx';
 import WelcomeModal from './components/OnboardingScreen.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
 import Drawer from './components/Drawer.jsx';
 import ChatScreen from './components/ChatScreen.jsx';
 import Toast from './components/Toast.jsx';
@@ -13,6 +14,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => { checkAuth(); }, []);
 
@@ -140,12 +142,19 @@ export default function App() {
         sessions={pastSessions}
         onResume={handleResume}
         onNewSession={handleNewSession}
+        onOpenSettings={() => { setDrawerOpen(false); setShowSettings(true); }}
         currentSessionId={sessionId}
       />
 
       <WelcomeModal
         open={showWelcome}
         onDismiss={handleWelcomeDismiss}
+      />
+
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        onSaved={() => addToast('Settings saved. Start a new session for changes to take effect.', 'success')}
       />
 
       {toasts.length > 0 && (

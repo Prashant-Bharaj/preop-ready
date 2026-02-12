@@ -13,6 +13,7 @@ import {
   refreshEnvContext,
   gatherEnvContext,
   buildPromptFromSpec,
+  buildScopedPrompt,
   buildBootstrapPrompt,
   verifyAppHealth,
   buildErrorPrompt,
@@ -148,7 +149,7 @@ function findLatestClineTaskId() {
  * When resuming, Cline replays all previous events before emitting new ones.
  * We filter these replayed events by watching for the `ask/resume_task` marker.
  */
-function runClineTask(sessionId, prompt, { clineTaskId = null } = {}) {
+function runClineTask(sessionId, prompt, { clineTaskId = null, scope = null } = {}) {
   return new Promise((resolve, reject) => {
     const { nodePath, clineScript } = resolveClinePaths();
     const isResume = !!clineTaskId;
@@ -210,11 +211,11 @@ function runClineTask(sessionId, prompt, { clineTaskId = null } = {}) {
             }
           }
 
-          const event = appendEvent(sessionId, 'cline', clineEvent);
+          const event = appendEvent(sessionId, 'cline', scope ? { ...clineEvent, scope } : clineEvent);
           sessionEvents.emit('event', sessionId, event);
         } catch {
           if (passthrough) {
-            const event = appendEvent(sessionId, 'stdout', redacted);
+            const event = appendEvent(sessionId, 'stdout', scope ? { text: redacted, scope } : redacted);
             sessionEvents.emit('event', sessionId, event);
           }
         }
@@ -242,18 +243,18 @@ function runClineTask(sessionId, prompt, { clineTaskId = null } = {}) {
         try {
           const clineEvent = JSON.parse(redacted);
           if (passthrough && clineEvent.say !== 'user_feedback') {
-            const event = appendEvent(sessionId, 'cline', clineEvent);
+            const event = appendEvent(sessionId, 'cline', scope ? { ...clineEvent, scope } : clineEvent);
             sessionEvents.emit('event', sessionId, event);
           }
         } catch {
           if (passthrough) {
-            const event = appendEvent(sessionId, 'stdout', redacted);
+            const event = appendEvent(sessionId, 'stdout', scope ? { text: redacted, scope } : redacted);
             sessionEvents.emit('event', sessionId, event);
           }
         }
       }
 
-      console.log('[session] Cline task completed: exitCode=%s', exitCode);
+      console.log('[session] Cline task completed: scope=%s exitCode=%s', scope || 'main', exitCode);
       const latestTaskId = findLatestClineTaskId();
       resolve({ exitCode, clineTaskId: latestTaskId });
     });
@@ -263,6 +264,124 @@ function runClineTask(sessionId, prompt, { clineTaskId = null } = {}) {
       reject(err);
     });
   });
+}
+
+// ── Phase-based parallel execution ──
+
+/** Dependency order for scopes — lower index runs first */
+const PHASE_MAP = {
+  database: 0,
+  vectordb: 0,
+  backend: 1,
+  frontend: 1,
+  integration: 2,
+};
+
+/**
+ * Group tasks into ordered phases, then execute each phase in parallel.
+ * Single-task shortcut: if only 1 task, run it directly without scoping restrictions.
+ *
+ * @param {Array<{scope, task, rules, snippets}>} tasks - Scoped tasks from router
+ * @param {object} envContext - Environment context
+ * @param {object} session - Active session object
+ * @returns {{ exitCode: number, clineTaskId: string|null }}
+ */
+async function runScopedPhases(tasks, envContext, session) {
+  // Single-task shortcut — no parallel overhead, no folder restriction
+  if (tasks.length <= 1) {
+    const enrichedMessage = buildPromptFromSpec({ tasks }, envContext);
+    console.log('[session] Single-scope execution: %s (%d chars)',
+      tasks[0]?.scope || 'raw', enrichedMessage.length);
+    return runClineTask(session.id, enrichedMessage, {
+      clineTaskId: session.clineTaskId,
+    });
+  }
+
+  // Group tasks by phase
+  const phases = new Map(); // phase number → [task, task, ...]
+  for (const task of tasks) {
+    const phaseNum = PHASE_MAP[task.scope] ?? 1;
+    if (!phases.has(phaseNum)) phases.set(phaseNum, []);
+    phases.get(phaseNum).push(task);
+  }
+
+  const sortedPhases = [...phases.entries()].sort((a, b) => a[0] - b[0]);
+  console.log('[session] Parallel execution: %d tasks in %d phases: %s',
+    tasks.length, sortedPhases.length,
+    sortedPhases.map(([p, ts]) => `phase${p}=[${ts.map(t => t.scope).join('+')}]`).join(' → '));
+
+  let lastResult = { exitCode: 0, clineTaskId: session.clineTaskId };
+
+  for (const [phaseNum, phaseTasks] of sortedPhases) {
+    console.log('[session] Phase %d: starting %d scope(s) [%s]',
+      phaseNum, phaseTasks.length, phaseTasks.map(t => t.scope).join(', '));
+
+    const tPhase = Date.now();
+
+    // Emit phase start event
+    sessionEvents.emit('event', session.id, {
+      ts: Date.now(), type: 'phase_status', payload: {
+        phase: phaseNum,
+        scopes: phaseTasks.map(t => t.scope),
+        status: 'running',
+      },
+    });
+
+    // Build scoped prompts and run in parallel
+    const promises = phaseTasks.map(async (task) => {
+      const scopedPrompt = buildScopedPrompt(task, envContext, { allTasks: tasks });
+      console.log('[session]   [%s] prompt built (%d chars)', task.scope, scopedPrompt.length);
+
+      // Emit scope start
+      sessionEvents.emit('event', session.id, {
+        ts: Date.now(), type: 'scope_status', payload: { scope: task.scope, status: 'running' },
+      });
+
+      const tScope = Date.now();
+      const result = await runClineTask(session.id, scopedPrompt, {
+        clineTaskId: session.clineTaskId,
+        scope: task.scope,  // tag events with scope
+      });
+
+      console.log('[session]   [%s] completed (%dms, exit=%s)',
+        task.scope, Date.now() - tScope, result.exitCode);
+
+      // Emit scope complete
+      sessionEvents.emit('event', session.id, {
+        ts: Date.now(), type: 'scope_status', payload: {
+          scope: task.scope, status: 'completed', exitCode: result.exitCode,
+        },
+      });
+
+      return result;
+    });
+
+    const results = await Promise.all(promises);
+
+    // Track clineTaskId from any result
+    for (const r of results) {
+      if (r.clineTaskId) lastResult.clineTaskId = r.clineTaskId;
+      if (r.exitCode !== 0) lastResult.exitCode = r.exitCode;
+    }
+
+    // Update session's clineTaskId after each phase
+    if (lastResult.clineTaskId && activeSession?.id === session.id) {
+      session.clineTaskId = lastResult.clineTaskId;
+    }
+
+    console.log('[session] Phase %d completed (%dms)', phaseNum, Date.now() - tPhase);
+
+    // Emit phase complete
+    sessionEvents.emit('event', session.id, {
+      ts: Date.now(), type: 'phase_status', payload: {
+        phase: phaseNum,
+        scopes: phaseTasks.map(t => t.scope),
+        status: 'completed',
+      },
+    });
+  }
+
+  return lastResult;
 }
 
 export function mountSessionRoutes(app) {
@@ -311,16 +430,22 @@ export function mountSessionRoutes(app) {
 
       // Run bootstrap prompt asynchronously (events stream via WebSocket)
       try {
+        const t0 = Date.now();
         const bootstrapContent = readFileSync(BOOTSTRAP_PATH, 'utf-8');
         const creds = getCredentials();
 
         // Build enriched bootstrap with environment context
         const envContext = await gatherEnvContext();
+        console.log('[session] Bootstrap: envContext gathered (%dms)', Date.now() - t0);
         const fullBootstrap = buildBootstrapPrompt(bootstrapContent, envContext, creds);
+        console.log('[session] Bootstrap: prompt built (%d chars), sending to Cline...', fullBootstrap.length);
 
         appendEvent(sessionId, 'user', { message: '[BOOTSTRAP]', source: 'system' });
 
+        const tCline = Date.now();
         const result = await runClineTask(sessionId, fullBootstrap);
+        console.log('[session] Bootstrap: Cline finished (%dms, exit=%s, total=%dms)',
+          Date.now() - tCline, result.exitCode, Date.now() - t0);
         if (activeSession?.id === sessionId) {
           activeSession.clineTaskId = result.clineTaskId;
           activeSession.status = 'idle';
@@ -379,6 +504,7 @@ export function mountSessionRoutes(app) {
 
     // Run message through assistant router, then Cline
     try {
+      const msgStart = Date.now();
       session.status = 'working';
       session.ranDockerCommands = false;
       session.retryCount = session.retryCount || 0;
@@ -388,12 +514,30 @@ export function mountSessionRoutes(app) {
 
       // ── Step 1: Route through assistant LLM ──
       let enrichedMessage = message;
+      let skipClineExecution = false;
       if (middlewareReady) {
         try {
+          const tEnv = Date.now();
           const envContext = await refreshEnvContext();
+          console.log('[session] Message: envContext refreshed (%dms)', Date.now() - tEnv);
+
+          const tRouter = Date.now();
+
+          // Emit "thinking" status so the frontend shows activity
+          sessionEvents.emit('event', session.id, {
+            ts: Date.now(), type: 'router_status', payload: { phase: 'thinking', chars: 0 },
+          });
+
           const routerResult = await routeMessage(message, envContext, {
             conversationId: session.routerConversationId,
+            onProgress: ({ chars, elapsedMs }) => {
+              sessionEvents.emit('event', session.id, {
+                ts: Date.now(), type: 'router_status', payload: { phase: 'streaming', chars, elapsedMs },
+              });
+            },
           });
+          console.log('[session] Message: router responded (%dms) action=%s convId=%s',
+            Date.now() - tRouter, routerResult.action, routerResult.conversationId || 'none');
 
           // Persist conversation ID for multi-turn clarification
           session.routerConversationId = routerResult.conversationId;
@@ -424,54 +568,81 @@ export function mountSessionRoutes(app) {
             sessionEvents.emit('event', session.id, summaryEvent);
           }
 
-          enrichedMessage = buildPromptFromSpec(routerResult, envContext);
-          console.log('[session] Router → execute: %d → %d chars, rules=[%s]',
-            message.length, enrichedMessage.length, routerResult.rules?.join(', ') || 'none');
+          const scopes = (routerResult.tasks || []).map(t => t.scope).join(', ');
+          const allRules = [...new Set((routerResult.tasks || []).flatMap(t => t.rules || []))];
+          console.log('[session] Router → execute: scopes=[%s] rules=[%s]',
+            scopes || 'none', allRules.join(', ') || 'none');
 
           // Reset router conversation after execution dispatch
           // (next user message starts a fresh routing conversation)
           session.routerConversationId = null;
+
+          // ── Step 2: Execute via Cline (parallel phases) ──
+          console.log('[session] Message: sending to Cline (elapsed=%dms)', Date.now() - msgStart);
+          const tCline = Date.now();
+          const result = await runScopedPhases(routerResult.tasks, envContext, session);
+          console.log('[session] Message: all scopes finished (%dms, exit=%s, total=%dms)',
+            Date.now() - tCline, result.exitCode, Date.now() - msgStart);
+
+          if (activeSession?.id === session.id) {
+            if (!session.clineTaskId && result.clineTaskId) {
+              session.clineTaskId = result.clineTaskId;
+              upsertSession({ sessionId: session.id, clineTaskId: result.clineTaskId });
+            }
+          }
+
+          // Skip the old single-task execution below
+          skipClineExecution = true;
         } catch (err) {
           console.error('[session] Router failed (falling back to raw message):', err.message);
           // Fall back to sending raw message to Cline
         }
       }
 
-      // ── Step 2: Execute via Cline ──
-      const result = await runClineTask(session.id, enrichedMessage, {
-        clineTaskId: session.clineTaskId,
-      });
+      // ── Step 2 (fallback): Execute via single Cline task (no router or router failed) ──
+      if (!skipClineExecution) {
+        console.log('[session] Message: sending raw to Cline (%d chars, elapsed=%dms)', enrichedMessage.length, Date.now() - msgStart);
+        const tCline = Date.now();
+        const result = await runClineTask(session.id, enrichedMessage, {
+          clineTaskId: session.clineTaskId,
+        });
+        console.log('[session] Message: Cline finished (%dms, exit=%s, total=%dms)',
+          Date.now() - tCline, result.exitCode, Date.now() - msgStart);
 
-      if (activeSession?.id === session.id) {
-        if (!session.clineTaskId && result.clineTaskId) {
-          session.clineTaskId = result.clineTaskId;
-          upsertSession({ sessionId: session.id, clineTaskId: result.clineTaskId });
-        }
-
-        // ── Step 3: Verify app health after docker tasks ──
-        if (session.ranDockerCommands && middlewareReady) {
-          try {
-            const health = await verifyAppHealth();
-            if (!health.healthy && canRetry(session)) {
-              console.log('[session] Health check failed, auto-retrying (%d/%d)', session.retryCount + 1, 2);
-              session.retryCount++;
-              const errorPrompt = buildErrorPrompt(health);
-              await runClineTask(session.id, errorPrompt, {
-                clineTaskId: session.clineTaskId,
-              });
-            } else if (!health.healthy) {
-              console.log('[session] Health check failed after max retries, notifying user');
-              const errorEvent = appendEvent(session.id, 'cline', {
-                say: 'text',
-                text: `The application has issues after the changes:\n${health.errors.join('\n')}\n\nPlease describe the problem and I'll help fix it.`,
-              });
-              sessionEvents.emit('event', session.id, errorEvent);
-            }
-          } catch (err) {
-            console.error('[session] Health verification failed (non-fatal):', err.message);
+        if (activeSession?.id === session.id) {
+          if (!session.clineTaskId && result.clineTaskId) {
+            session.clineTaskId = result.clineTaskId;
+            upsertSession({ sessionId: session.id, clineTaskId: result.clineTaskId });
           }
         }
+      }
 
+      // ── Step 3: Verify app health after docker tasks ──
+      if (session.ranDockerCommands && middlewareReady) {
+        try {
+          const health = await verifyAppHealth();
+          if (!health.healthy && canRetry(session)) {
+            console.log('[session] Health check failed, auto-retrying (%d/%d)', session.retryCount + 1, 2);
+            session.retryCount++;
+            const errorPrompt = buildErrorPrompt(health);
+            await runClineTask(session.id, errorPrompt, {
+              clineTaskId: session.clineTaskId,
+            });
+          } else if (!health.healthy) {
+            console.log('[session] Health check failed after max retries, notifying user');
+            const errorEvent = appendEvent(session.id, 'cline', {
+              say: 'text',
+              text: `The application has issues after the changes:\n${health.errors.join('\n')}\n\nPlease describe the problem and I'll help fix it.`,
+            });
+            sessionEvents.emit('event', session.id, errorEvent);
+          }
+        } catch (err) {
+          console.error('[session] Health verification failed (non-fatal):', err.message);
+        }
+      }
+
+      // ── Done — go idle ──
+      if (activeSession?.id === session.id) {
         session.status = 'idle';
         session.currentProc = null;
         upsertSession({ sessionId: session.id, lastMessageAt: Date.now() });

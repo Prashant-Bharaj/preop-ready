@@ -21,21 +21,37 @@ const ALWAYS_INCLUDE_RULES = ['10-platform-rules.md', '18-security.md'];
 
 /**
  * Build an enriched prompt from a router task specification.
- * Reads the selected rule files and snippets, assembles the full Cline prompt.
+ * Supports both old single-task format and new multi-task format.
  *
- * @param {{ task: string, rules: string[], snippets: string[], message: string }} routerSpec
+ * @param {{ tasks: Array<{scope, task, rules, snippets}>, message: string }} routerSpec
  * @param {object} envContext - From env-context.js
  * @returns {string} The enriched prompt for Cline
  */
 export function buildPromptFromSpec(routerSpec, envContext) {
-  const { task, rules = [], snippets = [] } = routerSpec;
+  const tasks = routerSpec.tasks || [];
 
-  // Merge always-included rules with router selection, deduplicate
-  const allRules = [...new Set([...ALWAYS_INCLUDE_RULES, ...rules])];
-  const rulesContent = readRuleFiles(allRules);
-  const snippetsContent = readSnippetFiles(snippets);
+  // Merge rules and snippets from all tasks + always-included
+  const allRules = new Set(ALWAYS_INCLUDE_RULES);
+  const allSnippets = new Set();
+  for (const t of tasks) {
+    (t.rules || []).forEach(r => allRules.add(r));
+    (t.snippets || []).forEach(s => allSnippets.add(s));
+  }
 
-  return buildPrompt(task, envContext, { rulesContent, snippetsContent });
+  const rulesContent = readRuleFiles([...allRules]);
+  const snippetsContent = readSnippetFiles([...allSnippets]);
+
+  // Build task description — join scoped tasks with headers
+  let taskText;
+  if (tasks.length === 1) {
+    taskText = tasks[0].task;
+  } else if (tasks.length > 1) {
+    taskText = tasks.map(t => `[${t.scope.toUpperCase()}]\n${t.task}`).join('\n\n');
+  } else {
+    taskText = routerSpec.message || '';
+  }
+
+  return buildPrompt(taskText, envContext, { rulesContent, snippetsContent });
 }
 
 /**
@@ -86,6 +102,76 @@ export function buildBootstrapPrompt(bootstrapContent, envContext, creds) {
 
   // Dynamic environment context
   sections.push(buildEnvSection(envContext));
+
+  return sections.join('\n\n');
+}
+
+// Scope → allowed folder mapping for parallel execution
+const SCOPE_FOLDERS = {
+  database:    ['database/'],
+  vectordb:    ['vectordb/'],
+  backend:     ['backend/'],
+  frontend:    ['frontend/'],
+  integration: ['docker-compose.yml', 'frontend/nginx.conf', 'frontend/nginx.local.conf', 'docs/'],
+};
+
+/**
+ * Build an enriched prompt for a SINGLE scoped task.
+ * Used in parallel execution — each Cline instance gets its own scoped prompt
+ * with folder restrictions to prevent file conflicts.
+ *
+ * @param {{ scope: string, task: string, rules: string[], snippets: string[] }} task
+ * @param {object} envContext - From env-context.js
+ * @param {{ allTasks: Array }} opts - Full task list for context
+ * @returns {string} The enriched prompt for one Cline instance
+ */
+export function buildScopedPrompt(task, envContext, { allTasks = [] } = {}) {
+  const rules = new Set(ALWAYS_INCLUDE_RULES);
+  (task.rules || []).forEach(r => rules.add(r));
+
+  const rulesContent = readRuleFiles([...rules]);
+  const snippetsContent = readSnippetFiles(task.snippets || []);
+
+  const sections = [];
+
+  // ── Environment section ──
+  sections.push(buildEnvSection(envContext));
+
+  // ── Scope restriction ──
+  const folders = SCOPE_FOLDERS[task.scope];
+  if (folders) {
+    const folderList = folders.join(', ');
+    sections.push(
+      `=== SCOPE RESTRICTION ===\n` +
+      `You are working on the ${task.scope.toUpperCase()} scope.\n` +
+      `ONLY create or modify files in: ${folderList}\n` +
+      `Do NOT touch files outside these paths — other scopes are handled by parallel workers.`
+    );
+  }
+
+  // ── Context: what other scopes are building (read-only info) ──
+  if (allTasks.length > 1) {
+    const otherScopes = allTasks
+      .filter(t => t.scope !== task.scope)
+      .map(t => `- [${t.scope.toUpperCase()}]: ${t.task.slice(0, 150)}`)
+      .join('\n');
+    sections.push(
+      `=== OTHER SCOPES (for reference only — do NOT implement these) ===\n${otherScopes}`
+    );
+  }
+
+  // ── Rules section ──
+  if (Object.keys(rulesContent).length > 0) {
+    sections.push(buildRulesSection({ rulesContent }));
+  }
+
+  // ── Snippets section ──
+  if (Object.keys(snippetsContent).length > 0) {
+    sections.push(buildSnippetsSection({ snippetsContent }));
+  }
+
+  // ── Task (always last) ──
+  sections.push(`=== YOUR TASK (${task.scope.toUpperCase()} scope) ===\n${task.task}`);
 
   return sections.join('\n\n');
 }

@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
 import { getCachedEnvContext, refreshEnvContext } from './middleware/env-context.js';
+import { routeMessage } from './middleware/router.js';
 
 /**
  * Run Node.js-based preflight checks (mirrors scripts/preflight-check.sh).
@@ -153,6 +154,35 @@ export function mountEnvironmentRoutes(app) {
     } catch (err) {
       console.error('[environment] Error:', err);
       res.status(500).json({ error: 'Failed to gather environment info' });
+    }
+  });
+
+  // POST /api/environment/test-router — test the assistant router in isolation
+  app.post('/api/environment/test-router', async (req, res) => {
+    const { message, conversationId } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+
+    try {
+      const t0 = Date.now();
+      const envContext = getCachedEnvContext() || await refreshEnvContext();
+      const tEnv = Date.now();
+
+      const result = await routeMessage(message, envContext, { conversationId });
+      const tRouter = Date.now();
+
+      res.json({
+        ...result,
+        timing: {
+          envContextMs: tEnv - t0,
+          routerMs: tRouter - tEnv,
+          totalMs: tRouter - t0,
+        },
+      });
+    } catch (err) {
+      console.error('[test-router] Error:', err.message);
+      res.status(500).json({ error: err.message });
     }
   });
 

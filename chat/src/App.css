@@ -528,6 +528,204 @@ input, textarea, select { font-size: 16px; }
   max-height: 40vh;
 }
 
+.drawer-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: calc(100% - 2rem);
+  margin: 0.5rem 1rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.drawer-settings-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* ── Settings Modal ── */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.settings-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease-out;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.settings-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.settings-env-notice {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  color: var(--warning);
+  line-height: 1.4;
+}
+
+.settings-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.settings-card label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.settings-card .required { color: var(--error-light); }
+.settings-card .optional { color: var(--text-muted); font-weight: 400; }
+
+.settings-card input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-sans);
+  min-height: var(--touch-min);
+  transition: border-color 0.2s;
+}
+
+.settings-card input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.settings-card select {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-sans);
+  min-height: var(--touch-min);
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+.settings-card select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.settings-model-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  margin-top: 0.35rem;
+}
+
+.settings-model-row select,
+.settings-model-row input {
+  flex: 1;
+  margin-top: 0;
+}
+
+.settings-refresh-btn {
+  flex-shrink: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.settings-refresh-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.settings-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.settings-card > form > button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  margin-top: 0.5rem;
+  min-height: var(--touch-min);
+  transition: background 0.2s;
+}
+
+.settings-card > form > button[type="submit"]:hover { background: var(--accent-hover); }
+.settings-card > form > button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* ── Session List Screen ── */
 .session-list-screen {
   display: flex;

@@ -5,12 +5,22 @@ export async function getAuthStatus() {
   return res.json();
 }
 
-export async function saveAuthConfig({ baseUrl, apiKey, model }) {
+export async function getAuthSettings() {
+  const res = await fetch(`${API_BASE}/auth/settings`);
+  return res.json();
+}
+
+export async function saveAuthConfig({ baseUrl, apiKey, model, assistantId }) {
   const res = await fetch(`${API_BASE}/auth/config`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ baseUrl, apiKey, model }),
+    body: JSON.stringify({ baseUrl, apiKey, model, assistantId }),
   });
+  return res.json();
+}
+
+export async function getModels() {
+  const res = await fetch(`${API_BASE}/auth/models`);
   return res.json();
 }
 

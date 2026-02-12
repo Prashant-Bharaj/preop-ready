@@ -76,12 +76,62 @@ export function mountAuthRoutes(app) {
     res.json({ configured: !!creds, source: creds?.source || null, mode: creds?.mode || 'beginner' });
   });
 
+  app.get('/api/auth/settings', (_req, res) => {
+    const creds = getCredentials();
+    if (!creds) return res.json({ configured: false });
+    // Mask the API key — show first 4 and last 4 chars
+    const key = creds.apiKey || '';
+    const maskedKey = key.length > 10
+      ? key.slice(0, 4) + '*'.repeat(key.length - 8) + key.slice(-4)
+      : '****';
+    res.json({
+      configured: true,
+      source: creds.source,
+      baseUrl: creds.baseUrl,
+      apiKey: maskedKey,
+      model: creds.model,
+      assistantId: creds.assistantId || '',
+      mode: creds.mode,
+    });
+  });
+
+  app.get('/api/auth/models', async (_req, res) => {
+    const creds = getCredentials();
+    if (!creds) return res.json({ models: [] });
+
+    try {
+      // Use OpenAI-compatible models endpoint: baseUrl + /models
+      const modelsUrl = creds.baseUrl.replace(/\/$/, '') + '/models';
+
+      const resp = await fetch(modelsUrl, {
+        headers: { 'Authorization': `Bearer ${creds.apiKey}` },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!resp.ok) {
+        return res.json({ models: [], error: `API returned ${resp.status}` });
+      }
+
+      const data = await resp.json();
+      // OpenAI format: { data: [{ id, ... }] } or platform format: { models: [...] }
+      const raw = data.data || data.models || data || [];
+      const models = Array.isArray(raw)
+        ? raw.map(m => typeof m === 'string' ? m : m.id || m.name).filter(Boolean).sort()
+        : [];
+
+      res.json({ models });
+    } catch (err) {
+      console.error('[auth] Failed to fetch models:', err.message);
+      res.json({ models: [], error: err.message });
+    }
+  });
+
   app.post('/api/auth/config', (req, res) => {
-    const { baseUrl, apiKey, model } = req.body;
+    const { baseUrl, apiKey, model, assistantId } = req.body;
     if (!baseUrl || !apiKey) {
       return res.status(400).json({ error: 'baseUrl and apiKey are required' });
     }
-    saveCredentials({ baseUrl, apiKey, model });
+    saveCredentials({ baseUrl, apiKey, model, assistantId });
     res.json({ ok: true });
   });
 

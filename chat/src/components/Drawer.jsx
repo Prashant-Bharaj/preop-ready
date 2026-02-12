@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { CloseIcon } from './Icon.jsx';
+import { CloseIcon, SettingsIcon } from './Icon.jsx';
 import EnvironmentPanel from './EnvironmentPanel.jsx';
 import { timeAgo } from '../lib/time.js';
 
-export default function Drawer({ open, onClose, sessions, onResume, onNewSession, currentSessionId }) {
+export default function Drawer({ open, onClose, sessions, onResume, onNewSession, onOpenSettings, currentSessionId }) {
   const panelRef = useRef(null);
   const [resuming, setResuming] = useState(null);
 
@@ -94,6 +94,13 @@ export default function Drawer({ open, onClose, sessions, onResume, onNewSession
         <div className="drawer-env">
           <EnvironmentPanel />
         </div>
+
+        <div className="drawer-divider" />
+
+        <button className="drawer-settings-btn" onClick={onOpenSettings}>
+          <SettingsIcon size={16} />
+          Settings
+        </button>
       </div>
     </div>
   );
