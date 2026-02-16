@@ -84,6 +84,16 @@ vectordb/              ← Vector database (optional, independent from database/
 
 ## Building Frontend
 
+### ❌ DO NOT use Next.js, Nuxt, Remix, or other server-side frameworks
+
+The platform serves frontends via **nginx** (static files only). Frameworks that need their own Node.js server (Next.js `next start`, Nuxt, Remix, etc.) **will not work** — the deployment will fail.
+
+**Only use:**
+- **Vanilla HTML/CSS/JS** → `Dockerfile.vanilla`
+- **React + Vite** → `Dockerfile.react` (builds to static `/dist`, served by nginx)
+
+If a user specifically asks for Next.js, explain that the platform requires static builds and offer React + Vite as the alternative.
+
 ### For Simple Sites (Vanilla HTML)
 Create these files:
 - `frontend/index.html` - the webpage
@@ -112,7 +122,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "8080:8080"
     volumes:
       - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
 ```

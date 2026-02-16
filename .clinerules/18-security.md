@@ -23,7 +23,7 @@ Before deployment, verify:
 
 ```nginx
 server {
-    listen 80;
+    listen 8080;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -169,7 +169,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Switch to non-root user
 USER appuser
 
-EXPOSE 80
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
 ```
 

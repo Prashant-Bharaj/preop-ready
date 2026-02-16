@@ -91,7 +91,7 @@ Files in `conf.d/` are INCLUDED inside nginx's main config, so they must ONLY co
 ```nginx
 # frontend/nginx.conf - PRODUCTION (deployed to ECS)
 server {
-    listen 80;
+    listen 8080;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -135,7 +135,7 @@ server {
 ```nginx
 # frontend/nginx.local.conf - LOCAL DEVELOPMENT ONLY
 server {
-    listen 80;
+    listen 8080;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -200,7 +200,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "8080:8080"
     volumes:
       # Mount local nginx config with API proxy (production has no proxy)
       - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
@@ -267,7 +267,7 @@ If you leave proxy_pass blocks pointing to `http://backend:3000/` with no backen
 
 | Component | Port | Notes |
 |-----------|------|-------|
-| Frontend  | **80** | nginx listens on port 80 inside container |
+| Frontend  | **8080** | nginx listens on port 8080 inside container (non-root compatible) |
 | Backend   | **3000** | Express/FastAPI MUST listen on port 3000 |
 
 **Backend example (Node.js):**
@@ -329,7 +329,7 @@ def health():
 
 In production, Traefik routes traffic like this:
 
-- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/` → Frontend container (port 80)
+- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/` → Frontend container (port 8080)
 - `https://<repo-name>.vibe.992872368362.cloud.bayer.com/api/*` → Backend container (port 3000)
 - `https://<repo-name>.vibe.992872368362.cloud.bayer.com/socket.io/*` → Backend container (WebSocket)
 
@@ -400,7 +400,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "8080:8080"
     volumes:
       # IMPORTANT: Mount local nginx config with API proxy
       # Production nginx.conf has no proxy (Traefik handles it)
@@ -556,7 +556,7 @@ Before deploying, verify ALL of these:
 - [ ] Database Dockerfile has HEALTHCHECK instruction
 
 ### Ports
-- [ ] Frontend nginx listens on port 80
+- [ ] Frontend nginx listens on port 8080
 - [ ] Backend listens on port 3000
 
 ### API Routes
