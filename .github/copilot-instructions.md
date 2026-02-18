@@ -66,7 +66,7 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 
 ```
 frontend/     → nginx (port 80)
-backend/      → Express/FastAPI (port 3000)
+backend/      → Express/FastAPI/Actix-web (port 3000)
 database/     → PostgreSQL/MySQL (optional)
 vectordb/     → Independent vector DB (optional, dual-DB)
 
@@ -87,6 +87,7 @@ Traefik routing:
 | Interactive app | React |
 | Save data | Node.js backend |
 | AI features | Python backend |
+| High-perf APIs (only if user asks) | Rust backend |
 
 ### Health Endpoint (REQUIRED)
 ```javascript
@@ -98,6 +99,13 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 # FastAPI
 @app.get("/health")
 def health(): return {"status": "ok"}
+```
+
+```rust
+// Rust (Actix-web)
+async fn health() -> impl Responder {
+    HttpResponse::Ok().json(serde_json::json!({"status": "ok"}))
+}
 ```
 
 ### nginx.conf (CORRECT format)

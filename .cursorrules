@@ -86,7 +86,7 @@ If user says "developer", "dev", "2", or uses technical terms:
 
 ```
 frontend/     → nginx (port 80) - static or React
-backend/      → Express/FastAPI (port 3000)
+backend/      → Express/FastAPI/Actix-web (port 3000)
 database/     → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 vectordb/     → Independent vector DB: pgvector/Chroma/Qdrant (optional, dual-DB)
 ```

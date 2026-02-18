@@ -37,12 +37,14 @@ auto_update:
     note: "Users should copy this when setting up frontend"
   - path: "frontend/nginx.local.conf"
     description: "Local dev nginx config template (with API proxy)"
-    
+
   # Backend Dockerfile templates
   - path: "backend/Dockerfile.node"
     description: "Node.js backend Dockerfile template (secure, non-root)"
   - path: "backend/Dockerfile.python"
     description: "Python backend Dockerfile template (secure, non-root)"
+  - path: "backend/Dockerfile.rust"
+    description: "Rust backend Dockerfile template (secure, multi-stage, non-root)"
     
   # Database Dockerfile templates
   - path: "database/Dockerfile.postgres"
@@ -144,6 +146,8 @@ ignore:
   - "backend/main.py"
   - "backend/requirements.txt"
   - "backend/package.json"
+  - "backend/Cargo.toml"
+  - "backend/Cargo.lock"
   - "backend/Dockerfile"        # User's chosen backend Dockerfile
   - "backend/src/**"            # User's backend source code
   - "backend/middleware/**"     # User's middleware (may include identity etc)

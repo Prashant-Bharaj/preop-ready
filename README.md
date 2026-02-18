@@ -36,7 +36,7 @@ This is your **hackathon project workspace**. You're going to build a web applic
 ### Architecture
 ```
 frontend/          → nginx (port 80) - static or React build
-backend/           → Express/FastAPI (port 3000)
+backend/           → Express/FastAPI/Actix-web (port 3000)
 database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 ```
 
@@ -93,7 +93,7 @@ git add . && git commit -m "feat: description" && git push
 
 ### Stack Options
 - **Frontend:** Copy `Dockerfile.vanilla` or `Dockerfile.react` → `Dockerfile`
-- **Backend:** Copy `Dockerfile.node` or `Dockerfile.python` → `Dockerfile`
+- **Backend:** Copy `Dockerfile.node`, `Dockerfile.python`, or `Dockerfile.rust` → `Dockerfile`
 - **Database:** Copy one of these to `database/Dockerfile`:
   - `Dockerfile.postgres` - Standard SQL database (recommended)
   - `Dockerfile.mysql` - MySQL database
@@ -183,7 +183,7 @@ The AI will save your work and deploy it automatically!
 │
 ├── 📁 backend/           ← The server (saves data, APIs)
 │   ├── server.js         ← Server code
-│   └── Dockerfile        ← Copy from Dockerfile.node or .python
+│   └── Dockerfile        ← Copy from Dockerfile.node, .python, or .rust
 │
 └── 📁 database/          ← Data storage (optional)
     ├── Dockerfile        ← Copy from Dockerfile.postgres/.mysql/.pgvector/.chroma/.qdrant

@@ -64,9 +64,10 @@ frontend/              ← Website (what users see)
 
 backend/               ← Server (saves data, APIs)
 ├── server.js          ← Main server code (Node.js)
-├── Dockerfile         ← Copy from Dockerfile.node or .python
+├── Dockerfile         ← Copy from Dockerfile.node, .python, or .rust
 ├── Dockerfile.node    ← Template for Node.js
-└── Dockerfile.python  ← Template for Python
+├── Dockerfile.python  ← Template for Python
+└── Dockerfile.rust    ← Template for Rust (advanced, developer-only)
 
 database/              ← Data storage (optional, relational)
 ├── Dockerfile         ← Copy from Dockerfile.postgres or .mysql
@@ -151,9 +152,79 @@ Only add a backend if they need:
 - External API calls (like OpenAI)
 - Server-side logic
 
-### Node.js Backend
+### Node.js Backend (Recommended)
 - Create `backend/server.js`
 - Copy `Dockerfile.node` → `backend/Dockerfile`
+
+### Rust Backend (Advanced — only if user explicitly requests Rust)
+
+> ⚠️ **Do NOT recommend Rust** unless the user specifically asks for it. Rust is complex and not well-suited for AI-assisted code generation. Default to Node.js or Python.
+
+- Create `backend/src/main.rs`
+- Create `backend/Cargo.toml`
+- Copy `Dockerfile.rust` → `backend/Dockerfile`
+
+**📋 COPY THIS for backend/Cargo.toml:**
+
+```toml
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+```
+
+**📋 COPY THIS for backend/src/main.rs:**
+
+```rust
+use actix_web::{web, App, HttpServer, HttpResponse, Responder};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct HealthResponse {
+    status: String,
+}
+
+// =============================================================================
+// ROUTES - Note: NO /api prefix! Frontend calls /api/X, backend defines /X
+// =============================================================================
+
+// Health check (REQUIRED - deployment fails without this!)
+async fn health() -> impl Responder {
+    HttpResponse::Ok().json(HealthResponse {
+        status: "ok".to_string(),
+    })
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = format!("0.0.0.0:{}", port);
+    println!("Server running on port {}", port);
+
+    HttpServer::new(|| {
+        App::new()
+            .route("/health", web::get().to(health))
+    })
+    .bind(&addr)?
+    .run()
+    .await
+}
+```
+
+**Generate `Cargo.lock` before building Docker:**
+```bash
+cd backend && cargo generate-lockfile && cd ..
+```
+
+---
+
+### Node.js Backend — Templates
 
 ### 📋 COPY THIS TEMPLATE for backend/server.js:
 

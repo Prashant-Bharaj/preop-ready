@@ -37,6 +37,9 @@ Based on what they describe, YOU decide the best technology:
 | Interactive app, forms, dashboards | React |
 | Save data, user accounts, APIs | Node.js backend |
 | AI/ML features, data science | Python backend |
+| High-performance APIs (developer explicitly asks for Rust) | Rust backend |
+
+> **Note:** Only use Rust if the user explicitly requests it. Rust is complex and not well-suited for AI-assisted code generation. Default to Node.js or Python.
 
 **Tell them your recommendation, don't make them choose:**
 
