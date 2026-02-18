@@ -1,0 +1,41 @@
+# ============================================================================
+# Rust Backend (Actix-web/Axum/etc) - SECURE
+# ============================================================================
+# Multi-stage build: compiles to static binary, runs on minimal runtime
+# Runs as non-root user for defense in depth
+# ============================================================================
+
+# --- Stage 1: Build ---
+FROM rust:1.84-slim AS builder
+
+WORKDIR /app
+
+# Cache dependency build (copy manifests first, build with dummy src)
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+# Build real application
+COPY src/ src/
+RUN touch src/main.rs && cargo build --release
+
+# --- Stage 2: Runtime ---
+FROM debian:bookworm-slim
+
+# ============================================
+# SECURITY: Create non-root user
+# ============================================
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/bash appuser
+
+WORKDIR /app
+
+# Copy compiled binary with correct ownership
+COPY --from=builder --chown=appuser:appgroup /app/target/release/backend .
+
+# Switch to non-root user
+USER appuser
+
+EXPOSE 3000
+CMD ["./backend"]
