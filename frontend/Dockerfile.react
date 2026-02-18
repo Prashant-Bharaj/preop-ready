@@ -16,7 +16,8 @@ FROM nginx:alpine
 # ============================================
 # SECURITY: Create non-root user
 # ============================================
-RUN addgroup -g 1001 -S appgroup && \
+RUN apk add --no-cache curl && \
+    addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup && \
     chown -R appuser:appgroup /var/cache/nginx && \
     chown -R appuser:appgroup /var/log/nginx && \
