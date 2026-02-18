@@ -193,6 +193,8 @@ jobs:
           if [ -d frontend ]; then
             fetch_file "frontend/Dockerfile.vanilla" || true
             fetch_file "frontend/Dockerfile.react" || true
+            fetch_file "frontend/nginx.conf" || true
+            fetch_file "frontend/nginx.local.conf" || true
           fi
           
           echo ""
@@ -208,6 +210,13 @@ jobs:
           fetch_file "database/Dockerfile.postgres" || true
           fetch_file "database/Dockerfile.mysql" || true
           
+          echo ""
+          echo "📁 Syncing vectordb templates..."
+          mkdir -p vectordb
+          fetch_file "vectordb/Dockerfile.pgvector" || true
+          fetch_file "vectordb/Dockerfile.chroma" || true
+          fetch_file "vectordb/Dockerfile.qdrant" || true
+
           echo ""
           echo "📁 Syncing AI instructions..."
           fetch_file ".cursorrules" || true

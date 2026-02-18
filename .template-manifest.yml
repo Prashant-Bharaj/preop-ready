@@ -160,6 +160,18 @@ ignore:
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "1.2.1":
+    date: "2026-02-18"
+    changes:
+      - "Fixed non-root nginx: port 80 → 8080 (non-root users cannot bind privileged ports)"
+      - "Added curl to frontend Dockerfile templates (required for ECS health checks)"
+      - "Removed libcap/setcap workaround from Dockerfile templates"
+      - "Updated nginx.conf and nginx.local.conf to listen on port 8080"
+      - "Updated docker-compose.yml port mapping to 8080:8080"
+      - "Deploy workflow auto-patches legacy port 80 projects at build time"
+      - "Added vectordb Dockerfiles and nginx configs to template-sync"
+      - "Added missing paths to version-bump trigger (nginx, vectordb, docker-compose)"
+
   "1.1.0":
     date: "2026-02-06"
     changes:
