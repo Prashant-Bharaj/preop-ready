@@ -153,8 +153,9 @@ RUN npm run build
 
 FROM nginx:alpine
 
-# Create non-root user for nginx
-RUN addgroup -g 1001 -S appgroup && \
+# Install curl (required for ECS health checks) and create non-root user
+RUN apk add --no-cache curl && \
+    addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup && \
     # nginx needs to write to these directories
     chown -R appuser:appgroup /var/cache/nginx && \
