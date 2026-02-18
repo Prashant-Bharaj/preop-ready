@@ -73,9 +73,9 @@ jobs:
       - id: check
         run: |
           # Only run in the template repo itself
-          if [ "${{ github.repository }}" != "bayer-int/dd-template-repo" ]; then
+          if [ "${{ github.repository }}" != "bayer-int/dd-template-repository" ]; then
             echo "should_run=false" >> $GITHUB_OUTPUT
-            echo "⏭️ Skipping - this workflow only runs in the template repo (bayer-int/dd-template-repo)"
+            echo "⏭️ Skipping - this workflow only runs in the template repo (bayer-int/dd-template-repository)"
             exit 0
           fi
           

@@ -63,7 +63,7 @@ permissions:
   pull-requests: write
 
 env:
-  TEMPLATE_REPO: bayer-int/dd-template-repo
+  TEMPLATE_REPO: bayer-int/dd-template-repository
   TEMPLATE_BRANCH: master
 
 jobs:
