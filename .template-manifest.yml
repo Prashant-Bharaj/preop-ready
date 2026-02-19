@@ -161,6 +161,18 @@ ignore:
   - "*.log"
 
 # -----------------------------------------------------------------------------
+# Files/directories to remove from child repos during sync
+# These were previously part of the template but have been deprecated
+# -----------------------------------------------------------------------------
+cleanup:
+  - path: "chat"
+    type: "directory"
+    reason: "Chat app moved to feat/chat branch"
+  - path: ".chat"
+    type: "gitignore_entry"
+    reason: "Chat runtime data entry no longer needed"
+
+# -----------------------------------------------------------------------------
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:

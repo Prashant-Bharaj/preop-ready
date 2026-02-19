@@ -158,6 +158,72 @@ if [ -n "$CURRENT_PATH" ]; then
     fi
 fi
 
+# Process cleanup section - remove deprecated files/directories
+echo ""
+echo "Checking for deprecated files..."
+IN_CLEANUP=false
+CLEANUP_PATH=""
+CLEANUP_TYPE=""
+
+while IFS= read -r line; do
+    if echo "$line" | grep -qE "^cleanup:"; then
+        IN_CLEANUP=true
+        continue
+    fi
+
+    # End of cleanup section (new top-level key)
+    if $IN_CLEANUP && echo "$line" | grep -qE "^[a-z_]+:" && ! echo "$line" | grep -qE "^[[:space:]]"; then
+        IN_CLEANUP=false
+        continue
+    fi
+
+    if ! $IN_CLEANUP; then
+        continue
+    fi
+
+    # Extract path
+    if echo "$line" | grep -qE "^[[:space:]]*-[[:space:]]*path:"; then
+        # Process previous entry
+        if [ -n "$CLEANUP_PATH" ]; then
+            if [ "$CLEANUP_TYPE" = "directory" ] && [ -d "$CLEANUP_PATH" ]; then
+                rm -rf "$CLEANUP_PATH"
+                echo "  Removed: $CLEANUP_PATH/"
+            elif [ "$CLEANUP_TYPE" = "gitignore_entry" ] && [ -f .gitignore ]; then
+                PATTERN="^\\.${CLEANUP_PATH#.}/"
+                if grep -q "$PATTERN" .gitignore 2>/dev/null; then
+                    sed -i "/$PATTERN/d" .gitignore
+                    sed -i "/^# .*${CLEANUP_PATH#.}/d" .gitignore
+                    echo "  Cleaned: $CLEANUP_PATH from .gitignore"
+                fi
+            fi
+        fi
+        CLEANUP_PATH=$(echo "$line" | sed 's/.*path:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' | tr -d '[:space:]')
+        CLEANUP_TYPE=""
+        continue
+    fi
+
+    # Extract type
+    if echo "$line" | grep -qE "type:"; then
+        CLEANUP_TYPE=$(echo "$line" | sed 's/.*type:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/' | tr -d '[:space:]')
+        continue
+    fi
+done < "$TMP_MANIFEST"
+
+# Process final cleanup entry
+if [ -n "$CLEANUP_PATH" ]; then
+    if [ "$CLEANUP_TYPE" = "directory" ] && [ -d "$CLEANUP_PATH" ]; then
+        rm -rf "$CLEANUP_PATH"
+        echo "  Removed: $CLEANUP_PATH/"
+    elif [ "$CLEANUP_TYPE" = "gitignore_entry" ] && [ -f .gitignore ]; then
+        PATTERN="^\\.${CLEANUP_PATH#.}/"
+        if grep -q "$PATTERN" .gitignore 2>/dev/null; then
+            sed -i "/$PATTERN/d" .gitignore
+            sed -i "/^# .*${CLEANUP_PATH#.}/d" .gitignore
+            echo "  Cleaned: $CLEANUP_PATH from .gitignore"
+        fi
+    fi
+fi
+
 # Update local version tracker
 cat > .template-version << EOF
 # Template Version Tracker - DO NOT EDIT MANUALLY
