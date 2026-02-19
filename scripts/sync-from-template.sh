@@ -140,6 +140,19 @@ BACKUP_BRANCH="backup/pre-sync-$(date +%Y%m%d-%H%M%S)"
 echo -e "${YELLOW}💾 Creating backup branch: $BACKUP_BRANCH${NC}"
 git branch "$BACKUP_BRANCH"
 
+# Remove deprecated files (runs BEFORE self-update to avoid chicken-and-egg)
+echo -e "${YELLOW}🧹 Removing deprecated files...${NC}"
+if [ -d "chat" ]; then
+  rm -rf chat
+  git rm -rf chat 2>/dev/null || true
+  echo -e "${GREEN}  ✓ Removed chat/ (moved to feat/chat branch)${NC}"
+fi
+if [ -f .gitignore ] && grep -q "^\.chat/" .gitignore; then
+  sed -i '' '/^# Chat UI runtime data/d' .gitignore
+  sed -i '' '/^\.chat\//d' .gitignore
+  echo -e "${GREEN}  ✓ Cleaned .chat/ entry from .gitignore${NC}"
+fi
+
 # Sync files using checkout from template
 echo -e "${YELLOW}📁 Syncing files...${NC}"
 
@@ -191,19 +204,6 @@ git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- examples 2>/dev/null || 
 mkdir -p scripts
 git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- scripts/sync-from-template.sh 2>/dev/null || true
 chmod +x scripts/sync-from-template.sh 2>/dev/null || true
-
-# Remove deprecated files
-echo -e "${YELLOW}🧹 Removing deprecated files...${NC}"
-if [ -d "chat" ]; then
-  rm -rf chat
-  git rm -rf chat 2>/dev/null || true
-  echo -e "${GREEN}  ✓ Removed chat/ (moved to feat/chat branch)${NC}"
-fi
-if [ -f .gitignore ] && grep -q "^\.chat/" .gitignore; then
-  sed -i '' '/^# Chat UI runtime data/d' .gitignore
-  sed -i '' '/^\.chat\//d' .gitignore
-  echo -e "${GREEN}  ✓ Cleaned .chat/ entry from .gitignore${NC}"
-fi
 
 # Update version tracker
 cat > .template-version << EOF

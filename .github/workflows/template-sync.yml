@@ -265,7 +265,6 @@ jobs:
           echo "✅ Sync complete!"
 
       - name: Remove deprecated files
-        if: steps.check-version.outputs.needs_update == 'true'
         run: |
           echo "🧹 Checking for deprecated files..."
 
@@ -321,19 +320,19 @@ jobs:
           fi
           
       - name: Commit directly (if configured)
-        if: steps.check-version.outputs.needs_update == 'true' && steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
+        if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git add -A
           git commit -m "chore: sync platform files from template v${{ steps.check-version.outputs.template_version }}"
           git push
-          
+
           echo "✅ Changes committed directly"
-          
+
       - name: Create Pull Request
-        if: steps.check-version.outputs.needs_update == 'true' && steps.changes.outputs.has_changes == 'true' && inputs.direct_commit != 'true'
+        if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit != 'true'
         id: create-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -410,7 +409,7 @@ jobs:
       - name: Set outputs
         id: result
         run: |
-          if [ "${{ steps.check-version.outputs.needs_update }}" = "true" ] && [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
+          if [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
             echo "updated=true" >> $GITHUB_OUTPUT
           else
             echo "updated=false" >> $GITHUB_OUTPUT

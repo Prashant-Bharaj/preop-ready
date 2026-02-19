@@ -105,8 +105,63 @@ if [[ -d "frontend" ]]; then
         else
             fail "nginx.conf missing /health endpoint" "Add: location /health { return 200 'OK'; }"
         fi
+
+        # Check nginx listens on port 8080 (non-root can't bind port 80)
+        if grep -qE "listen\s+8080" frontend/nginx.conf; then
+            pass "nginx.conf listens on port 8080"
+        elif grep -qE "listen\s+80[^0-9]" frontend/nginx.conf; then
+            fail "nginx.conf listens on port 80 (must be 8080)" "Change 'listen 80;' to 'listen 8080;' (non-root user cannot bind port 80)"
+        fi
+
+        # Check security headers
+        if grep -q "server_tokens off" frontend/nginx.conf; then
+            pass "nginx.conf has server_tokens off"
+        else
+            fail "nginx.conf missing 'server_tokens off'" "Add: server_tokens off;"
+        fi
+
+        if grep -q "X-Frame-Options" frontend/nginx.conf; then
+            pass "nginx.conf has X-Frame-Options header"
+        else
+            fail "nginx.conf missing X-Frame-Options header" "Add: add_header X-Frame-Options \"SAMEORIGIN\" always;"
+        fi
+
+        if grep -q "X-Content-Type-Options" frontend/nginx.conf; then
+            pass "nginx.conf has X-Content-Type-Options header"
+        else
+            fail "nginx.conf missing X-Content-Type-Options header" "Add: add_header X-Content-Type-Options \"nosniff\" always;"
+        fi
+
+        if grep -q "X-XSS-Protection" frontend/nginx.conf; then
+            pass "nginx.conf has X-XSS-Protection header"
+        else
+            fail "nginx.conf missing X-XSS-Protection header" "Add: add_header X-XSS-Protection \"1; mode=block\" always;"
+        fi
+
+        # Check for proxy_pass (should NOT be in production nginx.conf)
+        if grep -q "proxy_pass" frontend/nginx.conf; then
+            fail "nginx.conf has proxy_pass (not allowed in production)" "Remove proxy_pass - Traefik handles API routing. Use nginx.local.conf for local dev."
+        else
+            pass "nginx.conf has no proxy_pass (correct for production)"
+        fi
     else
         fail "frontend/nginx.conf missing" "Create nginx.conf with server block and /health endpoint"
+    fi
+
+    # Check Dockerfile has curl (required for ECS health checks)
+    if [[ -f "frontend/Dockerfile" ]]; then
+        if grep -q "curl" frontend/Dockerfile; then
+            pass "frontend/Dockerfile installs curl (required for ECS health checks)"
+        else
+            fail "frontend/Dockerfile missing curl" "Add: RUN apk add --no-cache curl"
+        fi
+
+        # Check Dockerfile has non-root user
+        if grep -q "USER appuser" frontend/Dockerfile; then
+            pass "frontend/Dockerfile runs as non-root user"
+        else
+            fail "frontend/Dockerfile missing non-root user" "Add USER appuser (see Dockerfile.vanilla or Dockerfile.react for example)"
+        fi
     fi
 fi
 
@@ -142,12 +197,43 @@ if [[ -d "backend" ]]; then
     fi
     
     # Check port 3000
-    for file in backend/server.js backend/index.js backend/app.js; do
+    for file in backend/server.js backend/index.js backend/app.js backend/main.py backend/app.py; do
         if [[ -f "$file" ]]; then
             if grep -qE "(3000|PORT)" "$file"; then
                 pass "Backend appears to use port 3000"
             else
                 warn "Could not verify backend uses port 3000 - deployment requires port 3000"
+            fi
+            break
+        fi
+    done
+
+    # Check Dockerfile has non-root user
+    if [[ -f "backend/Dockerfile" ]]; then
+        if grep -qE "USER (appuser|node|python)" backend/Dockerfile; then
+            pass "backend/Dockerfile runs as non-root user"
+        else
+            fail "backend/Dockerfile missing non-root user" "Add USER appuser (see Dockerfile.node or Dockerfile.python for example)"
+        fi
+    fi
+
+    # Check for hardcoded localhost URLs in frontend code (breaks in production)
+    HARDCODED_FOUND=false
+    for file in $(find frontend/src frontend/ -maxdepth 3 -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" 2>/dev/null); do
+        if grep -qE "https?://localhost" "$file" 2>/dev/null; then
+            HARDCODED_FOUND=true
+            warn "Hardcoded localhost URL found in $file - use relative URLs (e.g., fetch('/api/...'))"
+        fi
+    done
+    if [[ "$HARDCODED_FOUND" == "false" ]] && [[ -d "frontend" ]]; then
+        pass "No hardcoded localhost URLs in frontend code"
+    fi
+
+    # Check backend routes don't have /api prefix (Traefik strips it)
+    for file in backend/server.js backend/index.js backend/app.js; do
+        if [[ -f "$file" ]]; then
+            if grep -qE "\.(get|post|put|delete|patch)\s*\(\s*['\"]\/api\/" "$file" 2>/dev/null; then
+                warn "Backend routes use /api/ prefix - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
             fi
             break
         fi
@@ -188,6 +274,40 @@ if [[ -d "vectordb" ]]; then
     fi
 fi
 
+# Check database structure (optional)
+if [[ -d "database" ]] && [[ -f "database/Dockerfile" ]]; then
+    info "Database folder detected"
+
+    if grep -q "^FROM " database/Dockerfile; then
+        pass "database/Dockerfile has valid FROM instruction"
+    else
+        fail "database/Dockerfile is invalid" "Add a FROM instruction (copy from database/Dockerfile.postgres or .mysql)"
+    fi
+
+    # Check for HEALTHCHECK in Dockerfile
+    if grep -q "HEALTHCHECK" database/Dockerfile; then
+        pass "database/Dockerfile has HEALTHCHECK"
+    else
+        fail "database/Dockerfile missing HEALTHCHECK" "Add HEALTHCHECK instruction (see Dockerfile.postgres or .mysql templates)"
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+header "🔐 Security Checks"
+# -----------------------------------------------------------------------------
+
+# Check for committed .env files
+if git ls-files --error-unmatch .env backend/.env frontend/.env 2>/dev/null | grep -q ".env"; then
+    fail "Secret .env file(s) committed to git" "Run: git rm --cached .env backend/.env frontend/.env"
+else
+    pass "No .env files committed to git"
+fi
+
+# Check for deprecated chat/ directory
+if [[ -d "chat" ]]; then
+    warn "Deprecated chat/ directory found - run template sync to remove it"
+fi
+
 # -----------------------------------------------------------------------------
 header "🔧 Configuration Files"
 # -----------------------------------------------------------------------------
@@ -195,6 +315,15 @@ header "🔧 Configuration Files"
 # Check docker-compose.yml
 if [[ -f "docker-compose.yml" ]]; then
     pass "docker-compose.yml exists"
+
+    # Check nginx.local.conf volume mount for local API proxy
+    if [[ -d "frontend" ]] && [[ -d "backend" ]]; then
+        if grep -q "nginx.local.conf" docker-compose.yml; then
+            pass "docker-compose.yml mounts nginx.local.conf for local API proxy"
+        else
+            warn "docker-compose.yml missing nginx.local.conf volume mount - local /api/ proxy won't work"
+        fi
+    fi
 else
     fail "docker-compose.yml missing" "Create docker-compose.yml for local development"
 fi
