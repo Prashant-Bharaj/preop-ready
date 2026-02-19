@@ -92,9 +92,15 @@ auto_update:
     description: "Reusable code snippets"
     is_directory: true
     
-  # Sync script for manual updates
+  # Scripts
   - path: "scripts/sync-from-template.sh"
     description: "Manual sync script (alternative to workflow)"
+  - path: "scripts/apply-updates.sh"
+    description: "AI-driven update script (machine-readable output)"
+  - path: "scripts/check-updates.sh"
+    description: "AI-driven version check script (machine-readable output)"
+  - path: "scripts/preflight-check.sh"
+    description: "Pre-deployment validation checks"
 
 # -----------------------------------------------------------------------------
 # Files to merge intelligently

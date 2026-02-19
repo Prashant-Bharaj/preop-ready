@@ -241,7 +241,10 @@ jobs:
           echo "📁 Syncing scripts..."
           mkdir -p scripts
           fetch_file "scripts/sync-from-template.sh" || true
-          chmod +x scripts/sync-from-template.sh 2>/dev/null || true
+          fetch_file "scripts/apply-updates.sh" || true
+          fetch_file "scripts/check-updates.sh" || true
+          fetch_file "scripts/preflight-check.sh" || true
+          chmod +x scripts/*.sh 2>/dev/null || true
           
           echo ""
           echo "📁 Syncing examples..."
