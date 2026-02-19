@@ -189,10 +189,10 @@ while IFS= read -r line; do
                 rm -rf "$CLEANUP_PATH"
                 echo "  Removed: $CLEANUP_PATH/"
             elif [ "$CLEANUP_TYPE" = "gitignore_entry" ] && [ -f .gitignore ]; then
-                PATTERN="^\\.${CLEANUP_PATH#.}/"
-                if grep -q "$PATTERN" .gitignore 2>/dev/null; then
-                    sed -i "/$PATTERN/d" .gitignore
-                    sed -i "/^# .*${CLEANUP_PATH#.}/d" .gitignore
+                ENTRY="${CLEANUP_PATH#.}"
+                if grep -q "^\.${ENTRY}/" .gitignore 2>/dev/null; then
+                    sed -i "\|^\.${ENTRY}/|d" .gitignore
+                    sed -i "\|^# .*${ENTRY}|d" .gitignore
                     echo "  Cleaned: $CLEANUP_PATH from .gitignore"
                 fi
             fi
@@ -215,10 +215,10 @@ if [ -n "$CLEANUP_PATH" ]; then
         rm -rf "$CLEANUP_PATH"
         echo "  Removed: $CLEANUP_PATH/"
     elif [ "$CLEANUP_TYPE" = "gitignore_entry" ] && [ -f .gitignore ]; then
-        PATTERN="^\\.${CLEANUP_PATH#.}/"
-        if grep -q "$PATTERN" .gitignore 2>/dev/null; then
-            sed -i "/$PATTERN/d" .gitignore
-            sed -i "/^# .*${CLEANUP_PATH#.}/d" .gitignore
+        ENTRY="${CLEANUP_PATH#.}"
+        if grep -q "^\.${ENTRY}/" .gitignore 2>/dev/null; then
+            sed -i "\|^\.${ENTRY}/|d" .gitignore
+            sed -i "\|^# .*${ENTRY}|d" .gitignore
             echo "  Cleaned: $CLEANUP_PATH from .gitignore"
         fi
     fi
