@@ -29,12 +29,12 @@ on:
       auto_merge:
         description: 'Auto-merge PR if no conflicts'
         required: false
-        default: 'false'
+        default: false
         type: boolean
       direct_commit:
         description: 'Commit directly to branch (skip PR)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
         
   # Scheduled check - uncomment to enable
@@ -263,7 +263,27 @@ jobs:
           
           echo ""
           echo "✅ Sync complete!"
-          
+
+      - name: Remove deprecated files
+        if: steps.check-version.outputs.needs_update == 'true'
+        run: |
+          echo "🧹 Checking for deprecated files..."
+
+          # Chat app was removed from template - clean up if present
+          if [ -d "chat" ]; then
+            rm -rf chat
+            echo "  ✓ Removed chat/ (moved to feat/chat branch)"
+          fi
+
+          # Remove .chat/ runtime data entry from .gitignore
+          if [ -f .gitignore ] && grep -q "^\.chat/" .gitignore; then
+            sed -i '/^# Chat UI runtime data/d' .gitignore
+            sed -i '/^\.chat\//d' .gitignore
+            echo "  ✓ Cleaned .chat/ entry from .gitignore"
+          fi
+
+          echo "✅ Cleanup complete!"
+
       - name: Merge .gitignore patterns
         if: steps.check-version.outputs.needs_update == 'true'
         env:
