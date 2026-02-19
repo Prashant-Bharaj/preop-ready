@@ -49,7 +49,9 @@ When user says... → Check this snippet:
 
 | User Request | Snippet to Check |
 |--------------|------------------|
-| "Who is logged in" / "User identity" | `auth/user-identity.js` or `auth/user-identity.py` |
+| "Who is logged in" / "User identity" (Node.js) | `auth/user-identity.js` |
+| "Who is logged in" / "User identity" (Python) | `auth/user-identity.py` |
+| "Who is logged in" / "User identity" (Rust) | `auth/user-identity.rs` |
 | "Upload files" | `file-handling/upload-handler.js` |
 | "Validate input" / "Sanitize data" | `security/input-validation.js` |
 | "Database queries" / "SQL" | `security/parameterized-queries.js` |

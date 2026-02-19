@@ -24,6 +24,7 @@
 |---------|----------|------|-------------|
 | User Identity | JS | `auth/user-identity.js` | Get logged-in user from OIDC headers |
 | User Identity | Python | `auth/user-identity.py` | Get logged-in user (FastAPI/Flask) |
+| User Identity | Rust | `auth/user-identity.rs` | Get logged-in user (Actix-web) |
 
 ### 📁 File Handling
 

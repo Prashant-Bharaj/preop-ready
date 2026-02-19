@@ -13,9 +13,11 @@
 
 ---
 
-## ⚠️ FIRST: Configure docker-compose.yml for Your Architecture
+## ⚠️ FIRST: Configure docker-compose.yml AND nginx.local.conf for Your Architecture
 
-**BEFORE creating any code files, update `docker-compose.yml` to match the chosen stack:**
+**BEFORE creating any code files, update BOTH `docker-compose.yml` AND `frontend/nginx.local.conf` to match the chosen stack:**
+
+### Step 1: docker-compose.yml
 
 | Architecture | Action |
 |-------------|--------|
@@ -23,7 +25,14 @@
 | **Frontend + Backend** (no database) | Remove `db` service and its `depends_on`. Keep `frontend` and `backend`. |
 | **Full-stack** (frontend + backend + database) | Keep all services. Switch MySQL/PostgreSQL as needed. |
 
-**Do this FIRST** — if you run `docker-compose up` with services that reference missing Dockerfiles, the build will fail.
+### Step 2: nginx.local.conf (if frontend-only)
+
+| Architecture | Action |
+|-------------|--------|
+| **Frontend-only** (no backend) | Remove the entire API proxy section from `nginx.local.conf` (marked with `>>> REMOVE THIS ENTIRE SECTION FOR FRONTEND-ONLY APPS <<<`). Or copy `nginx.conf` as `nginx.local.conf`. |
+| **Has backend** | Keep nginx.local.conf as-is (proxy blocks needed). |
+
+**Do BOTH steps FIRST** — if you run `docker-compose up` with services that reference missing Dockerfiles or with nginx proxy_pass pointing to a non-existent backend, the build/start will fail.
 
 ---
 

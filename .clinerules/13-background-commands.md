@@ -85,7 +85,7 @@ services:
       - ./frontend:/app          # Mount source for hot reload
       - /app/node_modules        # Don't override node_modules
     ports:
-      - "8080:80"
+      - "8080:8080"
 
   backend:
     build: ./backend

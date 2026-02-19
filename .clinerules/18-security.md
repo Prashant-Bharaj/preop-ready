@@ -111,7 +111,7 @@ COPY --chown=appuser:appgroup . .
 USER appuser
 
 EXPOSE 3000
-CMD ["node", "src/index.js"]
+CMD ["node", "server.js"]
 ```
 
 ### Python Dockerfile (Secure)

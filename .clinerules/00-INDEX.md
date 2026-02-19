@@ -149,7 +149,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 10. **All persistent data must use `/data`** - Databases, vector DBs, and file uploads all store in `/data/<subdir>`. Anything outside `/data` is lost on redeployment. See `10-platform-rules.md` § Persistence and `14-file-handling.md`
 11. **Check whitelisting before deploy** - Repo must be whitelisted first. See `07-deployment.md`
 12. **Run preflight check before every push** - Always run `./scripts/preflight-check.sh` before `git push`. It validates Dockerfiles, nginx config, and health endpoints. Fix all issues before pushing. See `07-deployment.md`
-13. **Frontend-only apps need cleanup** - Remove backend/db from docker-compose.yml and proxy from nginx.local.conf. See `05-building.md`
+13. **Frontend-only apps need cleanup (DO THIS FIRST!)** - Before writing ANY code, remove backend/db services from `docker-compose.yml` AND remove the proxy blocks (marked `>>> REMOVE THIS ENTIRE SECTION FOR FRONTEND-ONLY APPS <<<`) from `nginx.local.conf`. Leaving proxy_pass pointing to a non-existent backend will crash nginx. See `05-building.md` and verify with `06-testing.md` checklist.
 
 ---
 

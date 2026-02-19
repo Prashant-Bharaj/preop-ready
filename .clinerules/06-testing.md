@@ -1,5 +1,24 @@
 # 🧪 Testing Locally
 
+## ⚠️ BEFORE Testing: Verify Architecture Consistency
+
+**EVERY TIME before running `docker-compose up`, verify these match the chosen architecture:**
+
+| Check | Frontend-only | Has Backend | Full-stack |
+|-------|--------------|-------------|------------|
+| `docker-compose.yml` has backend service? | ❌ Must be removed | ✅ Present | ✅ Present |
+| `docker-compose.yml` has db service? | ❌ Must be removed | ❌ Remove if unused | ✅ Present |
+| `docker-compose.yml` frontend has `depends_on: backend`? | ❌ Must be removed | ✅ Present | ✅ Present |
+| `nginx.local.conf` has `/api/` proxy block? | ❌ Must be removed | ✅ Present | ✅ Present |
+| `nginx.local.conf` has `/socket.io/` proxy block? | ❌ Must be removed | ✅ If using WS | ✅ If using WS |
+| `nginx.conf` has NO proxy_pass? | ✅ Must NOT have any | ✅ Must NOT have any | ✅ Must NOT have any |
+
+**If any mismatch exists, fix it BEFORE running docker-compose.**
+- A `proxy_pass` in `nginx.local.conf` pointing to a non-existent backend service will crash nginx on startup.
+- A `proxy_pass` in `nginx.conf` (production) will crash nginx in production — Traefik handles API routing, not nginx. **NEVER add proxy_pass to nginx.conf.**
+
+---
+
 ## How to Explain Testing
 
 Don't say "spin up containers" - **run the command for them**:
@@ -8,7 +27,7 @@ Don't say "spin up containers" - **run the command for them**:
 Let's test your app before making it live! Want me to start it?
 ```
 
-**If user agrees, RUN THE COMMAND:**
+**If user agrees, first verify architecture consistency (table above), then RUN THE COMMAND:**
 ```bash
 docker-compose up --build
 ```
