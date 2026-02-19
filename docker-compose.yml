@@ -35,7 +35,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=3306           # Change to 5432 for PostgreSQL
