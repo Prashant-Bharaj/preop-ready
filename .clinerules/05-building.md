@@ -201,6 +201,9 @@ struct HealthResponse {
 
 // =============================================================================
 // ROUTES - Note: NO /api prefix! Frontend calls /api/X, backend defines /X
+// The /api prefix is STRIPPED by Traefik (production) and nginx (local dev)
+// WRONG: .route("/api/users", ...) -> user calls /api/api/users -> 404!
+// RIGHT: .route("/users", ...)     -> user calls /api/users     -> works!
 // =============================================================================
 
 // Health check (REQUIRED - deployment fails without this!)
@@ -248,6 +251,9 @@ app.use(express.json());
 
 // =============================================================================
 // ROUTES - Note: NO /api prefix! Frontend calls /api/X, backend defines /X
+// The /api prefix is STRIPPED by Traefik (production) and nginx (local dev)
+// WRONG: app.get('/api/users') -> user calls /api/api/users -> 404!
+// RIGHT: app.get('/users')     -> user calls /api/users     -> works!
 // =============================================================================
 
 // Health check (REQUIRED - deployment fails without this!)

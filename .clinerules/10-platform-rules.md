@@ -355,6 +355,8 @@ const socket = io(window.location.origin);  // ✅ Works in production
 
 ### ⚠️ IMPORTANT: The `/api` prefix is STRIPPED!
 
+**How it works**: Traefik uses `stripprefix` middleware in production; nginx.local.conf uses trailing `/` in `proxy_pass http://backend:3000/` to strip locally.
+
 - Request: `GET /api/users` → Backend receives: `GET /users`
 - Request: `POST /api/data` → Backend receives: `POST /data`
 - Request: `GET /api/health` → Backend receives: `GET /health`

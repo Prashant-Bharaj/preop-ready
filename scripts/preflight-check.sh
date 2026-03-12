@@ -26,18 +26,18 @@ WARNINGS=0
 # Helper functions
 pass() {
     echo -e "${GREEN}✅ PASS${NC}: $1"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 }
 
 fail() {
     echo -e "${RED}❌ FAIL${NC}: $1"
     echo -e "   ${YELLOW}Fix${NC}: $2"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 }
 
 warn() {
     echo -e "${YELLOW}⚠️  WARN${NC}: $1"
-    ((WARNINGS++))
+    WARNINGS=$((WARNINGS + 1))
 }
 
 info() {
@@ -322,6 +322,30 @@ if [[ -f "docker-compose.yml" ]]; then
             pass "docker-compose.yml mounts nginx.local.conf for local API proxy"
         else
             warn "docker-compose.yml missing nginx.local.conf volume mount - local /api/ proxy won't work"
+        fi
+    fi
+
+    # Validate docker-compose services match project structure
+    if [[ -d "database" ]] && [[ -f "database/Dockerfile" ]]; then
+        if grep -qE '^\s+(db|database):' docker-compose.yml; then
+            pass "docker-compose.yml has database service matching database/Dockerfile"
+        else
+            fail "database/Dockerfile exists but docker-compose.yml has no db/database service" "Add a 'db' service to docker-compose.yml for local development"
+        fi
+    fi
+
+    if [[ -d "vectordb" ]] && [[ -f "vectordb/Dockerfile" ]]; then
+        if grep -qE '^\s+vectordb:' docker-compose.yml; then
+            pass "docker-compose.yml has vectordb service matching vectordb/Dockerfile"
+        else
+            fail "vectordb/Dockerfile exists but docker-compose.yml has no vectordb service" "Add a 'vectordb' service to docker-compose.yml for local development"
+        fi
+    fi
+
+    # Warn if frontend-only project has proxy_pass in nginx config
+    if [[ -d "frontend" ]] && [[ ! -d "backend" ]]; then
+        if [[ -f "frontend/nginx.local.conf" ]] && grep -q "proxy_pass" frontend/nginx.local.conf; then
+            warn "No backend/ folder but nginx.local.conf has proxy_pass - this will 502 locally"
         fi
     fi
 else
