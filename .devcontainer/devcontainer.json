@@ -43,7 +43,7 @@
     }
   },
 
-  "postStartCommand": "bash .devcontainer/install-cline.sh",
+  "postAttachCommand": "bash .devcontainer/install-cline.sh",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 

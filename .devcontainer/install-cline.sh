@@ -3,15 +3,37 @@
 # The auto-install via devcontainer.json extensions can fail with large extensions (~50MB+)
 # due to download timeouts or truncated zip files in Codespaces.
 
-EXTENSION_ID="saoudrizwan.claude-dev"
 VSIX_URL="https://saoudrizwan.gallery.vsassets.io/_apis/public/gallery/publisher/saoudrizwan/extension/claude-dev/latest/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage"
 VSIX_PATH="/tmp/cline.vsix"
-EXTENSIONS_DIR="$HOME/.vscode-remote/extensions"
 
 echo "🤖 Installing Cline extension..."
 
+# Find the VS Code server binary (available in Codespaces even when 'code' CLI is not)
+CODE_SERVER=$(find /vscode/bin -name "code-server" -type f 2>/dev/null | head -1)
+if [ -z "$CODE_SERVER" ]; then
+  CODE_SERVER=$(find /usr/lib/code-server -name "code-server" -type f 2>/dev/null | head -1)
+fi
+if [ -z "$CODE_SERVER" ]; then
+  # Fallback: wait for 'code' to become available (postAttachCommand timing)
+  for i in $(seq 1 10); do
+    if command -v code &>/dev/null; then
+      CODE_SERVER="code"
+      break
+    fi
+    echo "  Waiting for VS Code CLI... ($i/10)"
+    sleep 3
+  done
+fi
+
+if [ -z "$CODE_SERVER" ]; then
+  echo "⚠️  VS Code CLI not found. Install Cline manually from the Extensions sidebar."
+  exit 0
+fi
+
+echo "  Using: $CODE_SERVER"
+
 # Skip if already installed
-if ls "$EXTENSIONS_DIR" 2>/dev/null | grep -qi "claude-dev"; then
+if "$CODE_SERVER" --list-extensions 2>/dev/null | grep -qi "claude-dev"; then
   echo "✅ Cline is already installed, skipping."
   exit 0
 fi
@@ -30,13 +52,13 @@ if ! file "$VSIX_PATH" | grep -q "Zip archive"; then
   exit 0
 fi
 
-# Extract VSIX (it's a zip) directly into the extensions directory
-echo "  Extracting extension..."
-EXTRACT_DIR="$EXTENSIONS_DIR/$EXTENSION_ID"
-mkdir -p "$EXTRACT_DIR"
-unzip -qo "$VSIX_PATH" "extension/*" -d /tmp/cline-extract
-mv /tmp/cline-extract/extension/* "$EXTRACT_DIR/"
-rm -rf /tmp/cline-extract "$VSIX_PATH"
+# Install
+echo "  Installing extension..."
+if "$CODE_SERVER" --install-extension "$VSIX_PATH" 2>&1; then
+  echo "✅ Cline installed successfully!"
+else
+  echo "⚠️  Install command failed. Install Cline manually from the Extensions sidebar."
+fi
 
-echo "✅ Cline installed! Reload the window (Ctrl+Shift+P → 'Reload Window') to activate it."
+rm -f "$VSIX_PATH"
 exit 0
