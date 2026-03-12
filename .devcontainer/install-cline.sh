@@ -10,6 +10,12 @@ VSIX_URL="https://saoudrizwan.gallery.vsassets.io/_apis/public/gallery/publisher
 VSIX_PATH="/tmp/cline.vsix"
 MAX_RETRIES=3
 
+# Skip if already installed
+if code --list-extensions 2>/dev/null | grep -qi "claude-dev"; then
+  echo "✅ Cline is already installed, skipping."
+  exit 0
+fi
+
 echo "🤖 Installing Cline extension..."
 
 for i in $(seq 1 $MAX_RETRIES); do
