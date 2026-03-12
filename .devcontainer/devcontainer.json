@@ -4,9 +4,6 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        // 🤖 AI Coding Assistant - Ask it to write code for you!
-        "saoudrizwan.claude-dev",
-        
         // ✨ Auto-formatting - Makes your code look pretty automatically
         "esbenp.prettier-vscode",
         
@@ -45,6 +42,8 @@
       }
     }
   },
+
+  "postCreateCommand": "bash .devcontainer/install-cline.sh",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 
