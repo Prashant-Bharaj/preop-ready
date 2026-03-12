@@ -3,44 +3,40 @@
 # The auto-install via devcontainer.json extensions can fail with large extensions (~50MB+)
 # due to download timeouts or truncated zip files in Codespaces.
 
-set -e
-
 EXTENSION_ID="saoudrizwan.claude-dev"
 VSIX_URL="https://saoudrizwan.gallery.vsassets.io/_apis/public/gallery/publisher/saoudrizwan/extension/claude-dev/latest/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage"
 VSIX_PATH="/tmp/cline.vsix"
-MAX_RETRIES=3
+EXTENSIONS_DIR="$HOME/.vscode-remote/extensions"
+
+echo "🤖 Installing Cline extension..."
 
 # Skip if already installed
-if code --list-extensions 2>/dev/null | grep -qi "claude-dev"; then
+if ls "$EXTENSIONS_DIR" 2>/dev/null | grep -qi "claude-dev"; then
   echo "✅ Cline is already installed, skipping."
   exit 0
 fi
 
-echo "🤖 Installing Cline extension..."
+# Download the VSIX
+echo "  Downloading VSIX..."
+if ! curl -fSL --retry 3 --retry-delay 5 -o "$VSIX_PATH" "$VSIX_URL"; then
+  echo "⚠️  Download failed. Install Cline manually from the Extensions sidebar."
+  exit 0
+fi
 
-for i in $(seq 1 $MAX_RETRIES); do
-  echo "  Attempt $i/$MAX_RETRIES: Downloading VSIX..."
-  if curl -fSL --retry 2 --retry-delay 3 -o "$VSIX_PATH" "$VSIX_URL"; then
-    # Verify it's a valid zip
-    if file "$VSIX_PATH" | grep -q "Zip archive"; then
-      echo "  Download OK, installing..."
-      code --install-extension "$VSIX_PATH" && {
-        echo "✅ Cline installed successfully!"
-        rm -f "$VSIX_PATH"
-        exit 0
-      }
-    else
-      echo "  Downloaded file is not a valid zip, retrying..."
-      rm -f "$VSIX_PATH"
-    fi
-  else
-    echo "  Download failed, retrying..."
-    rm -f "$VSIX_PATH"
-  fi
-  sleep 5
-done
+# Verify it's a valid zip
+if ! file "$VSIX_PATH" | grep -q "Zip archive"; then
+  echo "⚠️  Downloaded file is not a valid zip. Install Cline manually from the Extensions sidebar."
+  rm -f "$VSIX_PATH"
+  exit 0
+fi
 
-echo "⚠️  Could not install Cline after $MAX_RETRIES attempts."
-echo "   You can install it manually: Extensions sidebar → search 'Cline' → Install"
-# Don't fail the entire Codespace setup over this
+# Extract VSIX (it's a zip) directly into the extensions directory
+echo "  Extracting extension..."
+EXTRACT_DIR="$EXTENSIONS_DIR/$EXTENSION_ID"
+mkdir -p "$EXTRACT_DIR"
+unzip -qo "$VSIX_PATH" "extension/*" -d /tmp/cline-extract
+mv /tmp/cline-extract/extension/* "$EXTRACT_DIR/"
+rm -rf /tmp/cline-extract "$VSIX_PATH"
+
+echo "✅ Cline installed! Reload the window (Ctrl+Shift+P → 'Reload Window') to activate it."
 exit 0
