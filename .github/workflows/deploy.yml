@@ -5,7 +5,7 @@
 # we have more info / own-AWS static hosting.
 #
 # Triggers:
-#   - After CodeQL security scan completes on main/master (deploy only if CodeQL passed)
+#   - After CodeQL security scan completes on main/master (deploy only if CodeQL passed, including scheduled scans)
 #   - Manual dispatch (for testing)
 #
 # URL: https://<repo-name>.vibe.992872368362.cloud.bayer.com
@@ -52,13 +52,6 @@ jobs:
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
             exit 0
           fi
-          # Skip deploys triggered by scheduled CodeQL scans (only deploy on push/manual)
-          if [[ "$EVENT" == "workflow_run" ]] && [[ "$TRIGGER_EVENT" == "schedule" ]]; then
-            REASON="scheduled-scan"
-            echo "should-deploy=false" >> $GITHUB_OUTPUT
-            echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
-            exit 0
-          fi
           if [[ "$EVENT" == "workflow_run" ]] && [[ "$CONCLUSION" != "success" ]]; then
             REASON="codeql-failed"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
@@ -66,7 +59,8 @@ jobs:
             exit 0
           fi
           ACTOR="${{ github.actor }}"
-          if [[ "$ACTOR" == *"[bot]"* ]] || [[ "$ACTOR" == "dependabot"* ]] || [[ "$ACTOR" == "github-advanced-security"* ]]; then
+          # Allow github-advanced-security[bot] through — scheduled CodeQL scans should trigger deploys
+          if [[ "$ACTOR" != "github-advanced-security"* ]] && { [[ "$ACTOR" == *"[bot]"* ]] || [[ "$ACTOR" == "dependabot"* ]]; }; then
             REASON="bot-triggered"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
@@ -82,11 +76,7 @@ jobs:
           {
             echo "## Deployment Skipped"
             echo ""
-            if [[ "$REASON" == "scheduled-scan" ]]; then
-              echo "**Reason:** Triggered by a scheduled CodeQL scan — skipping deploy."
-              echo ""
-              echo "Automatic deploys only run after CodeQL scans triggered by a push to main/master."
-            elif [[ "$REASON" == "codeql-failed" ]]; then
+            if [[ "$REASON" == "codeql-failed" ]]; then
               echo "**Reason:** CodeQL security scan did not pass."
               echo ""
               echo "Deployment is blocked until CodeQL completes successfully."
