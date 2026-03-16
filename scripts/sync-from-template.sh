@@ -97,22 +97,40 @@ if [ "$CURRENT_VERSION" = "$TEMPLATE_VERSION" ]; then
 fi
 
 echo ""
-echo -e "${BLUE}📋 Files to sync:${NC}"
-echo "   - .github/workflows/deploy.yml, template-sync.yml"
-echo "   - frontend/Dockerfile.vanilla, Dockerfile.react"
-echo "   - backend/Dockerfile.node, Dockerfile.python"
-echo "   - database/Dockerfile.* templates"
-echo "   - .cursorrules, .clinerules/"
-echo "   - .devcontainer/devcontainer.json"
-echo "   - docs/MIGRATION.md, docs/EXAMPLES.md"
-echo "   - snippets/, scripts/"
+
+# Read manifest from template to get file list
+echo -e "${BLUE}📋 Reading manifest from template...${NC}"
+MANIFEST=$(git show "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}:.template-manifest.yml" 2>/dev/null)
+
+if [ -z "$MANIFEST" ]; then
+  echo -e "${RED}❌ Could not read manifest from template${NC}"
+  exit 1
+fi
+
+# Parse auto_update entries for display
+echo -e "${BLUE}📋 Files to sync (from manifest):${NC}"
+echo "$MANIFEST" | awk '
+/^auto_update:/ { in_section=1; next }
+/^[a-zA-Z]/ && in_section { exit }
+in_section && /^  - path:/ {
+  gsub(/"/, "")
+  printf "   - %s\n", $3
+}
+'
 echo ""
 
 echo -e "${BLUE}🔒 Files NOT touched (your code is safe):${NC}"
-echo "   - frontend/src/, frontend/index.html, frontend/style.css"
-echo "   - backend/server.js, backend/main.py, backend/Dockerfile"
-echo "   - database/init/, database/Dockerfile"
-echo "   - docker-compose.yml (user services preserved)"
+echo "$MANIFEST" | awk '
+/^ignore:/ { in_section=1; next }
+/^[a-zA-Z]/ && in_section { exit }
+in_section && /^  - / {
+  gsub(/"/, "")
+  gsub(/^  - /, "")
+  # Strip inline comments
+  sub(/ *#.*$/, "")
+  printf "   - %s\n", $0
+}
+'
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
@@ -140,70 +158,79 @@ BACKUP_BRANCH="backup/pre-sync-$(date +%Y%m%d-%H%M%S)"
 echo -e "${YELLOW}💾 Creating backup branch: $BACKUP_BRANCH${NC}"
 git branch "$BACKUP_BRANCH"
 
-# Remove deprecated files (runs BEFORE self-update to avoid chicken-and-egg)
+# Remove deprecated files from manifest cleanup section
 echo -e "${YELLOW}🧹 Removing deprecated files...${NC}"
-if [ -d "chat" ]; then
-  rm -rf chat
-  git rm -rf chat 2>/dev/null || true
-  echo -e "${GREEN}  ✓ Removed chat/ (moved to feat/chat branch)${NC}"
-fi
-if [ -f .gitignore ] && grep -q "^\.chat/" .gitignore; then
-  sed -i '' '/^# Chat UI runtime data/d' .gitignore
-  sed -i '' '/^\.chat\//d' .gitignore
-  echo -e "${GREEN}  ✓ Cleaned .chat/ entry from .gitignore${NC}"
-fi
+echo "$MANIFEST" | awk '
+/^cleanup:/ { in_section=1; next }
+/^[a-zA-Z]/ && in_section { exit }
+in_section && /^  - path:/ {
+  gsub(/"/, "")
+  path=$3
+  next
+}
+in_section && /type:/ {
+  gsub(/"/, "")
+  type=$2
+  if (path) print path, type
+  path=""
+  type=""
+  next
+}
+END { if (path && type) print path, type }
+' | while read -r path type; do
+  case "$type" in
+    directory)
+      if [ -d "$path" ]; then
+        rm -rf "$path"
+        git rm -rf "$path" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Removed $path/${NC}"
+      fi
+      ;;
+    gitignore_entry)
+      if [ -f .gitignore ] && grep -q "^${path}" .gitignore; then
+        sed -i '' "/${path//\//\\/}/d" .gitignore
+        echo -e "${GREEN}  ✓ Cleaned $path from .gitignore${NC}"
+      fi
+      ;;
+  esac
+done
 
-# Sync files using checkout from template
-echo -e "${YELLOW}📁 Syncing files...${NC}"
+# Sync files from manifest auto_update section
+echo -e "${YELLOW}📁 Syncing files from manifest...${NC}"
+echo "$MANIFEST" | awk '
+/^auto_update:/ { in_section=1; next }
+/^[a-zA-Z]/ && in_section { exit }
+in_section && /^  - path:/ {
+  if (path) print path, is_dir
+  gsub(/"/, "")
+  path=$3
+  is_dir="false"
+  next
+}
+in_section && /is_directory:/ {
+  is_dir=$2
+  next
+}
+END { if (path) print path, is_dir }
+' | while read -r path is_dir; do
+  dir=$(dirname "$path")
+  [ "$dir" != "." ] && mkdir -p "$dir"
 
-# Workflows (includes self-updating sync workflow)
-mkdir -p .github/workflows
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .github/workflows/deploy.yml 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .github/workflows/template-sync.yml 2>/dev/null || true
+  if [ "$is_dir" = "true" ]; then
+    rm -rf "$path"
+    git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- "$path" 2>/dev/null && \
+      echo -e "${GREEN}  ✓ $path (directory)${NC}" || \
+      echo -e "${YELLOW}  ⏭️ $path (not found)${NC}"
+  else
+    git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- "$path" 2>/dev/null && \
+      echo -e "${GREEN}  ✓ $path${NC}" || \
+      echo -e "${YELLOW}  ⏭️ $path (not found)${NC}"
+  fi
+done
 
-# Frontend templates (if frontend dir exists)
-if [ -d frontend ]; then
-  git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- frontend/Dockerfile.vanilla 2>/dev/null || true
-  git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- frontend/Dockerfile.react 2>/dev/null || true
-fi
-
-# Backend templates (if backend dir exists)
-if [ -d backend ]; then
-  git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- backend/Dockerfile.node 2>/dev/null || true
-  git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- backend/Dockerfile.python 2>/dev/null || true
-fi
-
-# Database templates
-mkdir -p database
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.postgres 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- database/Dockerfile.mysql 2>/dev/null || true
-
-# AI instructions
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .cursorrules 2>/dev/null || true
-rm -rf .clinerules
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .clinerules 2>/dev/null || true
-
-# Dev container
-mkdir -p .devcontainer
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- .devcontainer/devcontainer.json 2>/dev/null || true
-
-# Documentation
-mkdir -p docs
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- docs/MIGRATION.md 2>/dev/null || true
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- docs/EXAMPLES.md 2>/dev/null || true
-
-# Snippets
-rm -rf snippets
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- snippets 2>/dev/null || true
-
-# Examples
-mkdir -p examples
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- examples 2>/dev/null || true
-
-# Scripts (including this sync script itself)
-mkdir -p scripts
-git checkout "${TEMPLATE_REMOTE}/${TEMPLATE_BRANCH}" -- scripts/sync-from-template.sh 2>/dev/null || true
-chmod +x scripts/sync-from-template.sh 2>/dev/null || true
+# Make scripts executable
+chmod +x scripts/*.sh 2>/dev/null || true
+chmod +x .devcontainer/*.sh 2>/dev/null || true
 
 # Update version tracker
 cat > .template-version << EOF

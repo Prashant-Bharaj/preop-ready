@@ -35,6 +35,12 @@
 |---------|----------|------|-------------|
 | File Upload | JS | `file-handling/upload-handler.js` | Handle file uploads (memory, not disk!) |
 
+### 🤖 AI / LLM
+
+| Snippet | Language | File | Description |
+|---------|----------|------|-------------|
+| Bayer LLM Client | JS | `llm/bayer-llm-client.js` | Connect to Bayer's internal LLM API (OpenAI-compatible) |
+
 ### 🔒 Security
 
 > ⚠️ **REQUIRED**: All projects MUST follow security best practices. See `.clinerules/18-security.md`

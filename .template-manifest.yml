@@ -80,6 +80,8 @@ auto_update:
   # Development environment
   - path: ".devcontainer/devcontainer.json"
     description: "Codespaces/devcontainer configuration"
+  - path: ".devcontainer/install-cline.sh"
+    description: "Cline extension installer for Codespaces"
     
   # Documentation
   - path: "docs/MIGRATION.md"
@@ -92,6 +94,11 @@ auto_update:
     description: "Reusable code snippets"
     is_directory: true
     
+  # Examples
+  - path: "examples/"
+    description: "Example config files (eslint, ruff, vite)"
+    is_directory: true
+
   # Scripts
   - path: "scripts/sync-from-template.sh"
     description: "Manual sync script (alternative to workflow)"

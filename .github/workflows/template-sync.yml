@@ -142,21 +142,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "📥 Fetching platform files from template..."
-          
+
           TEMPLATE_VERSION="${{ steps.check-version.outputs.template_version }}"
-          
+
           # Helper function to fetch file from template
           fetch_file() {
             local path=$1
             local dir=$(dirname "$path")
-            
+
             # Create directory if needed
             [ "$dir" != "." ] && mkdir -p "$dir"
-            
+
             # Fetch file content
             CONTENT=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
               --jq '.content' 2>/dev/null | base64 -d)
-            
+
             if [ -n "$CONTENT" ]; then
               echo "$CONTENT" > "$path"
               echo "  ✓ $path"
@@ -166,122 +166,119 @@ jobs:
               return 1
             fi
           }
-          
+
           # Helper to fetch directory
           fetch_dir() {
             local path=$1
             rm -rf "$path"
             mkdir -p "$path"
-            
+
             # Get list of files in directory
             FILES=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
               --jq '.[].path' 2>/dev/null || echo "")
-            
+
             for file in $FILES; do
               fetch_file "$file" || true
             done
           }
-          
-          echo ""
-          echo "📁 Syncing workflows..."
-          mkdir -p .github/workflows
-          fetch_file ".github/workflows/deploy.yml" || true
-          fetch_file ".github/workflows/template-sync.yml" || true
-          
-          echo ""
-          echo "📁 Syncing frontend templates..."
-          if [ -d frontend ]; then
-            fetch_file "frontend/Dockerfile.vanilla" || true
-            fetch_file "frontend/Dockerfile.react" || true
-            fetch_file "frontend/nginx.conf" || true
-            fetch_file "frontend/nginx.local.conf" || true
-          fi
-          
-          echo ""
-          echo "📁 Syncing backend templates..."
-          if [ -d backend ]; then
-            fetch_file "backend/Dockerfile.node" || true
-            fetch_file "backend/Dockerfile.python" || true
-          fi
-          
-          echo ""
-          echo "📁 Syncing database templates..."
-          mkdir -p database
-          fetch_file "database/Dockerfile.postgres" || true
-          fetch_file "database/Dockerfile.mysql" || true
-          
-          echo ""
-          echo "📁 Syncing vectordb templates..."
-          mkdir -p vectordb
-          fetch_file "vectordb/Dockerfile.pgvector" || true
-          fetch_file "vectordb/Dockerfile.chroma" || true
-          fetch_file "vectordb/Dockerfile.qdrant" || true
 
+          # Fetch manifest from template repo (single source of truth)
           echo ""
-          echo "📁 Syncing AI instructions..."
-          fetch_file ".cursorrules" || true
-          fetch_dir ".clinerules" || true
-          
+          echo "📋 Reading manifest from template..."
+          MANIFEST=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml?ref=${{ env.TEMPLATE_BRANCH }}" \
+            --jq '.content' | base64 -d)
+
+          # Parse auto_update entries and sync each one
           echo ""
-          echo "📁 Syncing dev container..."
-          mkdir -p .devcontainer
-          fetch_file ".devcontainer/devcontainer.json" || true
-          
-          echo ""
-          echo "📁 Syncing documentation..."
-          mkdir -p docs
-          fetch_file "docs/MIGRATION.md" || true
-          fetch_file "docs/EXAMPLES.md" || true
-          
-          echo ""
-          echo "📁 Syncing snippets..."
-          fetch_dir "snippets" || true
-          
-          echo ""
-          echo "📁 Syncing scripts..."
-          mkdir -p scripts
-          fetch_file "scripts/sync-from-template.sh" || true
-          fetch_file "scripts/apply-updates.sh" || true
-          fetch_file "scripts/check-updates.sh" || true
-          fetch_file "scripts/preflight-check.sh" || true
+          echo "📁 Syncing files from manifest..."
+          echo "$MANIFEST" | awk '
+          /^auto_update:/ { in_section=1; next }
+          /^[a-zA-Z]/ && in_section { exit }
+          in_section && /^  - path:/ {
+            if (path) print path, is_dir
+            gsub(/"/, "")
+            path=$3
+            is_dir="false"
+            next
+          }
+          in_section && /is_directory:/ {
+            is_dir=$2
+            next
+          }
+          END { if (path) print path, is_dir }
+          ' | while read -r path is_dir; do
+            if [ "$is_dir" = "true" ]; then
+              fetch_dir "$path"
+            else
+              fetch_file "$path" || true
+            fi
+          done
+
+          # Make scripts executable
           chmod +x scripts/*.sh 2>/dev/null || true
-          
-          echo ""
-          echo "📁 Syncing examples..."
-          mkdir -p examples
-          fetch_file "examples/eslint.config.js" || true
-          fetch_file "examples/ruff.toml" || true
-          
+          chmod +x .devcontainer/*.sh 2>/dev/null || true
+
           # Update version tracker
           echo ""
           echo "📝 Updating version tracker..."
           cat > .template-version << EOF
           # Template Version Tracker
           # DO NOT DELETE - helps keep your project up to date!
-          
+
           version: "$TEMPLATE_VERSION"
           template_repo: "bayer-int/dd-template-repo"
           last_sync: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           EOF
-          
+
           echo ""
           echo "✅ Sync complete!"
 
       - name: Remove deprecated files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🧹 Checking for deprecated files..."
 
-          # Chat app was removed from template - clean up if present
-          if [ -d "chat" ]; then
-            rm -rf chat
-            echo "  ✓ Removed chat/ (moved to feat/chat branch)"
-          fi
+          # Fetch manifest to read cleanup entries
+          MANIFEST=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml?ref=${{ env.TEMPLATE_BRANCH }}" \
+            --jq '.content' 2>/dev/null | base64 -d || echo "")
 
-          # Remove .chat/ runtime data entry from .gitignore
-          if [ -f .gitignore ] && grep -q "^\.chat/" .gitignore; then
-            sed -i '/^# Chat UI runtime data/d' .gitignore
-            sed -i '/^\.chat\//d' .gitignore
-            echo "  ✓ Cleaned .chat/ entry from .gitignore"
+          if [ -z "$MANIFEST" ]; then
+            echo "  ⚠️ Could not fetch manifest for cleanup, skipping"
+          else
+            echo "$MANIFEST" | awk '
+            /^cleanup:/ { in_section=1; next }
+            /^[a-zA-Z]/ && in_section { exit }
+            in_section && /^  - path:/ {
+              gsub(/"/, "")
+              path=$3
+              next
+            }
+            in_section && /type:/ {
+              gsub(/"/, "")
+              type=$2
+              if (path) print path, type
+              path=""
+              type=""
+              next
+            }
+            END { if (path && type) print path, type }
+            ' | while read -r path type; do
+              case "$type" in
+                directory)
+                  if [ -d "$path" ]; then
+                    rm -rf "$path"
+                    echo "  ✓ Removed $path/"
+                  fi
+                  ;;
+                gitignore_entry)
+                  if [ -f .gitignore ] && grep -q "^${path}" .gitignore; then
+                    sed -i "/^${path//\//\\/}/d" .gitignore
+                    echo "  ✓ Cleaned $path from .gitignore"
+                  fi
+                  ;;
+              esac
+            done
           fi
 
           echo "✅ Cleanup complete!"
