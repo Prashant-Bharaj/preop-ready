@@ -45,3 +45,4 @@ context/*
 # Local data folder (for persistent storage testing)
 local-data/
 
+.chat/
