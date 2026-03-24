@@ -8,7 +8,7 @@
 #   - After CodeQL security scan completes on main/master (deploy only if CodeQL passed, including scheduled scans)
 #   - Manual dispatch (for testing)
 #
-# URL: https://<repo-name>.vibe.992872368362.cloud.bayer.com
+# URL: https://<repo-name>.vibe.intranet.cnb
 # =============================================================================
 
 name: Deploy Vibe Project
@@ -22,7 +22,7 @@ on:
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -45,29 +45,36 @@ jobs:
           EVENT="${{ github.event_name }}"
           CONCLUSION="${{ github.event.workflow_run.conclusion }}"
           TRIGGER_EVENT="${{ github.event.workflow_run.event }}"
+          ACTOR="${{ github.actor }}"
           REASON=""
+
+          # Debug logging — helps diagnose silent deployment skips
+          echo "=============================================="
+          echo "🔍 Deployment Gate Check"
+          echo "=============================================="
+          echo "  Repository:    $REPO"
+          echo "  Event:         $EVENT"
+          echo "  Conclusion:    $CONCLUSION"
+          echo "  Trigger event: $TRIGGER_EVENT"
+          echo "  Actor:         $ACTOR"
+          echo "=============================================="
+
           if [[ "$REPO" == "bayer-int/dd-template-repository" ]] || [[ "$REPO" == "bayer-int/dd-template-repo" ]]; then
             REASON="template-repo"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
             exit 0
           fi
-          if [[ "$EVENT" == "workflow_run" ]] && [[ "$CONCLUSION" != "success" ]]; then
-            REASON="codeql-failed"
-            echo "should-deploy=false" >> $GITHUB_OUTPUT
-            echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          ACTOR="${{ github.actor }}"
-          # Allow github-advanced-security[bot] through — scheduled CodeQL scans should trigger deploys
-          if [[ "$ACTOR" != "github-advanced-security"* ]] && { [[ "$ACTOR" == *"[bot]"* ]] || [[ "$ACTOR" == "dependabot"* ]]; }; then
-            REASON="bot-triggered"
+          # Allow "success" and "neutral" (CodeQL with no findings)
+          if [[ "$EVENT" == "workflow_run" ]] && [[ "$CONCLUSION" != "success" ]] && [[ "$CONCLUSION" != "neutral" ]]; then
+            REASON="codeql-failed (conclusion: $CONCLUSION)"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "should-deploy=true" >> $GITHUB_OUTPUT
           echo "skip-reason=" >> $GITHUB_OUTPUT
+          echo "✅ All checks passed — deploying"
 
       - name: Write skip summary
         if: steps.check.outputs.should-deploy == 'false'
@@ -83,10 +90,6 @@ jobs:
               echo "Check the **CodeQL** workflow run for details on security findings."
             elif [[ "$REASON" == "template-repo" ]]; then
               echo "**Reason:** This is the template repository — deployment is disabled."
-            elif [[ "$REASON" == "bot-triggered" ]]; then
-              echo "**Reason:** Deployment was triggered by a bot (${GITHUB_ACTOR})."
-              echo ""
-              echo "Automated bot-triggered deployments are skipped to prevent unintended changes."
             fi
           } >> $GITHUB_STEP_SUMMARY
 
@@ -132,7 +135,7 @@ jobs:
             echo ""
             echo "**Type:** Full-stack (AWS ECS)"
             echo ""
-            echo "**App URL:** [https://${REPO_NAME}.vibe.992872368362.cloud.bayer.com](https://${REPO_NAME}.vibe.992872368362.cloud.bayer.com)"
+            echo "**App URL:** [https://${REPO_NAME}.vibe.intranet.cnb](https://${REPO_NAME}.vibe.intranet.cnb)"
             echo ""
             [[ "$DEPLOY_RESULT" == "success" ]] && echo "**Status:** Success" || echo "**Status:** $DEPLOY_RESULT"
             echo ""
@@ -153,7 +156,7 @@ jobs:
   #     frontend-type: ${{ steps.detect.outputs.frontend-type }}
   #     has-backend: ${{ steps.detect.outputs.has-backend }}
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v6
   #     - name: Detect project stack
   #       id: detect
   #       run: |
@@ -188,7 +191,7 @@ jobs:
   #   env:
   #     VITE_BASE_PATH: ${{ format('/-/{0}/', github.event.repository.name) }}
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v6
   #     - name: Prepare site (vanilla)
   #       if: needs.detect.outputs.frontend-type == 'vanilla'
   #       run: |
@@ -198,7 +201,7 @@ jobs:
   #       if: needs.detect.outputs.frontend-type == 'react'
   #       uses: actions/setup-node@v4
   #       with:
-  #         node-version: "20"
+  #         node-version: "22"
   #     - name: Build React and prepare site
   #       if: needs.detect.outputs.frontend-type == 'react'
   #       run: |
@@ -208,7 +211,7 @@ jobs:
   #         npm run build
   #         cp -r dist/* ../site/
   #     - name: Upload site artifact
-  #       uses: actions/upload-artifact@v4
+  #       uses: actions/upload-artifact@v5
   #       with:
   #         name: site
   #         path: site/
