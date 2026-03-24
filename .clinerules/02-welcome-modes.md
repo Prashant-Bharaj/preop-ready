@@ -103,8 +103,8 @@ frontend/     → nginx serving static/React (port 80 in container)
 backend/      → Express/FastAPI (port 3000)
 database/     → MySQL/PostgreSQL (optional)
 
-Traefik routes: <repo-name>.vibe.992872368362.cloud.bayer.com → frontend
-               <repo-name>.vibe.992872368362.cloud.bayer.com/api/* → backend
+Traefik routes: <repo-name>.vibe.intranet.cnb → frontend
+               <repo-name>.vibe.intranet.cnb/api/* → backend
 ```
 
 ---

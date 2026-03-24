@@ -24,7 +24,7 @@
 | Field | Value |
 |-------|-------|
 | **Status** | ⬜ Not deployed |
-| **URL** | _Will be: https://dd-template-repository.vibe.992872368362.cloud.bayer.com_ |
+| **URL** | _Will be: https://dd-template-repository.vibe.intranet.cnb_ |
 | **Last Deploy** | - |
 
 ---

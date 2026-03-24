@@ -92,7 +92,7 @@ If an attacker exploits your application, running as root gives them full contro
 
 ```dockerfile
 # Node.js Backend - SECURE
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \
@@ -144,7 +144,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
 
 ```dockerfile
 # React Frontend - SECURE
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -349,6 +349,117 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 - [ ] Validate input types before querying
 - [ ] Limit query results (pagination)
 - [ ] Use least-privilege database users
+
+---
+
+## 🚨 Error Response Handling (REQUIRED)
+
+**All API endpoints must return descriptive JSON error responses. Never return plain text errors or expose stack traces.**
+
+### Standard Error Response Format
+
+```json
+{
+  "error": "NOT_FOUND",
+  "message": "User with ID 42 was not found",
+  "statusCode": 404
+}
+```
+
+### HTTP Status Code Guide
+
+| Code | When to Use |
+|------|-------------|
+| 400 | Bad request — invalid input, missing fields |
+| 401 | Unauthorized — not authenticated |
+| 403 | Forbidden — authenticated but no permission |
+| 404 | Not found — resource doesn't exist |
+| 409 | Conflict — duplicate entry, version mismatch |
+| 422 | Unprocessable — valid format but failed business rules |
+| 429 | Too many requests — rate limited |
+| 500 | Internal error — unexpected server failure |
+
+### ❌ WRONG — Generic/Dangerous Error Responses
+
+```javascript
+// ❌ No useful information
+res.status(500).send('Error');
+
+// ❌ Exposes internal details (stack trace, file paths)
+res.status(500).json({ error: err.stack });
+
+// ❌ Plain text error
+res.status(400).send('Bad request');
+```
+
+### ✅ CORRECT — Node.js/Express Error Middleware
+
+```javascript
+// Error handler middleware — add AFTER all routes
+app.use((err, req, res, next) => {
+  console.error(err); // Log full error server-side
+
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    error: err.code || 'INTERNAL_ERROR',
+    message: statusCode === 500
+      ? 'An unexpected error occurred'  // Hide internal details
+      : err.message,
+    statusCode
+  });
+});
+
+// Throwing errors in routes
+app.get('/users/:id', async (req, res, next) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) {
+      const err = new Error('User not found');
+      err.statusCode = 404;
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+```
+
+### ✅ CORRECT — Python/FastAPI Exception Handler
+
+```python
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "INTERNAL_ERROR",
+            "message": "An unexpected error occurred",
+            "statusCode": 500
+        }
+    )
+
+# Raising errors in routes
+@app.get("/users/{user_id}")
+def get_user(user_id: int):
+    user = find_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+```
+
+### Security Rules for Errors
+- **Never expose stack traces** in production responses
+- **Never reveal internal paths**, database details, or library versions
+- **Always log the full error server-side** (for debugging)
+- **Use generic messages for 500 errors** — "An unexpected error occurred"
+- **Be specific for 4xx errors** — help the client fix their request
 
 ---
 

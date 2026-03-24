@@ -10,7 +10,7 @@
 #   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
-version: "1.2.15"
+version: "1.3.0"
 template_repo: "bayer-int/dd-template-repository"
 template_branch: "master"
 
@@ -189,6 +189,15 @@ cleanup:
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "1.3.1":
+    date: "2026-03-23"
+    note: "Version auto-bumped by version-bump.yml workflow"
+    changes:
+      - "Fixed bot check blocking github-advanced-security[bot] deployments (removed unnecessary bot gate)"
+      - "Migrated domain references from vibe.992872368362.cloud.bayer.com to vibe.intranet.cnb"
+      - "Added descriptive error response handling section to security instructions"
+      - "Added error response rule to .cursorrules and copilot-instructions.md"
+
   "1.2.1":
     date: "2026-02-18"
     changes:

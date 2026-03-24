@@ -177,7 +177,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 |---------|-----|
 | Local testing | `http://localhost:8080` |
 | Codespaces testing | `https://{CODESPACE_NAME}-8080.app.github.dev` |
-| Production (ECS) | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
+| Production (ECS) | `https://<repo-name>.vibe.intranet.cnb` |
 
 ---
 

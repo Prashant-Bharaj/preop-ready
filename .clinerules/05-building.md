@@ -2,13 +2,53 @@
 
 ---
 
-## 🚨 CRITICAL: API Routing Rules
+## 🚨🚨🚨 CRITICAL: NEVER Use /api Prefix in Backend Routes 🚨🚨🚨
 
+> **⛔ ABSOLUTE RULE: Backend routes must NEVER include `/api` prefix.**
+>
+> Traefik (production) and nginx (local dev) STRIP the `/api` prefix before forwarding to the backend.
+> If your backend route is `/api/users`, the request arrives as `/api/users` but Traefik strips `/api`,
+> so the backend receives `/users` — and your `/api/users` route never matches → **404 error**.
+>
 > **Frontend calls `/api/*` → Traefik/nginx strips `/api` → Backend receives `/*`**
->
-> - Backend routes: **NO** `/api` prefix (e.g., `app.get('/users', ...)`)
-> - Frontend calls: **WITH** `/api` prefix (e.g., `fetch('/api/users')`)
->
+
+### ✅ CORRECT — Backend routes WITHOUT /api:
+
+**Node.js/Express:**
+```javascript
+app.get('/users', (req, res) => { ... });      // Frontend: fetch('/api/users')
+app.get('/health', (req, res) => { ... });     // Frontend: fetch('/api/health')
+app.post('/data', (req, res) => { ... });      // Frontend: fetch('/api/data', {method:'POST'})
+```
+
+**Python/FastAPI:**
+```python
+@app.get("/users")                              # Frontend: fetch('/api/users')
+def get_users(): ...
+
+@app.get("/health")                             # Frontend: fetch('/api/health')
+def health(): ...
+```
+
+**Python/Flask:**
+```python
+@app.route('/users')                            # Frontend: fetch('/api/users')
+def get_users(): ...
+```
+
+**Rust/Actix-web:**
+```rust
+web::resource("/users").route(web::get().to(get_users))  // Frontend: fetch('/api/users')
+```
+
+### ❌ WRONG — These WILL break in production:
+```javascript
+app.get('/api/users', ...);    // ❌ Would need /api/api/users to reach!
+```
+```python
+@app.get("/api/users")         // ❌ Would need /api/api/users to reach!
+```
+
 > **Full details, examples, and common mistakes: see `10-platform-rules.md` § API Routing.**
 
 ---

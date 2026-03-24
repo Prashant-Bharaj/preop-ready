@@ -175,7 +175,7 @@ if [[ -d "backend" ]]; then
         if grep -q "^FROM " backend/Dockerfile; then
             pass "backend/Dockerfile has valid FROM instruction"
         else
-            fail "backend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM node:20-alpine)"
+            fail "backend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM node:22-alpine)"
         fi
     else
         fail "backend/Dockerfile missing" "Copy Dockerfile.node or Dockerfile.python to backend/Dockerfile"
@@ -183,7 +183,7 @@ if [[ -d "backend" ]]; then
     
     # Check for health endpoint in common backend files
     HEALTH_FOUND=false
-    for file in backend/server.js backend/index.js backend/app.js backend/app.py backend/main.py; do
+    for file in backend/server.js backend/index.js backend/app.js backend/app.py backend/main.py backend/src/main.rs backend/main.rs; do
         if [[ -f "$file" ]] && grep -q "/health" "$file"; then
             HEALTH_FOUND=true
             break
@@ -197,7 +197,7 @@ if [[ -d "backend" ]]; then
     fi
     
     # Check port 3000
-    for file in backend/server.js backend/index.js backend/app.js backend/main.py backend/app.py; do
+    for file in backend/server.js backend/index.js backend/app.js backend/main.py backend/app.py backend/src/main.rs backend/main.rs; do
         if [[ -f "$file" ]]; then
             if grep -qE "(3000|PORT)" "$file"; then
                 pass "Backend appears to use port 3000"
@@ -210,7 +210,7 @@ if [[ -d "backend" ]]; then
 
     # Check Dockerfile has non-root user
     if [[ -f "backend/Dockerfile" ]]; then
-        if grep -qE "USER (appuser|node|python)" backend/Dockerfile; then
+        if grep -qE "USER (appuser|node|python|rust|app)" backend/Dockerfile; then
             pass "backend/Dockerfile runs as non-root user"
         else
             fail "backend/Dockerfile missing non-root user" "Add USER appuser (see Dockerfile.node or Dockerfile.python for example)"
@@ -230,12 +230,28 @@ if [[ -d "backend" ]]; then
     fi
 
     # Check backend routes don't have /api prefix (Traefik strips it)
+    # Node.js: app.get('/api/...'), app.post('/api/...')
     for file in backend/server.js backend/index.js backend/app.js; do
         if [[ -f "$file" ]]; then
             if grep -qE "\.(get|post|put|delete|patch)\s*\(\s*['\"]\/api\/" "$file" 2>/dev/null; then
-                warn "Backend routes use /api/ prefix - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
+                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
             fi
-            break
+        fi
+    done
+    # Python: @app.get("/api/..."), @app.route("/api/...")
+    for file in backend/app.py backend/main.py; do
+        if [[ -f "$file" ]]; then
+            if grep -qE "@app\.(get|post|put|delete|patch|route)\s*\(\s*['\"]\/api\/" "$file" 2>/dev/null; then
+                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
+            fi
+        fi
+    done
+    # Rust: .route("/api/..."), "/api/" string patterns
+    for file in backend/src/main.rs backend/main.rs; do
+        if [[ -f "$file" ]]; then
+            if grep -qE "['\"]\/api\/" "$file" 2>/dev/null; then
+                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
+            fi
         fi
     done
 fi

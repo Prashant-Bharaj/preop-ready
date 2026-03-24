@@ -42,8 +42,8 @@ The workflow deploys to AWS ECS. Projects need at least a `frontend/Dockerfile` 
 
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
-| **Frontend-only** | `frontend/Dockerfile` exists (no backend) | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
-| **Full-stack** (has backend) | `backend/Dockerfile` exists | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
+| **Frontend-only** | `frontend/Dockerfile` exists (no backend) | `https://<repo-name>.vibe.intranet.cnb` |
+| **Full-stack** (has backend) | `backend/Dockerfile` exists | `https://<repo-name>.vibe.intranet.cnb` |
 
 ## Make Deployment Sound Easy (Because It Is!)
 
@@ -111,7 +111,7 @@ I'll let you know when it's ready, or you can check back in a few minutes!
 🎉 YOUR APP IS LIVE!
 
 Visit your app at:
-👉 https://<repo-name>.vibe.992872368362.cloud.bayer.com
+👉 https://<repo-name>.vibe.intranet.cnb
 
 Note: You need to be on the Bayer network (VPN) to access it.
 
@@ -122,7 +122,7 @@ Want to make any changes? Just tell me and we'll update it.
 
 ## How to Know Which URL to Show
 
-Deployment is ECS only. **URL:** `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+Deployment is ECS only. **URL:** `https://<repo-name>.vibe.intranet.cnb`
 
 ## If Deployment Fails
 

@@ -4,7 +4,7 @@
 
 | Context | URL Format |
 |---------|------------|
-| **Production (deployed)** | `https://<repo-name>.vibe.992872368362.cloud.bayer.com` |
+| **Production (deployed)** | `https://<repo-name>.vibe.intranet.cnb` |
 | **Local test (user's machine)** | `http://localhost:8080` |
 | **Local test (Codespaces)** | `https://{CODESPACE_NAME}-8080.app.github.dev` |
 
@@ -50,7 +50,7 @@ fi
 
 Always use:
 ```
-https://<repo-name>.vibe.992872368362.cloud.bayer.com
+https://<repo-name>.vibe.intranet.cnb
 ```
 
 (Requires Bayer VPN to access)

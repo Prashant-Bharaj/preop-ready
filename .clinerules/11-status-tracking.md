@@ -105,7 +105,7 @@ Move from "In Progress" to "Completed" and add date:
 
 ```markdown
 | **Status** | ✅ Deployed |
-| **URL** | https://<repo-name>.vibe.992872368362.cloud.bayer.com |
+| **URL** | https://<repo-name>.vibe.intranet.cnb |
 | **Last Deploy** | 2026-01-19 15:30 |
 ```
 
@@ -113,7 +113,7 @@ Or if failed:
 
 ```markdown
 | **Status** | ❌ Deploy failed |
-| **URL** | https://<repo-name>.vibe.992872368362.cloud.bayer.com |
+| **URL** | https://<repo-name>.vibe.intranet.cnb |
 | **Last Deploy** | 2026-01-19 15:30 (failed - health check timeout) |
 ```
 

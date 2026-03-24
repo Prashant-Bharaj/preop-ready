@@ -329,9 +329,9 @@ def health():
 
 In production, Traefik routes traffic like this:
 
-- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/` → Frontend container (port 8080)
-- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/api/*` → Backend container (port 3000)
-- `https://<repo-name>.vibe.992872368362.cloud.bayer.com/socket.io/*` → Backend container (WebSocket)
+- `https://<repo-name>.vibe.intranet.cnb/` → Frontend container (port 8080)
+- `https://<repo-name>.vibe.intranet.cnb/api/*` → Backend container (port 3000)
+- `https://<repo-name>.vibe.intranet.cnb/socket.io/*` → Backend container (WebSocket)
 
 ### 🔌 WebSocket Support (Socket.IO)
 
@@ -484,18 +484,20 @@ Add secrets in GitHub:
 
 ⚠️ **CRITICAL: The `APP_` prefix is stripped when injected into containers!**
 
-| GitHub Secret | Available in Code As | Common Use |
-|---------------|---------------------|------------|
-| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI API key |
-| `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Custom database connection string |
-| `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
-| `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
-| `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing key |
-| `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook validation secret |
-| `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Data encryption key |
-| `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret (e.g., password) |
-| `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret (e.g., username) |
-| `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret (e.g., admin email) |
+⚠️ **This is a FIXED list of exactly 10 secrets. Users CANNOT add custom secret names — only these are passed through the deployment workflow.**
+
+| # | GitHub Secret | Available in Code As | Common Use |
+|---|---------------|---------------------|------------|
+| 1 | `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI / LLM API key |
+| 2 | `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Custom database connection string |
+| 3 | `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
+| 4 | `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
+| 5 | `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing key |
+| 6 | `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook validation secret |
+| 7 | `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Data encryption key |
+| 8 | `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret (e.g., password) |
+| 9 | `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret (e.g., username) |
+| 10 | `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret (e.g., admin email) |
 
 ### Auto-Injected Database Credentials
 

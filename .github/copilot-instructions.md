@@ -55,10 +55,11 @@ The complete AI rules are in `.clinerules/` folder. Key files:
 1. **Health endpoints REQUIRED** - Every container needs `/health`
 2. **Backend port is 3000** - Always
 3. **nginx.conf: NO `events{}` or `http{}`** - Only `server{}` block
-4. **API calls use `/api/*`** - Traefik strips the prefix
+4. **⛔ NEVER use `/api` prefix in backend routes!** Traefik strips `/api` before reaching backend. Frontend: `fetch('/api/users')`. Backend: `app.get('/users')` (NO `/api`!). Using `/api` in backend routes → 404 in production.
 5. **WebSockets use `window.location.origin`** - Routes via `/socket.io/*`
 6. **Update `docs/PROJECT_STATUS.md`** - After every task
 7. **Security REQUIRED** - See `18-security.md`
+8. **Error responses** - All API endpoints must return descriptive JSON error responses with appropriate HTTP status codes. Never return plain text errors or expose stack traces.
 
 ---
 
@@ -147,17 +148,26 @@ docker-compose up -d --build
 git add . && git commit -m "feat: description" && git push
 ```
 
-Production URL: `https://<repo-name>.vibe.992872368362.cloud.bayer.com`
+Production URL: `https://<repo-name>.vibe.intranet.cnb`
 
 ---
 
-## 🔐 Secrets
+## 🔐 Secrets (Fixed List — 10 Total, Cannot Be Changed)
 
-| GitHub Secret | Use in Code |
-|---------------|-------------|
-| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
-| `APP_API_KEY` | `process.env.API_KEY` |
-| `APP_SECRET_1` | `process.env.SECRET_1` |
+The `APP_` prefix is stripped in the container. **Users cannot add custom secret names.**
+
+| GitHub Secret | Use in Code | Purpose |
+|---------------|-------------|---------|
+| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI / LLM API key |
+| `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Custom DB connection string |
+| `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
+| `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
+| `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing key |
+| `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook validation |
+| `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Encryption key |
+| `APP_SECRET_1` | `process.env.SECRET_1` | Custom (e.g., password) |
+| `APP_SECRET_2` | `process.env.SECRET_2` | Custom (e.g., username) |
+| `APP_SECRET_3` | `process.env.SECRET_3` | Custom (e.g., admin email) |
 
 ---
 

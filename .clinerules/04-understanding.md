@@ -57,7 +57,7 @@ The project URL is automatically based on the **GitHub repository name**.
 
 For example:
 - Repo: `bayer-int/lunch-voting-app`
-- URL: `https://lunch-voting-app.vibe.992872368362.cloud.bayer.com`
+- URL: `https://lunch-voting-app.vibe.intranet.cnb`
 
 **No need to ask the user for a project name** - it's already set!
 

@@ -44,12 +44,12 @@ database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
 | **Frontend-only** (Vanilla/React) | No `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo>/` |
-| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.992872368362.cloud.bayer.com` |
+| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.intranet.cnb` |
 
 ### Routing (Full-Stack/ECS only)
 ```
-https://[project].vibe.992872368362.cloud.bayer.com      → frontend
-https://[project].vibe.992872368362.cloud.bayer.com/api  → backend (stripped)
+https://[project].vibe.intranet.cnb      → frontend
+https://[project].vibe.intranet.cnb/api  → backend (stripped)
 ```
 
 ### Required: Health Endpoint
@@ -81,7 +81,7 @@ git add . && git commit -m "feat: description" && git push
 
 # URL depends on project type:
 # Frontend-only: https://docs.int.bayer.com/-/[repo-name]/
-# Full-stack:    https://[repo-name].vibe.992872368362.cloud.bayer.com
+# Full-stack:    https://[repo-name].vibe.intranet.cnb
 ```
 
 ### Secrets (GitHub → Settings → Secrets → Actions)
@@ -164,7 +164,7 @@ The AI will save your work and deploy it automatically!
 | Project Type | URL |
 |-------------|-----|
 | Frontend-only (no backend) | `https://docs.int.bayer.com/-/YOUR-REPO-NAME/` |
-| Full-stack (has backend) | `https://YOUR-REPO-NAME.vibe.992872368362.cloud.bayer.com` |
+| Full-stack (has backend) | `https://YOUR-REPO-NAME.vibe.intranet.cnb` |
 
 *(Requires Bayer VPN)*
 

@@ -58,11 +58,26 @@ git push
 That's it! Your app can now use OpenAI securely.
 ```
 
-## Available Secret Names & Mapping
+## Available Secrets — Fixed List (Cannot Be Changed)
 
-⚠️ **CRITICAL: The `APP_` prefix is removed when secrets are injected into the container!**
+⚠️ **CRITICAL: These are the ONLY secrets available. The list is hardcoded in the deployment workflow and cannot be modified by the user. There are exactly 10 secrets.**
 
-**See `10-platform-rules.md` § Environment Variables for the full secrets table** (GitHub secret name → env var in container → common uses).
+⚠️ **The `APP_` prefix is stripped when injected into the container.**
+
+| # | GitHub Secret Name | Available in Code As | Common Use |
+|---|-------------------|---------------------|------------|
+| 1 | `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` | OpenAI / LLM API key |
+| 2 | `APP_DATABASE_URL` | `process.env.DATABASE_URL` | Custom database connection string |
+| 3 | `APP_API_KEY` | `process.env.API_KEY` | Generic API key |
+| 4 | `APP_API_SECRET` | `process.env.API_SECRET` | API secret |
+| 5 | `APP_JWT_SECRET` | `process.env.JWT_SECRET` | JWT signing key |
+| 6 | `APP_WEBHOOK_SECRET` | `process.env.WEBHOOK_SECRET` | Webhook validation secret |
+| 7 | `APP_ENCRYPTION_KEY` | `process.env.ENCRYPTION_KEY` | Data encryption key |
+| 8 | `APP_SECRET_1` | `process.env.SECRET_1` | Custom secret (e.g., password) |
+| 9 | `APP_SECRET_2` | `process.env.SECRET_2` | Custom secret (e.g., username) |
+| 10 | `APP_SECRET_3` | `process.env.SECRET_3` | Custom secret (e.g., admin email) |
+
+**Users CANNOT add custom secret names.** If the app needs more than 10 secrets, repurpose the generic ones (`SECRET_1`, `SECRET_2`, `SECRET_3`) or combine values.
 
 ### Common Pattern: External API with Username/Password
 
