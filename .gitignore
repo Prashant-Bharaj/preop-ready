@@ -48,6 +48,7 @@ local-data/
 .chat/
 .claude/
 
+
 # Documents & binaries (don't commit to repo — use context/ folder for AI)
 *.pdf
 *.doc
