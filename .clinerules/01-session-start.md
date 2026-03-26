@@ -5,9 +5,10 @@
 **Order of operations:**
 
 1. **Detect Environment** (Local vs Codespaces - for correct URLs)
-2. **Check Template Version** (run script silently)
-3. **Read Project Status** (if exists)
-4. **Greet User** (include update notification if available)
+2. **Validate Repo Name** (check naming convention, offer rename if needed)
+3. **Check Template Version** (run script silently)
+4. **Read Project Status** (if exists)
+5. **Greet User** (include update notification if available)
 
 ---
 
@@ -17,7 +18,67 @@
 
 ---
 
-## 2️⃣ Check for Platform Updates (Run Silently)
+## 2️⃣ Validate Repo Name (Run Silently)
+
+**Check if the repository name follows platform naming conventions.**
+
+```bash
+# Get repo name from git remote
+REPO_NAME=$(basename -s .git $(git remote get-url origin 2>/dev/null) 2>/dev/null)
+```
+
+**Naming rules:**
+- Pattern: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`
+- Length: 2–30 characters
+- Allowed: lowercase letters, numbers, hyphens
+- NOT allowed: uppercase, underscores, special characters, spaces
+
+**Why it matters:**
+- ECS service name = `vibe-{repo-name}` (must be valid)
+- Production URL = `https://{repo-name}.vibe.intranet.cnb`
+- Invalid names will cause deployment failures
+
+**If name is non-compliant:**
+
+```
+⚠️ Your repository name "{current-name}" doesn't follow the platform naming convention.
+
+Valid names: lowercase letters, numbers, and hyphens only (2-30 chars).
+Example: "my-cool-app", "hackathon-2026", "sales-dashboard"
+
+Your name has: {explain violation — e.g., "uppercase letters", "underscores"}
+
+Suggested name: "{suggested-name}"
+
+Want me to rename it for you? (Your code and git history will be preserved)
+```
+
+**If user says YES — rename via GitHub API:**
+
+```bash
+# Step 1: Rename on GitHub
+gh api repos/{owner}/{current-name} --method PATCH -f name='{new-name}'
+
+# Step 2: Update local remote
+git remote set-url origin https://github.com/{owner}/{new-name}.git
+
+# Step 3: Verify
+git remote get-url origin
+```
+
+**After rename:**
+```
+✅ Repository renamed to "{new-name}"!
+
+Your production URL will be: https://{new-name}.vibe.intranet.cnb
+All your code and git history are preserved.
+```
+
+**If user says NO:** Continue normally. The repo may still work if it's already whitelisted, but deployment could fail if the name causes issues.
+
+---
+
+## 3️⃣ Check for Platform Updates (Run Silently)
 
 **Run the check script:**
 
@@ -37,7 +98,7 @@
 
 ---
 
-## 3️⃣ Read Project Status
+## 4️⃣ Read Project Status
 
 **Check if this is a returning user or a brand new project:**
 
@@ -53,7 +114,7 @@ cat docs/PROJECT_STATUS.md 2>/dev/null
 
 ---
 
-## 4️⃣ Greet User
+## 5️⃣ Greet User
 
 **After completing the silent checks above, greet the user appropriately.**
 
@@ -88,7 +149,7 @@ If updates are available, mention it briefly after the welcome:
 
 ---
 
-## 5️⃣ If User Says "Yes" to Update (from greeting)
+## 6️⃣ If User Says "Yes" to Update (from greeting)
 
 **Simply run the apply script:**
 
@@ -120,7 +181,7 @@ Ready to continue?
 
 ---
 
-## 6️⃣ If User Says "No" or "Later"
+## 7️⃣ If User Says "No" or "Later"
 
 ```
 No problem! You can update anytime by asking me to "update platform files".

@@ -584,7 +584,7 @@ const migrations = [
 
 **Tell the user:**
 ```
-I've added migration support to your backend. Now when you need 
+I've added migration support to your backend. Now when you need
 schema changes:
 
 1. Add a new migration to the migrations array
@@ -593,6 +593,64 @@ schema changes:
 
 Want me to add a migration for your change?
 ```
+
+### ⚠️ Database Management — Critical Principles
+
+**Understanding the deployment model:**
+
+Every `git push` triggers a redeployment. The **database container is NOT rebuilt** — it persists on EFS at `/data`. But the **backend container IS rebuilt** and runs migrations on startup.
+
+| What | Behavior | Implication |
+|------|----------|-------------|
+| `database/init/*.sql` | Runs **ONCE** on first deploy only | Editing after first deploy has NO effect |
+| Backend migrations | Run on **every** backend startup | This is how you change schema |
+| Database data (EFS `/data`) | Persists across deployments | Your data survives redeploys |
+| Database container image | Rebuilt on deploy | But data dir is mounted from EFS |
+
+**Key principles:**
+
+1. **Don't rebuild the database to change schema.** Init scripts only run when the database is empty (first time). All subsequent schema changes MUST go through backend migrations.
+
+2. **Don't commit data to git.** Data lives in the database on EFS. Seed data goes in `database/init/*.sql` (first deploy). User-generated data stays in the DB. Never export SQL dumps to the repo.
+
+3. **Schema changes = backend migrations.** If you edit `database/init/init.sql` after the database already has data, nothing happens. The migration system above is the ONLY way to change schema post-deployment.
+
+### Common Anti-Patterns
+
+| ❌ Anti-Pattern | ✅ Correct Approach |
+|----------------|-------------------|
+| Editing `database/init/*.sql` after first deploy | Add a backend migration |
+| Committing SQL dump files to git | Keep data in DB, use migrations for schema |
+| Rebuilding DB container to apply schema changes | Use backend migrations (data preserved) |
+| Adding `NOT NULL` column without default | Add as nullable first, backfill, then add constraint |
+| Deleting and recreating tables | Use `ALTER TABLE` in migrations |
+
+### Continuous Deployment Considerations
+
+Since every push triggers a redeploy and migrations run on startup:
+
+**Migrations must be backward-compatible.** The new backend code starts serving traffic immediately after deployment. If a migration fails, the backend won't start.
+
+**Zero-downtime migration pattern** (for complex changes):
+
+```
+Phase 1: Add new column (nullable or with default)     → git push
+Phase 2: Update code to write to both old + new column → git push
+Phase 3: Backfill data from old → new column            → git push
+Phase 4: Remove old column usage from code              → git push
+Phase 5: (Optional) Drop old column via migration       → git push
+```
+
+**Testing migrations locally:**
+```bash
+# Test from scratch (simulates first deployment)
+docker-compose down -v && docker-compose up --build
+
+# Test migration on existing data (simulates redeployment)
+docker-compose restart backend
+```
+
+**Rollback:** If a migration causes issues, add a NEW migration that reverses the change. Never edit or delete old migrations.
 
 ### Adding a Vector Database (Dual-Database Setup)
 

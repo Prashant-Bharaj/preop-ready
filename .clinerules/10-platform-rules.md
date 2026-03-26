@@ -34,6 +34,45 @@ your-repo/
         └── deploy.yml     ← Triggers deployment
 ```
 
+---
+
+## 🔒 Protected Files — Do Not Modify
+
+### ⛔ NEVER Modify (Platform-Managed)
+
+These files are managed by the platform and auto-updated via `template-sync.yml`. **AI assistants must NEVER edit these files.** They will be overwritten on the next template sync.
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/deploy.yml` | Deployment pipeline — triggers on CodeQL completion |
+| `.github/workflows/template-sync.yml` | Auto-update mechanism — syncs platform files |
+| `.github/workflows/dependabot-auto-merge.yml` | Auto-merges patch/minor dependency updates |
+| `.template-version` | Tracks current template version |
+| `.template-manifest.yml` | Defines which files are synced |
+
+**If user asks to modify one of these:**
+```
+That file is managed by the platform and will be overwritten on the
+next template update. Let me help you find an alternative approach
+that doesn't require changing it.
+```
+
+### ⚠️ Modify with EXTREME CARE
+
+These files are critical for deployment. Follow the exact patterns documented below in this file.
+
+| File | Rules |
+|------|-------|
+| `frontend/nginx.conf` | Production only — NO `events{}`, NO `http{}`, NO `proxy_pass`. See § NGINX below. |
+| `frontend/nginx.local.conf` | Local dev — WITH `proxy_pass`. See § NGINX below. |
+| `database/Dockerfile` | Must use EFS paths (`/data/postgres` or `/data/mysql`). See § Persistence below. |
+| `vectordb/Dockerfile` | Must use EFS paths. See § Persistence below. |
+| `docker-compose.yml` | Service names must match platform expectations (`frontend`, `backend`, `db`, `vectordb`). |
+
+**If user wants to change these:** Always check the relevant section in this file first to ensure the change follows platform requirements.
+
+---
+
 ### Database Templates Available (`database/`)
 | Template | Use Case |
 |----------|----------|

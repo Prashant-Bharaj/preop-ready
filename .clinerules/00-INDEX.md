@@ -150,6 +150,9 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 11. **Check whitelisting before deploy** - Repo must be whitelisted first. See `07-deployment.md`
 12. **Run preflight check before every push** - Always run `./scripts/preflight-check.sh` before `git push`. It validates Dockerfiles, nginx config, and health endpoints. Fix all issues before pushing. See `07-deployment.md`
 13. **Frontend-only apps need cleanup (DO THIS FIRST!)** - Before writing ANY code, remove backend/db services from `docker-compose.yml` AND remove the proxy blocks (marked `>>> REMOVE THIS ENTIRE SECTION FOR FRONTEND-ONLY APPS <<<`) from `nginx.local.conf`. Leaving proxy_pass pointing to a non-existent backend will crash nginx. See `05-building.md` and verify with `06-testing.md` checklist.
+14. **Repo name must be lowercase with hyphens** - Check at session start. Pattern: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`. Offer to rename via `gh api` if non-compliant. See `01-session-start.md`
+15. **NEVER modify platform-managed files** - `deploy.yml`, `template-sync.yml`, `dependabot-auto-merge.yml`, `.template-version`, `.template-manifest.yml` are auto-updated and will be overwritten. See `10-platform-rules.md` § Protected Files
+16. **Schema changes via migrations only** - After first deployment, editing `database/init/*.sql` has NO effect. Use backend migrations. Don't commit data to git. See `05-building.md` § Database Management
 
 ---
 

@@ -34,25 +34,41 @@ This file is private - it won't be uploaded to GitHub.
 
 ## How to Explain It Simply
 
+### 🔗 Quick Link to GitHub Secrets
+
+**Generate a direct link for the user** so they don't have to navigate through menus:
+
+```bash
+# Get the repo URL and construct the secrets link
+REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
+echo "${REPO_URL}/settings/secrets/actions"
+```
+
+**Show the user:**
+```
+Here's a direct link to your GitHub Secrets page:
+🔗 {repo-url}/settings/secrets/actions
+
+Click it, then add a "New repository secret" with the name and value below.
+```
+
+### Step-by-Step (if user needs hand-holding)
+
 ```
 To use OpenAI in your app, you'll need to add your API key securely.
 Don't worry - I'll walk you through it!
 
-**Step 1: Go to your GitHub repository**
-(the website, not this code editor)
+**Step 1: Click this link to go to your secrets page:**
+🔗 {repo-url}/settings/secrets/actions
 
-**Step 2: Click Settings** (top menu)
+**Step 2: Click "New repository secret"**
 
-**Step 3: Click "Secrets and variables" → "Actions"** (left sidebar)
-
-**Step 4: Click "New repository secret"**
-
-**Step 5: Add your secret:**
+**Step 3: Add your secret:**
 - Name: APP_OPENAI_KEY
 - Value: [paste your OpenAI API key]
 - Click "Add secret"
 
-**Step 6: Push your code again**
+**Step 4: Push your code again**
 git push
 
 That's it! Your app can now use OpenAI securely.

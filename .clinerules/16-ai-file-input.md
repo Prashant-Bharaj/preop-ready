@@ -100,6 +100,81 @@ Jane,jane@example.com,Engineering
 
 ---
 
+## 📏 Large File Handling (>2MB or >5000 lines)
+
+### When Files Are Too Large for AI Context
+
+AI assistants have context limits. Don't try to read entire large files — it wastes tokens and may fail silently.
+
+**Decision flow:**
+
+```
+File shared by user
+     │
+     ├─── <2MB / <5000 lines ──► Read directly, analyze in context
+     │
+     └─── >2MB / >5000 lines ──► Use chunking strategy below
+```
+
+### Strategy for Large Files
+
+1. **Read the first 100 lines** to understand the structure:
+   ```bash
+   head -100 context/large-file.csv
+   ```
+
+2. **Identify the format** — CSV headers, JSON schema, Excel structure
+
+3. **Don't read the whole file.** Instead, build a parsing feature in the app:
+   ```
+   This file is too large for me to analyze directly (X MB / Y lines).
+   Instead, I'll build a parsing feature in your backend that can
+   process it efficiently. This is better because:
+
+   - It handles files of any size
+   - Users can upload similar files through the app
+   - Processing happens on the server, not in AI context
+   ```
+
+### Chunking Patterns by File Type
+
+| File Type | Strategy |
+|-----------|----------|
+| **CSV** | Read headers + first 10 rows → infer schema → build `csv-parse` streaming import |
+| **JSON** | Read structure with `head` → build `JSONStream` or chunked reader |
+| **Excel** | Don't read directly → build `xlsx`/`exceljs` parser in backend |
+| **SQL dump** | Read first 50 lines for schema → build migration or import endpoint |
+| **Log files** | `tail -100` for recent entries → build log viewer in app |
+
+### Implementation: Build a Parsing Endpoint
+
+When user has a large file, build an upload + parse feature instead of reading it in AI context:
+
+```javascript
+// Use the file-handling snippet (snippets/file-handling/upload-handler.js)
+// Process in memory, return structured results
+const csv = require('csv-parse');
+const { Readable } = require('stream');
+
+app.post('/import', upload.single('file'), async (req, res) => {
+  const records = [];
+  const parser = Readable.from(req.file.buffer).pipe(
+    csv.parse({ columns: true })
+  );
+
+  for await (const record of parser) {
+    records.push(record);
+  }
+
+  // Process records (insert to DB, validate, etc.)
+  res.json({ imported: records.length });
+});
+```
+
+> **See also:** `14-file-handling.md` for memory vs persistent storage decisions, and `snippets/file-handling/upload-handler.js` for the upload snippet.
+
+---
+
 ## 💬 How to Ask the AI
 
 ### Good Examples

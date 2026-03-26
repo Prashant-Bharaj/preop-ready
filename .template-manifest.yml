@@ -24,6 +24,8 @@ auto_update:
     description: "Deployment workflow"
   - path: ".github/workflows/template-sync.yml"
     description: "Template sync workflow (enables pull-based updates)"
+  - path: ".github/workflows/dependabot-auto-merge.yml"
+    description: "Auto-merge patch/minor Dependabot PRs after CI passes"
     
   # Frontend Dockerfile templates
   - path: "frontend/Dockerfile.vanilla"
