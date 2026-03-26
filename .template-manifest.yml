@@ -82,6 +82,8 @@ auto_update:
     description: "Codespaces/devcontainer configuration"
   - path: ".devcontainer/install-cline.sh"
     description: "Cline extension installer for Codespaces"
+  - path: ".devcontainer/auto-update-template.sh"
+    description: "Auto-check and apply template updates on Codespace start"
     
   # Documentation
   - path: "docs/MIGRATION.md"

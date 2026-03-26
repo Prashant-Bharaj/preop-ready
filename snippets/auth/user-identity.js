@@ -16,6 +16,11 @@
  *   - x-amzn-oidc-data: JWT with user claims (sub, email, name)
  *   - x-amzn-oidc-identity: User's unique subject ID
  *   - x-amzn-oidc-accesstoken: OIDC access token
+ *
+ * SESSION EXPIRATION:
+ *   The ALB OIDC session expires after 1 hour (absolute timeout).
+ *   For frontend session handling, see snippets/auth/token-refresh.js
+ *   which provides a fetch wrapper that auto-redirects on expiry.
  * 
  * USAGE:
  *   const { userIdentityMiddleware } = require('./middleware/user-identity');

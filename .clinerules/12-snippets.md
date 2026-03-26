@@ -52,6 +52,7 @@ When user says... → Check this snippet:
 | "Who is logged in" / "User identity" (Node.js) | `auth/user-identity.js` |
 | "Who is logged in" / "User identity" (Python) | `auth/user-identity.py` |
 | "Who is logged in" / "User identity" (Rust) | `auth/user-identity.rs` |
+| "Session expired" / "Token timeout" / "User gets stuck" | `auth/token-refresh.js` |
 | "Upload files" | `file-handling/upload-handler.js` |
 | "Validate input" / "Sanitize data" | `security/input-validation.js` |
 | "Database queries" / "SQL" | `security/parameterized-queries.js` |

@@ -74,6 +74,8 @@ app.get('/api/users', ...);    // ❌ Would need /api/api/users to reach!
 
 **Do BOTH steps FIRST** — if you run `docker-compose up` with services that reference missing Dockerfiles or with nginx proxy_pass pointing to a non-existent backend, the build/start will fail.
 
+> **Segments are optional.** Projects can use any combination: frontend-only, backend-only, with or without database/vectordb. To remove a segment, see the "Removing a Segment" section in `10-platform-rules.md`. Removal is safe — data is preserved on EFS.
+
 ---
 
 ## Always Start with Something Visual

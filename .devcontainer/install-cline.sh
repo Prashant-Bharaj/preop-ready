@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Install Cline VS Code extension manually to avoid Codespace marketplace download issues.
-# The auto-install via devcontainer.json extensions can fail with large extensions (~50MB+)
-# due to download timeouts or truncated zip files in Codespaces.
+# FALLBACK installer for Cline VS Code extension.
+# Primary install: devcontainer.json extensions array (saoudrizwan.claude-dev).
+# This script runs as postAttachCommand and only acts if the extensions array
+# failed (e.g., marketplace timeout on large ~50MB+ VSIX in Codespaces).
+# If Cline is already installed, this script exits immediately.
 
 VSIX_URL="https://saoudrizwan.gallery.vsassets.io/_apis/public/gallery/publisher/saoudrizwan/extension/claude-dev/latest/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage"
 VSIX_PATH="/tmp/cline.vsix"

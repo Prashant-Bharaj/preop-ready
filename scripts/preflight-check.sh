@@ -63,28 +63,27 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 header "📁 Project Structure"
 # -----------------------------------------------------------------------------
 
-# Check if at least frontend or backend exists
-if [[ -d "frontend" ]] || [[ -d "backend" ]]; then
-    pass "Project has frontend and/or backend folder"
+# Check if at least one deployable segment exists (Dockerfile required)
+if [[ -f "frontend/Dockerfile" ]] || [[ -f "backend/Dockerfile" ]]; then
+    pass "Project has deployable frontend and/or backend (Dockerfile found)"
 else
-    fail "No frontend/ or backend/ folder found" "Create at least one: mkdir frontend"
+    fail "No frontend/Dockerfile or backend/Dockerfile found" "Create at least one Dockerfile to deploy (copy from Dockerfile.* templates)"
 fi
 
-# Check frontend structure
-if [[ -d "frontend" ]]; then
-    info "Frontend folder detected"
-    
-    if [[ -f "frontend/Dockerfile" ]]; then
-        pass "frontend/Dockerfile exists"
-        
-        # Check if Dockerfile has FROM
-        if grep -q "^FROM " frontend/Dockerfile; then
-            pass "frontend/Dockerfile has valid FROM instruction"
-        else
-            fail "frontend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM nginx:alpine)"
-        fi
+# Check frontend structure (only if Dockerfile exists — directory alone is not an error)
+if [[ -d "frontend" ]] && [[ ! -f "frontend/Dockerfile" ]]; then
+    info "frontend/ folder exists but no Dockerfile — skipping frontend checks (not deploying frontend)"
+fi
+
+if [[ -f "frontend/Dockerfile" ]]; then
+    info "Frontend segment detected"
+    pass "frontend/Dockerfile exists"
+
+    # Check if Dockerfile has FROM
+    if grep -q "^FROM " frontend/Dockerfile; then
+        pass "frontend/Dockerfile has valid FROM instruction"
     else
-        fail "frontend/Dockerfile missing" "Copy Dockerfile.vanilla or Dockerfile.react to frontend/Dockerfile"
+        fail "frontend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM nginx:alpine)"
     fi
     
     if [[ -f "frontend/nginx.conf" ]]; then
@@ -165,20 +164,19 @@ if [[ -d "frontend" ]]; then
     fi
 fi
 
-# Check backend structure
-if [[ -d "backend" ]]; then
-    info "Backend folder detected"
-    
-    if [[ -f "backend/Dockerfile" ]]; then
-        pass "backend/Dockerfile exists"
-        
-        if grep -q "^FROM " backend/Dockerfile; then
-            pass "backend/Dockerfile has valid FROM instruction"
-        else
-            fail "backend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM node:22-alpine)"
-        fi
+# Check backend structure (only if Dockerfile exists — directory alone is not an error)
+if [[ -d "backend" ]] && [[ ! -f "backend/Dockerfile" ]]; then
+    info "backend/ folder exists but no Dockerfile — skipping backend checks (not deploying backend)"
+fi
+
+if [[ -f "backend/Dockerfile" ]]; then
+    info "Backend segment detected"
+    pass "backend/Dockerfile exists"
+
+    if grep -q "^FROM " backend/Dockerfile; then
+        pass "backend/Dockerfile has valid FROM instruction"
     else
-        fail "backend/Dockerfile missing" "Copy Dockerfile.node or Dockerfile.python to backend/Dockerfile"
+        fail "backend/Dockerfile is invalid" "Add a FROM instruction (e.g., FROM node:22-alpine)"
     fi
     
     # Check for health endpoint in common backend files
@@ -257,42 +255,45 @@ if [[ -d "backend" ]]; then
 fi
 
 # Check vectordb structure (optional, for dual-database setups)
-if [[ -d "vectordb" ]]; then
-    info "Vector database folder detected (dual-database setup)"
+if [[ -d "vectordb" ]] && [[ ! -f "vectordb/Dockerfile" ]]; then
+    info "vectordb/ folder exists but no Dockerfile — skipping vectordb checks (not using vector database)"
+fi
 
-    if [[ -f "vectordb/Dockerfile" ]]; then
-        pass "vectordb/Dockerfile exists"
+if [[ -d "vectordb" ]] && [[ -f "vectordb/Dockerfile" ]]; then
+    info "Vector database segment detected (dual-database setup)"
+    pass "vectordb/Dockerfile exists"
 
-        if grep -q "^FROM " vectordb/Dockerfile; then
-            pass "vectordb/Dockerfile has valid FROM instruction"
-        else
-            fail "vectordb/Dockerfile is invalid" "Add a FROM instruction (copy from vectordb/Dockerfile.chroma, .qdrant, or .pgvector)"
-        fi
-
-        # Check if pgvector and init.sql has CREATE EXTENSION
-        if grep -q "pgvector" vectordb/Dockerfile; then
-            if [[ -f "vectordb/init/init.sql" ]]; then
-                if grep -q "CREATE EXTENSION" vectordb/init/init.sql; then
-                    pass "vectordb/init/init.sql enables vector extension"
-                else
-                    warn "vectordb/init/init.sql should have: CREATE EXTENSION IF NOT EXISTS vector;"
-                fi
-            else
-                warn "vectordb/init/init.sql missing - pgvector needs init script with CREATE EXTENSION"
-            fi
-        fi
+    if grep -q "^FROM " vectordb/Dockerfile; then
+        pass "vectordb/Dockerfile has valid FROM instruction"
     else
-        fail "vectordb/Dockerfile missing" "Copy Dockerfile.chroma, .qdrant, or .pgvector to vectordb/Dockerfile"
+        fail "vectordb/Dockerfile is invalid" "Add a FROM instruction (copy from vectordb/Dockerfile.chroma, .qdrant, or .pgvector)"
     fi
 
-    if [[ ! -d "backend" ]]; then
-        warn "vectordb/ exists but no backend/ - backend is needed to connect to the vector database"
+    # Check if pgvector and init.sql has CREATE EXTENSION
+    if grep -q "pgvector" vectordb/Dockerfile; then
+        if [[ -f "vectordb/init/init.sql" ]]; then
+            if grep -q "CREATE EXTENSION" vectordb/init/init.sql; then
+                pass "vectordb/init/init.sql enables vector extension"
+            else
+                warn "vectordb/init/init.sql should have: CREATE EXTENSION IF NOT EXISTS vector;"
+            fi
+        else
+            warn "vectordb/init/init.sql missing - pgvector needs init script with CREATE EXTENSION"
+        fi
+    fi
+
+    if [[ ! -f "backend/Dockerfile" ]]; then
+        warn "vectordb/ exists but no backend/Dockerfile - backend is needed to connect to the vector database"
     fi
 fi
 
 # Check database structure (optional)
+if [[ -d "database" ]] && [[ ! -f "database/Dockerfile" ]]; then
+    info "database/ folder exists but no Dockerfile — skipping database checks (not using database)"
+fi
+
 if [[ -d "database" ]] && [[ -f "database/Dockerfile" ]]; then
-    info "Database folder detected"
+    info "Database segment detected"
 
     if grep -q "^FROM " database/Dockerfile; then
         pass "database/Dockerfile has valid FROM instruction"
@@ -333,7 +334,7 @@ if [[ -f "docker-compose.yml" ]]; then
     pass "docker-compose.yml exists"
 
     # Check nginx.local.conf volume mount for local API proxy
-    if [[ -d "frontend" ]] && [[ -d "backend" ]]; then
+    if [[ -f "frontend/Dockerfile" ]] && [[ -f "backend/Dockerfile" ]]; then
         if grep -q "nginx.local.conf" docker-compose.yml; then
             pass "docker-compose.yml mounts nginx.local.conf for local API proxy"
         else
@@ -359,7 +360,7 @@ if [[ -f "docker-compose.yml" ]]; then
     fi
 
     # Warn if frontend-only project has proxy_pass in nginx config
-    if [[ -d "frontend" ]] && [[ ! -d "backend" ]]; then
+    if [[ -f "frontend/Dockerfile" ]] && [[ ! -f "backend/Dockerfile" ]]; then
         if [[ -f "frontend/nginx.local.conf" ]] && grep -q "proxy_pass" frontend/nginx.local.conf; then
             warn "No backend/ folder but nginx.local.conf has proxy_pass - this will 502 locally"
         fi

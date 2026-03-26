@@ -593,6 +593,47 @@ Before deploying, verify ALL of these:
 
 ---
 
+## 🔄 Removing a Segment
+
+Segments (frontend, backend, database, vectordb) are **optional and independent**. Users can add or remove them at any time. The presence of a `Dockerfile` in the segment's directory is what triggers deployment — the directory itself can exist without causing issues.
+
+### How to Remove Each Segment
+
+**Remove Frontend** (backend-only deployment):
+1. Delete `frontend/Dockerfile` (keep template Dockerfiles for reference)
+2. Remove the `frontend:` service from `docker-compose.yml`
+3. Remove any `nginx.local.conf` volume mount from docker-compose.yml
+4. Run `./scripts/preflight-check.sh` to verify
+
+**Remove Backend** (static frontend-only):
+1. Delete `backend/Dockerfile`
+2. Remove the `backend:` service from `docker-compose.yml`
+3. Remove `nginx.local.conf` proxy config if exists (no backend to proxy to)
+4. Run `./scripts/preflight-check.sh` to verify
+
+**Remove Database:**
+1. Delete `database/Dockerfile`
+2. Remove the `db:` / `database:` service from `docker-compose.yml`
+3. Remove `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` env vars from backend service in docker-compose.yml
+4. Run `./scripts/preflight-check.sh` to verify
+
+**Remove Vector Database:**
+1. Delete `vectordb/Dockerfile`
+2. Remove the `vectordb:` service from `docker-compose.yml`
+3. Remove `VECTORDB_HOST`, `VECTORDB_PORT` env vars from backend service in docker-compose.yml
+4. Run `./scripts/preflight-check.sh` to verify
+
+### What Happens During Deployment After Removal
+
+The platform **automatically cleans up** orphaned services:
+- **Deleted:** ECS service (stopped), task definitions (deregistered), Service Discovery DNS entry
+- **Preserved:** EFS data, SSM passwords, ECR images — your data is NOT deleted
+- **Recovery:** Re-add the Dockerfile and redeploy. Same EFS path and passwords are reused, so data is automatically restored
+
+> **Safe and reversible:** Removing a segment does NOT delete data. You can always re-add it later.
+
+---
+
 ## 🚨 Common Deployment Failures
 
 | Symptom | Cause | Fix |

@@ -368,6 +368,60 @@ can test the personalization features without needing the full auth setup.
 
 ---
 
+## ⏰ Session Expiration (1-Hour Timeout)
+
+The ALB OIDC session expires after **1 hour** (absolute timeout, not idle-based). When the session expires:
+
+1. The ALB returns a **302 redirect** to EntraID for re-authentication
+2. For **full page loads** — the browser follows the redirect and re-authenticates automatically
+3. For **fetch()/AJAX calls** — the browser **cannot** follow cross-origin redirects, so the request fails silently. The user sees a broken app with no prompt to re-authenticate
+
+### Frontend Fix: Use `apiFetch()` wrapper
+
+**Always use the session-aware fetch wrapper** instead of raw `fetch()` for API calls:
+
+```javascript
+// See: snippets/auth/token-refresh.js
+
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    redirect: 'manual',
+  });
+
+  if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 401) {
+    console.warn('Session expired — redirecting to re-authenticate');
+    window.location.reload();
+    return new Promise(() => {});
+  }
+
+  return response;
+}
+
+// Usage: replace fetch('/api/...') with apiFetch('/api/...')
+```
+
+### WebSocket / Socket.IO
+
+WebSocket connections drop when the session expires. Implement reconnect with page reload fallback:
+
+```javascript
+socket.on('disconnect', () => {
+  setTimeout(() => {
+    if (!socket.connected) window.location.reload();
+  }, 5000); // Wait 5s for reconnect, then reload
+});
+```
+
+### Key Points
+
+- Backend does NOT need to handle session expiration — it's a frontend concern
+- The ALB handles re-authentication automatically when the browser follows the redirect
+- Local development is unaffected (no ALB, no OIDC)
+- The 1-hour timeout matches the Microsoft access token lifetime
+
+---
+
 ## 🎯 Summary
 
 | What | How |
@@ -377,3 +431,4 @@ can test the personalization features without needing the full auth setup.
 | Local development | Middleware returns fallback user |
 | Store user data | Use `user_id` column with `sub` as value |
 | Authentication | Automatic - AWS ALB handles it |
+| Session expiration | Use `apiFetch()` wrapper (see `snippets/auth/token-refresh.js`) |

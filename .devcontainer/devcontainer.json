@@ -14,7 +14,10 @@
         "ms-azuretools.vscode-docker",
         
         // 📁 Better file icons
-        "vscode-icons-team.vscode-icons"
+        "vscode-icons-team.vscode-icons",
+
+        // 🤖 Cline AI coding assistant
+        "saoudrizwan.claude-dev"
       ],
       
       "settings": {
@@ -43,7 +46,7 @@
     }
   },
 
-  "postAttachCommand": "[ -f .devcontainer/install-cline.sh ] && bash .devcontainer/install-cline.sh || true",
+  "postAttachCommand": "bash .devcontainer/auto-update-template.sh; bash .devcontainer/install-cline.sh",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 
