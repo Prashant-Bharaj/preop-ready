@@ -5,8 +5,9 @@
 # we have more info / own-AWS static hosting.
 #
 # Triggers:
-#   - After CodeQL security scan completes on main/master (deploy only if CodeQL passed, including scheduled scans)
-#   - Manual dispatch (for testing)
+#   - After CodeQL security scan completes on main/master
+#   - Push-triggered CodeQL: deploy if passed, block if failed
+#   - Schedule-triggered CodeQL: skip deploy; if failed, stop containers
 #
 # URL: https://<repo-name>.vibe.intranet.cnb
 # =============================================================================
@@ -18,7 +19,6 @@ on:
     workflows: ["CodeQL"]
     branches: [main, master]
     types: [completed]
-  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -30,13 +30,14 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Gate: only proceed when CodeQL passed (or manual) and not template repo
+  # Gate: only proceed when push-triggered CodeQL passed and not template repo
   # ---------------------------------------------------------------------------
   gate:
     name: Check deployment conditions
     runs-on: ubuntu-latest
     outputs:
       should-deploy: ${{ steps.check.outputs.should-deploy }}
+      codeql-failed-on-schedule: ${{ steps.check.outputs.codeql-failed-on-schedule }}
     steps:
       - name: Check conditions
         id: check
@@ -63,17 +64,35 @@ jobs:
             REASON="template-repo"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
+            echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+
+          # Scheduled CodeQL scans — never redeploy, stop containers if failed
+          if [[ "$TRIGGER_EVENT" == "schedule" ]]; then
+            if [[ "$CONCLUSION" == "success" ]] || [[ "$CONCLUSION" == "neutral" ]]; then
+              REASON="scheduled-scan-passed"
+              echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
+            else
+              REASON="scheduled-scan-failed"
+              echo "codeql-failed-on-schedule=true" >> $GITHUB_OUTPUT
+            fi
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Allow "success" and "neutral" (CodeQL with no findings)
           if [[ "$EVENT" == "workflow_run" ]] && [[ "$CONCLUSION" != "success" ]] && [[ "$CONCLUSION" != "neutral" ]]; then
             REASON="codeql-failed (conclusion: $CONCLUSION)"
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
+            echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "should-deploy=true" >> $GITHUB_OUTPUT
           echo "skip-reason=" >> $GITHUB_OUTPUT
+          echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
           echo "✅ All checks passed — deploying"
 
       - name: Write skip summary
@@ -83,7 +102,14 @@ jobs:
           {
             echo "## Deployment Skipped"
             echo ""
-            if [[ "$REASON" == "codeql-failed" ]]; then
+            if [[ "$REASON" == "scheduled-scan-passed" ]]; then
+              echo "**Reason:** Scheduled CodeQL scan passed. No redeployment needed (no code changed)."
+            elif [[ "$REASON" == "scheduled-scan-failed" ]]; then
+              echo "**Reason:** Scheduled CodeQL scan **FAILED**."
+              echo ""
+              echo "⛔ Containers will be stopped to prevent running vulnerable code."
+              echo "Fix the security findings and push to redeploy."
+            elif [[ "$REASON" =~ ^codeql-failed ]]; then
               echo "**Reason:** CodeQL security scan did not pass."
               echo ""
               echo "Deployment is blocked until CodeQL completes successfully."
@@ -92,6 +118,20 @@ jobs:
               echo "**Reason:** This is the template repository — deployment is disabled."
             fi
           } >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # Stop: if scheduled CodeQL failed, stop containers and block redeployment
+  # ---------------------------------------------------------------------------
+  stop-on-security-failure:
+    name: Stop containers (security failure)
+    needs: gate
+    if: needs.gate.outputs.codeql-failed-on-schedule == 'true'
+    uses: bayer-int/dd-platform-repository/.github/workflows/stop-project.yml@master
+    with:
+      project-name: ${{ github.event.repository.name }}
+      reason: "Scheduled CodeQL security scan failed"
+    secrets:
+      AWS_DEPLOY_ROLE_ARN: "arn:aws:iam::992872368362:role/vibe-platform-github-deploy"
 
   # ---------------------------------------------------------------------------
   # Deploy to ECS (frontend-only or full-stack; needs frontend/Dockerfile or backend/Dockerfile)
