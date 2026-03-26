@@ -189,3 +189,29 @@
 - [ ] Critical rules #14 (repo naming), #15 (protected files), #16 (schema migrations) added
 - [ ] No `19-dependabot.md` in file table (handled by workflow, not AI rules)
 - [ ] All cross-references in critical rules point to correct files
+
+---
+
+## Batch 4 — DX Fixes (2026-03-26)
+
+### Gitignore media exclusion
+- [ ] Media files (png, jpg, svg, etc.) are globally ignored
+- [ ] `frontend/**/*` media files are NOT ignored (negation patterns present)
+- [ ] Test: add an image to `frontend/assets/logo.png` → `git status` should show it as untracked
+- [ ] Test: add an image to `backend/images/test.png` → `git status` should NOT show it
+
+### Template auto-update disable
+- [ ] `auto-update-template.sh` checks for `.template-auto-update-disabled` file
+- [ ] If file exists: prints "auto-update is disabled" and exits
+- [ ] If file doesn't exist: proceeds with update check normally
+- [ ] Test: `touch .template-auto-update-disabled` → run `bash .devcontainer/auto-update-template.sh` → should skip
+- [ ] Test: `rm .template-auto-update-disabled` → run script → should check for updates
+
+### MGA Assistant snippet simplification
+- [ ] `snippets/llm/mga-assistant-client.js` uses ChatCompletion API (POST `/chat/completions`)
+- [ ] No threads, runs, or polling logic — simple request/response
+- [ ] Exports `callAssistant()` and `testAssistantConnection()`
+- [ ] Same env var pattern as `bayer-llm-client.js` (SECRET_1, API_KEY, SECRET_2)
+- [ ] Mock fallback when credentials not configured
+- [ ] Supports conversation history via `options.messages`
+- [ ] `INDEX.md` description updated (no longer mentions threads/runs)

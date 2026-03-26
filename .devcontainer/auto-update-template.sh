@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Auto-check and apply template updates on Codespace start
 
+# Allow users to disable auto-updates by creating this file:
+#   touch .template-auto-update-disabled
+if [ -f ".template-auto-update-disabled" ]; then
+  echo "⏸️  Template auto-update is disabled (.template-auto-update-disabled exists)."
+  echo "   To re-enable: rm .template-auto-update-disabled"
+  exit 0
+fi
+
 echo "🔄 Checking for template updates..."
 
 RESULT=$(bash scripts/check-updates.sh 2>/dev/null)

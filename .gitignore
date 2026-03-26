@@ -61,6 +61,8 @@ local-data/
 *.tar.gz
 *.rar
 *.7z
+
+# Media files (ignored everywhere EXCEPT frontend/ for app assets)
 *.png
 *.jpg
 *.jpeg
@@ -72,3 +74,14 @@ local-data/
 *.mp3
 *.wav
 *.mov
+!frontend/**/*.png
+!frontend/**/*.jpg
+!frontend/**/*.jpeg
+!frontend/**/*.gif
+!frontend/**/*.bmp
+!frontend/**/*.ico
+!frontend/**/*.svg
+!frontend/**/*.mp4
+!frontend/**/*.mp3
+!frontend/**/*.wav
+!frontend/**/*.mov

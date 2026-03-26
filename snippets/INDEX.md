@@ -43,7 +43,7 @@
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
 | Bayer LLM Client | JS | `llm/bayer-llm-client.js` | Direct chat completions via Bayer's internal LLM API |
-| MGA Assistant Client | JS | `llm/mga-assistant-client.js` | OpenAI Assistants API (threads, runs, polling) via MGA |
+| MGA Assistant Client | JS | `llm/mga-assistant-client.js` | MGA assistant via ChatCompletion API |
 
 ### Microsoft 365 Integration
 
