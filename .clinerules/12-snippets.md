@@ -37,8 +37,14 @@ Implement from scratch. No need to add it to the library.
 
 | Category | Folder | Common Uses |
 |----------|--------|-------------|
-| **Auth** | `snippets/auth/` | User identity from OIDC headers |
+| **Auth** | `snippets/auth/` | User identity, token refresh, roles & whitelisting |
 | **File Handling** | `snippets/file-handling/` | File uploads (memory-based) |
+| **AI / LLM** | `snippets/llm/` | Direct LLM chat, MGA assistant (threads/runs) |
+| **SharePoint** | `snippets/sharepoint/` | Fetch files from SharePoint via Graph API |
+| **Email** | `snippets/email/` | Send emails via Bayer SMTP |
+| **UI Components** | `snippets/ui/` | Datepicker (React + Vanilla) |
+| **Realtime** | `snippets/realtime/` | WebSocket (Socket.IO) server + client |
+| **Configuration** | `snippets/config/` | App settings (runtime), CORS setup |
 | **Security** | `snippets/security/` | Input validation, parameterized SQL queries |
 
 ---
@@ -53,7 +59,19 @@ When user says... → Check this snippet:
 | "Who is logged in" / "User identity" (Python) | `auth/user-identity.py` |
 | "Who is logged in" / "User identity" (Rust) | `auth/user-identity.rs` |
 | "Session expired" / "Token timeout" / "User gets stuck" | `auth/token-refresh.js` |
+| "User roles" / "Admin only" / "Whitelist" / "Approve users" | `auth/user-roles.js` + `auth/user-roles-schema.sql` |
+| "User management page" / "Admin panel for users" | `auth/UserManagement.jsx` |
 | "Upload files" | `file-handling/upload-handler.js` |
+| "Call LLM" / "AI chat" / "GPT" | `llm/bayer-llm-client.js` |
+| "Assistant" / "Thread" / "MGA assistant" | `llm/mga-assistant-client.js` |
+| "SharePoint" / "OneDrive" / "Graph API" / "Excel from SharePoint" | `sharepoint/sharepoint-client.js` |
+| "Send email" / "SMTP" / "Notification email" | `email/smtp-client.js` |
+| "Date picker" / "Calendar input" / "Date range" (React) | `ui/datepicker-react.jsx` |
+| "Date picker" / "Calendar input" / "Date range" (Vanilla) | `ui/datepicker-vanilla.js` |
+| "WebSocket" / "Real-time" / "Live updates" / "Chat" | `realtime/websocket-helper.js` |
+| "App settings" / "Config without redeploy" / "Runtime config" | `config/app-settings.js` + `config/app-settings-schema.sql` |
+| "Settings page" / "Admin settings" | `config/AppSettings.jsx` |
+| "CORS error" / "Cross-origin" / "Proxy setup" | `config/cors-proxy.js` |
 | "Validate input" / "Sanitize data" | `security/input-validation.js` |
 | "Database queries" / "SQL" | `security/parameterized-queries.js` |
 
