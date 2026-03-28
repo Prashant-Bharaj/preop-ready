@@ -185,55 +185,86 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ---
 
-## 🛡️ Input Validation (REQUIRED)
+## 🛡️ Input Validation & Sanitization (REQUIRED)
 
 **NEVER trust user input.** Validate ALL inputs server-side.
 
-### Node.js/Express Validation
+### ⚡ AI Rule: Always Validate and Sanitize
+
+**When generating ANY Express/FastAPI app, ALWAYS apply these patterns:**
+
+1. **Add global sanitization middleware** — use snippet `security/sanitize-middleware.js` (or `.py`)
+   - `sanitizeBody` strips HTML from ALL incoming request body strings
+   - `sanitizeResponse` strips HTML from ALL outgoing JSON responses
+   - Apply BEFORE routes — this is your safety net
+2. **Set explicit body size limit** — `express.json({ limit: '1mb' })` (adjust based on use case; file uploads use multer separately)
+3. **Validate `:id` params** with `isPositiveInt()` on EVERY route that takes an ID
+4. **Validate query params** against allowed values (don't just pass them through)
+5. **Enforce max lengths** on all string fields matching DB column sizes
+6. **Check required fields** on POST/PUT — return 400 if missing
+7. **Never return `error.message`** to clients — use generic messages for 500s
+8. **Add a global error handler** — AFTER all routes
+
+### Setup (Node.js/Express)
 
 ```javascript
-// Use express-validator for input validation
-const { body, validationResult } = require('express-validator');
+const express = require('express');
+const { applySecurityMiddleware, globalErrorHandler } = require('./middleware/sanitize');
 
-// Route with validation
-app.post('/users',
-  // Validation rules
-  body('email').isEmail().normalizeEmail(),
-  body('name').trim().isLength({ min: 1, max: 100 }).escape(),
-  body('age').optional().isInt({ min: 0, max: 150 }),
-  
-  // Handler
-  (req, res) => {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    
-    // Safe to use validated data
-    const { email, name, age } = req.body;
-    // ... process request
-  }
-);
+const app = express();
+
+// Apply global sanitization BEFORE routes
+applySecurityMiddleware(app);
+
+// ... define routes here ...
+
+// Global error handler AFTER routes
+app.use(globalErrorHandler);
 ```
 
-### Python/FastAPI Validation
+### Setup (Python/FastAPI)
 
 ```python
-from pydantic import BaseModel, EmailStr, constr, conint
-from fastapi import HTTPException
+from fastapi import FastAPI
+from sanitize_middleware import apply_security_middleware
 
-# Define validated model
-class UserCreate(BaseModel):
-    email: EmailStr
-    name: constr(min_length=1, max_length=100)
-    age: conint(ge=0, le=150) | None = None
+app = FastAPI()
+apply_security_middleware(app)
 
-# Route with automatic validation
-@app.post("/users")
-def create_user(user: UserCreate):
-    # Pydantic already validated - safe to use
-    return {"email": user.email, "name": user.name}
+# ... define routes here ...
+```
+
+### Per-Route Validation Example
+
+```javascript
+const { isPositiveInt, isAllowedValue, validateRequiredFields, enforceMaxLengths } = require('./middleware/sanitize');
+
+app.get('/items/:id', (req, res) => {
+  if (!isPositiveInt(req.params.id)) {
+    return res.status(400).json({ error: 'ID must be a positive integer' });
+  }
+  // ...
+});
+
+app.get('/items', (req, res) => {
+  const { status, sort } = req.query;
+  if (status && !isAllowedValue(status, ['active', 'archived', 'draft'])) {
+    return res.status(400).json({ error: 'Invalid status value' });
+  }
+  // ...
+});
+
+app.post('/items', (req, res) => {
+  const missing = validateRequiredFields(req.body, ['title', 'description']);
+  if (missing.length) {
+    return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
+  }
+  const tooLong = enforceMaxLengths(req.body, { title: 200, description: 2000 });
+  if (tooLong.length) {
+    return res.status(400).json({ error: `Fields too long: ${tooLong.map(v => v.field).join(', ')}` });
+  }
+  // ...
+});
 ```
 
 ### Validation Rules to Apply
@@ -243,10 +274,12 @@ def create_user(user: UserCreate):
 | Email | Use email validator, normalize |
 | Names/Text | Trim whitespace, limit length, escape HTML |
 | Numbers | Check type, range (min/max) |
-| IDs | Validate format (UUID, integer) |
+| IDs | Validate format (UUID, integer) — use `isPositiveInt()` |
 | URLs | Validate URL format, whitelist domains if needed |
 | File uploads | Check type, size, scan for malware |
 | Dates | Parse with library, validate range |
+| Query params | Validate against allowed values — use `isAllowedValue()` |
+| Settings keys | Validate format (e.g. `/^[a-z0-9_]+$/`) |
 
 ---
 

@@ -95,7 +95,9 @@
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| Input Validation | JS | `security/input-validation.js` | Server-side input validation (express-validator) |
+| Sanitize Middleware | JS | `security/sanitize-middleware.js` | Global body/response sanitization + validation helpers |
+| Sanitize Middleware | Python | `security/sanitize-middleware.py` | Global sanitization middleware for FastAPI |
+| Input Validation | JS | `security/input-validation.js` | Per-route input validation (express-validator) |
 | Input Validation | Python | `security/input-validation.py` | Pydantic models + sanitization helpers |
 | Parameterized Queries | JS | `security/parameterized-queries.js` | Safe SQL queries (PostgreSQL/MySQL) |
 | Parameterized Queries | Python | `security/parameterized-queries.py` | Safe SQL queries (asyncpg) |

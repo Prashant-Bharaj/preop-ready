@@ -71,6 +71,7 @@ When user says... → Check this snippet:
 | "App settings" / "Config without redeploy" | `config/app-settings.js` + schema | `config/app-settings.py` + same schema |
 | "Settings page" / "Admin settings" | `config/AppSettings.jsx` | — (React frontend) |
 | "CORS error" / "Cross-origin" | `config/cors-proxy.js` | `config/cors-middleware.py` |
+| "Sanitize" / "Strip HTML" / "Global middleware" | `security/sanitize-middleware.js` | `security/sanitize-middleware.py` |
 | "Validate input" / "Sanitize data" | `security/input-validation.js` | `security/input-validation.py` |
 | "Database queries" / "SQL" | `security/parameterized-queries.js` | `security/parameterized-queries.py` |
 
