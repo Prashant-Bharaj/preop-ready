@@ -103,6 +103,10 @@ auto_update:
   - path: ".devcontainer/auto-update-template.sh"
     description: "Auto-check and apply template updates on Codespace start"
     
+  # README
+  - path: "README.md"
+    description: "Project README with data security warning and getting started guide"
+
   # Documentation
   - path: "docs/MIGRATION.md"
     description: "Migration guide for existing projects"
