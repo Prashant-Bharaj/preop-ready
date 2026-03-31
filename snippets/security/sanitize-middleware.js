@@ -13,7 +13,7 @@
  *   validateRequiredFields, enforceMaxLengths.
  *
  * DEPENDENCIES:
- *   None (uses built-in Express features)
+ *   npm install sanitize-html
  *
  * USAGE:
  *   const { sanitizeBody, sanitizeResponse } = require('./middleware/sanitize');
@@ -40,14 +40,18 @@
 // GLOBAL SANITIZATION MIDDLEWARE
 // ============================================
 
+const sanitizeHtml = require('sanitize-html');
+
 /**
- * Strip HTML tags from a string value.
+ * Strip ALL HTML tags from a string value.
+ * Uses sanitize-html library (not regex) for robust protection against
+ * XSS bypasses like unclosed tags, nested encoding, and attribute injection.
  * @param {string} str
  * @returns {string}
  */
 function stripHtml(str) {
   if (typeof str !== 'string') return str;
-  return str.replace(/<[^>]*>/g, '');
+  return sanitizeHtml(str, { allowedTags: [], allowedAttributes: {} });
 }
 
 /**

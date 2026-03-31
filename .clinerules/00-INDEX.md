@@ -37,6 +37,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 | `16-ai-file-input.md` | **Files for AI** | User giving files to AI assistant |
 | `17-user-identity.md` | **User identity** | Get logged-in user from OIDC headers |
 | `18-security.md` | **Security** | Headers, non-root, input validation, SQL |
+| `19-sensitive-files.md` | **⛔ Sensitive Files** | Protected files, data handling, seed data rules |
 
 ---
 
@@ -153,6 +154,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 14. **Repo name must be lowercase with hyphens** - Check at session start. Pattern: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`. Offer to rename via `gh api` if non-compliant. See `01-session-start.md`
 15. **NEVER modify platform-managed files** - `deploy.yml`, `template-sync.yml`, `dependabot-auto-merge.yml`, `.template-version`, `.template-manifest.yml` are auto-updated and will be overwritten. See `10-platform-rules.md` § Protected Files
 16. **Schema changes via migrations only** - After first deployment, editing `database/init/*.sql` has NO effect. Use backend migrations. Don't commit data to git. See `05-building.md` § Database Management
+17. **⛔ Sensitive files rules are NON-NEGOTIABLE** - Never modify `.gitignore`, never create files with real data outside `context/`, never use `git add .`, never put data in `database/init/` (schema only). Seed data goes in `database/seed/` (gitignored). See `19-sensitive-files.md`
 
 ---
 

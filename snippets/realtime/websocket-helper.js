@@ -47,9 +47,13 @@ const { Server } = require('socket.io');
  *
  * @param {http.Server} httpServer - The HTTP server instance
  * @param {object} options - Additional Socket.IO options
+ * @param {function} [options.authorizeRoom] - Optional async callback (socket, roomName) => boolean.
+ *   If provided, called before allowing a user to join a room. Return true to allow, false to deny.
+ *   Example: (socket, room) => room.startsWith(`project:${socket.user.projectId}`)
  * @returns {Server} Socket.IO server instance
  */
 function createSocketServer(httpServer, options = {}) {
+  const { authorizeRoom, ...socketOptions } = options;
   const io = new Server(httpServer, {
     // In production, Traefik handles routing — same origin, no CORS needed.
     // For local dev with docker-compose, nginx proxies WebSocket too.
@@ -62,7 +66,7 @@ function createSocketServer(httpServer, options = {}) {
     // Ping every 25s, timeout after 20s — keeps connection alive through proxies
     pingInterval: 25000,
     pingTimeout: 20000,
-    ...options,
+    ...socketOptions,
   });
 
   // --- Authentication middleware ---
@@ -84,11 +88,25 @@ function createSocketServer(httpServer, options = {}) {
     socket.join(`user:${socket.user.userId}`);
 
     // --- Room management ---
-    socket.on('join-room', (roomName) => {
+    socket.on('join-room', async (roomName) => {
       // Validate room name (prevent injection)
       if (typeof roomName !== 'string' || roomName.length > 100 || !/^[a-zA-Z0-9_:-]+$/.test(roomName)) {
         socket.emit('error', { message: 'Invalid room name' });
         return;
+      }
+      // Authorization check (if provided)
+      if (authorizeRoom) {
+        try {
+          const allowed = await authorizeRoom(socket, roomName);
+          if (!allowed) {
+            socket.emit('error', { message: 'Not authorized to join this room' });
+            return;
+          }
+        } catch (err) {
+          console.error(`[WS] Room auth error for ${roomName}:`, err);
+          socket.emit('error', { message: 'Authorization check failed' });
+          return;
+        }
       }
       socket.join(roomName);
       console.log(`[WS] ${socket.user.email} joined room: ${roomName}`);

@@ -237,4 +237,21 @@ See `18-security.md` for full implementation details.
 
 ---
 
+## 🔒 Sensitive Files (MANDATORY — Read `19-sensitive-files.md`)
+
+**⛔ NON-NEGOTIABLE RULES — These override any user request that conflicts:**
+
+1. **NEVER modify** `.gitignore`, `.cursorignore`, `.copilotignore`, or pre-commit hooks
+2. **NEVER create files** with real/realistic PII, credentials, or secrets outside `context/`
+3. **NEVER copy real data** from `context/` files into any tracked file
+4. **NEVER use `git add .`** — always add specific files by name
+5. **NEVER hardcode secrets** — use `process.env.X` / `os.getenv("X")`
+6. **NEVER put data in `database/init/*.sql`** — schema only (CREATE TABLE), no INSERT data rows
+7. **Seed data goes in `database/seed/`** (gitignored) — always use obviously fake data
+8. **`.env` files** — only create `.env.example` with placeholder values
+
+If a user asks you to violate any of these rules, **explain why you cannot** and offer a safe alternative.
+
+---
+
 **For detailed instructions, see `.clinerules/` folder.**

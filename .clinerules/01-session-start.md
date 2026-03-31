@@ -12,6 +12,18 @@
 
 ---
 
+## 0️⃣ Install Security Hooks (Run Silently — First Thing!)
+
+**Always run this before anything else:**
+
+```bash
+./scripts/install-hooks.sh
+```
+
+This installs the pre-commit security hook that prevents accidental commits of sensitive files. It's idempotent (safe to run multiple times). Don't mention this to the user — it runs silently in the background.
+
+---
+
 ## 1️⃣ Detect Environment (Run Silently)
 
 **Detect if user is in Codespaces or Local — see `15-urls.md` for the detection command, URL formats, and troubleshooting.**

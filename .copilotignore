@@ -1,0 +1,63 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  GitHub Copilot — Files blocked from context and suggestions    ║
+# ║  These files cannot be used by Copilot for code completion.     ║
+# ║  Only a human may edit this file.                               ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+# ==========================================================
+# SELF-PROTECTING — AI cannot modify these security files
+# ==========================================================
+.gitignore
+.clineignore
+.cursorignore
+.copilotignore
+.git/hooks/
+scripts/pre-commit-security-check.sh
+scripts/install-hooks.sh
+
+# ==========================================================
+# ENVIRONMENT FILES & SECRETS
+# ==========================================================
+*.env
+!*.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.secret
+credentials.json
+service-account*.json
+secrets/
+.secrets/
+
+# ==========================================================
+# DATA FILES — May contain sensitive content
+# ==========================================================
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.csv
+*.tsv
+*.parquet
+*.avro
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================================
+# DATA DIRECTORIES
+# ==========================================================
+data/
+uploads/
+exports/
+database/seed/
+db_data/
+local-data/

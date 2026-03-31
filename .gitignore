@@ -1,55 +1,60 @@
-# Dependencies
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  ⛔ AI AGENTS: DO NOT MODIFY THIS FILE                         ║
+# ║  This file is protected. Only humans may edit .gitignore.      ║
+# ║  See .clinerules/19-sensitive-files.md for details.            ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+# ==========================================================
+# DEPENDENCIES
+# ==========================================================
 node_modules/
 .pnp
 .pnp.js
+__pycache__/
+*.pyc
+venv/
+.venv/
 
-# Build outputs
+# ==========================================================
+# BUILD OUTPUTS
+# ==========================================================
 dist/
 build/
 .next/
 out/
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# ==========================================================
+# ENVIRONMENT FILES — NEVER COMMIT SECRETS
+# Only .env.example files (with placeholder values) are allowed.
+# ==========================================================
+*.env
+*.env.local
+*.env.*.local
+!*.env.example
 
-# IDE
-.idea/
-*.swp
-*.swo
-*~
+# ==========================================================
+# SECRETS & CREDENTIALS — HARD BLOCK
+# ==========================================================
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.secret
+credentials.json
+service-account*.json
+secrets/
+.secrets/
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Database
-db_data/
-
-# Test coverage
-coverage/
-
-# Security test file (should not be deployed)
-# backend/src/SECURITY_TEST.js
-
-# AI context folder (files for AI to analyze - never commit, but keep the folder)
-context/*
-!context/.gitkeep
-
-# Local data folder (for persistent storage testing)
-local-data/
-
-.chat/
-.claude/
-
-
-# Documents & binaries (don't commit to repo — use context/ folder for AI)
+# ==========================================================
+# DOCUMENTS & DATA FILES — NEVER COMMIT
+# Projects often handle confidential Bayer data.
+# Use context/ folder for reference data (gitignored below).
+# Use database/seed/ for local test data (gitignored below).
+# ==========================================================
 *.pdf
 *.doc
 *.docx
@@ -58,12 +63,25 @@ local-data/
 *.ppt
 *.pptx
 *.csv
+*.tsv
+*.parquet
+*.avro
+
+# ==========================================================
+# ARCHIVES
+# ==========================================================
 *.zip
 *.tar.gz
+*.tar
 *.rar
 *.7z
+*.gz
+*.bz2
 
-# Media files (ignored everywhere EXCEPT frontend/ for app assets)
+# ==========================================================
+# MEDIA FILES — Blocked everywhere EXCEPT frontend/
+# Frontend app assets (logos, icons, images) are allowed.
+# ==========================================================
 *.png
 *.jpg
 *.jpeg
@@ -71,10 +89,17 @@ local-data/
 *.bmp
 *.ico
 *.svg
+*.webp
 *.mp4
 *.mp3
 *.wav
 *.mov
+*.avi
+*.webm
+*.tiff
+*.tif
+
+# Allow frontend app assets
 !frontend/**/*.png
 !frontend/**/*.jpg
 !frontend/**/*.jpeg
@@ -82,7 +107,59 @@ local-data/
 !frontend/**/*.bmp
 !frontend/**/*.ico
 !frontend/**/*.svg
-!frontend/**/*.mp4
-!frontend/**/*.mp3
-!frontend/**/*.wav
-!frontend/**/*.mov
+!frontend/**/*.webp
+
+# ==========================================================
+# LOCAL DATABASES & DATA DIRECTORIES
+# ==========================================================
+*.sqlite
+*.sqlite3
+*.db
+db_data/
+data/
+uploads/
+exports/
+local-data/
+
+# ==========================================================
+# DATABASE — Schema tracked, seed data and env gitignored
+# ==========================================================
+database/.env
+database/seed/*
+!database/seed/.gitkeep
+
+# ==========================================================
+# AI CONTEXT FOLDER — For reference data (gitignored)
+# Users share files here for AI to analyze. Never committed.
+# ==========================================================
+context/*
+!context/.gitkeep
+
+# ==========================================================
+# AI TOOL DATA — Chat history, Claude settings
+# ==========================================================
+.chat/
+.claude/
+
+# ==========================================================
+# IDE & OS
+# ==========================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ==========================================================
+# LOGS
+# ==========================================================
+logs/
+*.log
+npm-debug.log*
+
+# ==========================================================
+# TEST COVERAGE
+# ==========================================================
+coverage/

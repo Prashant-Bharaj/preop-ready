@@ -46,7 +46,7 @@
     }
   },
 
-  "postAttachCommand": "bash .devcontainer/auto-update-template.sh; bash .devcontainer/install-cline.sh",
+  "postAttachCommand": "bash .devcontainer/auto-update-template.sh; bash .devcontainer/install-cline.sh; bash scripts/install-hooks.sh",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 

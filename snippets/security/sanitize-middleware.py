@@ -13,7 +13,7 @@ DESCRIPTION:
     validate_required_fields, enforce_max_lengths.
 
 DEPENDENCIES:
-    None (uses built-in FastAPI / Starlette features)
+    pip install nh3
 
 USAGE:
     from sanitize_middleware import SanitizeMiddleware, is_positive_int
@@ -33,9 +33,9 @@ IMPORTANT:
     - These are a SAFETY NET, not a replacement for Pydantic validation
 """
 
-import re
 import json
 from typing import Any
+import nh3
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
@@ -47,10 +47,14 @@ from fastapi import FastAPI
 # ---------------------------------------------------------------------------
 
 def strip_html(value: str) -> str:
-    """Strip HTML tags from a string."""
+    """
+    Strip ALL HTML tags from a string.
+    Uses nh3 library (Rust-backed, replaces deprecated bleach) for robust
+    protection against XSS bypasses like unclosed tags and nested encoding.
+    """
     if not isinstance(value, str):
         return value
-    return re.sub(r"<[^>]*>", "", value)
+    return nh3.clean(value, tags=set())
 
 
 def deep_sanitize(obj: Any) -> Any:

@@ -30,8 +30,37 @@ USAGE:
 """
 
 import os
+import re
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
+from fastapi.responses import Response
+
+# ---------------------------------------------------------------------------
+# Filename Sanitization
+# ---------------------------------------------------------------------------
+
+def sanitize_filename(filename: str) -> str:
+    """
+    Sanitize a filename to prevent path traversal and injection.
+    Strips directory components, null bytes, and dangerous characters.
+    """
+    if not filename:
+        return "unnamed"
+    # Strip path components (prevents ../../../etc/passwd)
+    safe = os.path.basename(filename)
+    # Remove null bytes
+    safe = safe.replace("\0", "")
+    # Remove non-printable characters
+    safe = re.sub(r"[^\x20-\x7E]", "", safe)
+    # Remove characters problematic on filesystems
+    safe = re.sub(r'[<>:"/\\|?*]', "_", safe)
+    # Collapse multiple dots/underscores
+    safe = re.sub(r"\.{2,}", ".", safe)
+    safe = re.sub(r"_{2,}", "_", safe)
+    # Don't allow leading dots (hidden files)
+    safe = safe.lstrip(".")
+    return safe or "unnamed"
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -107,7 +136,7 @@ async def save_upload(
     os.makedirs(save_dir, exist_ok=True)
 
     import time
-    safe_name = f"{int(time.time() * 1000)}-{file.filename}"
+    safe_name = f"{int(time.time() * 1000)}-{sanitize_filename(file.filename)}"
     file_path = os.path.join(save_dir, safe_name)
 
     with open(file_path, "wb") as f:
@@ -119,3 +148,34 @@ async def save_upload(
         "size": len(content),
         "content_type": file.content_type,
     }
+
+
+# ---------------------------------------------------------------------------
+# Secure file download response
+# ---------------------------------------------------------------------------
+
+def create_file_response(
+    content: bytes,
+    filename: str,
+    content_type: str = "application/octet-stream",
+) -> Response:
+    """
+    Create a download response with security headers.
+    Forces the browser to download rather than render inline (prevents XSS).
+
+    Usage:
+        @app.get("/download/{file_id}")
+        async def download(file_id: str):
+            data, name = get_file_from_storage(file_id)
+            return create_file_response(data, name, "application/pdf")
+    """
+    safe_name = sanitize_filename(filename)
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}"',
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "no-store",
+        },
+    )
