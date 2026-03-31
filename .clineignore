@@ -17,6 +17,15 @@ scripts/pre-commit-security-check.sh
 scripts/install-hooks.sh
 
 # ==========================================================
+# GITHUB WORKFLOWS — Platform-managed, do not modify
+# AI can create NEW workflows but must not touch these
+# ==========================================================
+.github/workflows/deploy.yml
+.github/workflows/template-sync.yml
+.github/workflows/version-bump.yml
+.github/workflows/dependabot-auto-merge.yml
+
+# ==========================================================
 # ENVIRONMENT FILES & SECRETS
 # ==========================================================
 *.env
