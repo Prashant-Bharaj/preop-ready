@@ -53,8 +53,8 @@ auto_update:
     description: "PostgreSQL database template"
   - path: "database/Dockerfile.mysql"
     description: "MySQL database template"
-  - path: "database/env.example"
-    description: "Database environment example"
+  - path: "database/.env.example"
+    description: "Database environment template (rename of database/env.example)"
 
   # Vector Database Dockerfile templates
   - path: "vectordb/Dockerfile.pgvector"
@@ -75,6 +75,22 @@ auto_update:
     description: "AI assistant detailed rules"
     is_directory: true
     
+  # Security — AI ignore files and pre-commit hook
+  - path: ".clineignore"
+    description: "Cline AI ignore file (blocks sensitive files from auto-context)"
+  - path: ".cursorignore"
+    description: "Cursor AI ignore file (blocks sensitive files from reading)"
+  - path: ".copilotignore"
+    description: "GitHub Copilot ignore file (blocks sensitive files from context)"
+  - path: "scripts/pre-commit-security-check.sh"
+    description: "Pre-commit hook: blocks sensitive files and secrets from commits"
+  - path: "scripts/install-hooks.sh"
+    description: "Installs pre-commit security hook (runs on Codespace start)"
+
+  # Database seed directory
+  - path: "database/seed/.gitkeep"
+    description: "Gitignored directory for local test/seed data"
+
   # AI context folder (for giving files to AI)
   - path: "context/.gitkeep"
     description: "Folder for files to share with AI assistant"
