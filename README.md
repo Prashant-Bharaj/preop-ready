@@ -1,4 +1,25 @@
-# 🎉 Welcome to the Vibe Hackathon Platform!
+# !! IMPORTANT: No Real Data Allowed !!
+
+> **NEVER PUT REAL COMPANY DATA IN YOUR PROJECT FILES.**
+>
+> Your app might work with sensitive information — employee lists, patient records, sales numbers, internal documents. **That data must never be saved in your project.** Not in spreadsheets, not in database files, not anywhere.
+
+**What counts as "real data"?** Anything that came from a real Bayer system — names, emails, reports, documents, numbers from real people or real business.
+
+| Safe | Not safe |
+|------|----------|
+| Make up test data: `John Doe`, `jane@example.com` | Use real names, real emails, or real documents |
+| Share reference files with the AI via the `context/` folder (your AI can read these, but they stay private) | Put spreadsheets, PDFs, or data files directly in your project |
+| Let the AI generate fake sample data for testing | Copy-paste real data into any file |
+| Add passwords and API keys through GitHub Settings | Write passwords or API keys directly in your code |
+
+**We have automated checks that will block your work if any data that even resembles real data is detected.** Your project will refuse to save if it finds spreadsheets, documents, passwords, or anything that looks like it could be real. Your AI assistant also follows these rules and will help you stay on the safe side.
+
+> For the full details, see `.clinerules/19-sensitive-files.md`.
+
+---
+
+# Welcome to the Vibe Hackathon Platform!
 
 > **No coding experience? No problem!** Your AI assistant will help you build and deploy your app.
 >
