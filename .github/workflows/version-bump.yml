@@ -49,6 +49,16 @@ on:
       - 'scripts/apply-updates.sh'
       - 'scripts/check-updates.sh'
       - 'scripts/preflight-check.sh'
+      - 'scripts/pre-commit-security-check.sh'
+      - 'scripts/install-hooks.sh'
+      - '.gitignore'
+      - '.clineignore'
+      - '.cursorignore'
+      - '.copilotignore'
+      - '.github/copilot-instructions.md'
+      - 'README.md'
+      - 'database/.env.example'
+      - 'database/seed/.gitkeep'
       # Don't trigger on manifest itself (would cause loop)
       
   workflow_dispatch:
