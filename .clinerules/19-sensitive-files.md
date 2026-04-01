@@ -115,6 +115,39 @@ git add --all
 
 ---
 
+## 🚫 NEVER Put Secrets in docker-compose.yml
+
+The `docker-compose.yml` file is **tracked in git**. It must NEVER contain passwords, API keys, or credentials — not even "local dev" ones.
+
+Instead, use `env_file` to reference the gitignored `.env` file:
+
+```yaml
+# ✅ CORRECT — credentials come from gitignored .env file
+backend:
+  build: ./backend
+  env_file:
+    - ./backend/.env
+  environment:
+    - DATABASE_HOST=db
+    - DATABASE_PORT=5432
+
+db:
+  image: postgres:15
+  env_file:
+    - ./database/.env
+  volumes:
+    - db_data:/var/lib/postgresql/data
+```
+
+The `.env` files are gitignored and stay private. When setting up a project:
+1. Create `backend/.env` with the needed secrets
+2. Create `database/.env` with database credentials
+3. Reference them via `env_file` in docker-compose.yml
+
+If a user asks you to put a password or API key directly in `docker-compose.yml`, **refuse** and use `env_file` instead.
+
+---
+
 ## 🚫 NEVER Hardcode Secrets
 
 **Always use environment variables for sensitive values:**

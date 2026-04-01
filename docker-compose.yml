@@ -36,12 +36,12 @@ services:
     build: ./backend
     ports:
       - "3000:3000"
+    env_file:
+      - ./backend/.env               # Gitignored — secrets stay private
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=3306           # Change to 5432 for PostgreSQL
       - DATABASE_NAME=demo
-      - DATABASE_USER=demo_user
-      - DATABASE_PASSWORD=demo_password
     depends_on:
       db:
         condition: service_healthy
@@ -54,11 +54,8 @@ services:
   # AI will switch to PostgreSQL if needed (replace entire db block)
   db:
     image: mysql:8.0
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - MYSQL_DATABASE=demo
-      - MYSQL_USER=demo_user
-      - MYSQL_PASSWORD=demo_password
+    env_file:
+      - ./database/.env               # Gitignored — credentials stay private
     ports:
       - "3306:3306"
     volumes:
@@ -78,10 +75,8 @@ services:
   # AI will uncomment this and remove MySQL if PostgreSQL is chosen:
   # db:
   #   image: postgres:15
-  #   environment:
-  #     - POSTGRES_DB=demo
-  #     - POSTGRES_USER=demo_user
-  #     - POSTGRES_PASSWORD=demo_password
+  #   env_file:
+  #     - ./database/.env             # Gitignored — credentials stay private
   #   ports:
   #     - "5432:5432"
   #   volumes:

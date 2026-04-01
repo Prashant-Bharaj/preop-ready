@@ -161,6 +161,15 @@ while IFS= read -r file; do
         BLOCKED_FILES+=("$file|Contains what looks like a hardcoded password. Use environment variables instead.")
     fi
 
+    # Docker-compose / YAML inline credentials (e.g. MYSQL_PASSWORD=realvalue, POSTGRES_PASSWORD=realvalue)
+    case "$basename" in
+        docker-compose*.yml|docker-compose*.yaml|compose*.yml|compose*.yaml)
+            if echo "$content" | grep -qiE '_PASSWORD[=:][[:space:]]*[^$\{]'; then
+                WARNED_FILES+=("$file|Contains inline password values. Use env_file to reference a gitignored .env file instead of hardcoding credentials in docker-compose.")
+            fi
+            ;;
+    esac
+
 done <<< "$STAGED_FILES"
 
 # ============================================================
