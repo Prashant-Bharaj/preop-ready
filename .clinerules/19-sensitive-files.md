@@ -135,13 +135,14 @@ api_key = os.getenv("API_KEY")
 api_key = "sk-abc123..."
 ```
 
-When creating `.env` files, only create `.env.example` with placeholder values:
+**Do NOT create `.env.example` files** — they were removed from the repo for security reasons. Instead, create `.env` files directly (they are gitignored and stay local):
 ```bash
-# ✅ .env.example (safe to commit)
-API_KEY=your-api-key-here
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-
-# ❌ .env (NEVER create — gitignored for a reason)
+# Create backend/.env for local development (gitignored, stays private)
+cat > backend/.env << 'EOF'
+OPENAI_KEY=
+API_KEY=
+SECRET_1=
+EOF
 ```
 
 ---
@@ -152,7 +153,7 @@ These file types are blocked by `.gitignore` and should never be created in trac
 
 | Pattern | Reason |
 |---------|--------|
-| `*.env` (not `.env.example`) | May contain secrets |
+| `*.env` | May contain secrets |
 | `*.pem`, `*.key`, `*.cert`, `*.crt` | Cryptographic material |
 | `*.p12`, `*.pfx`, `*.jks`, `*.keystore` | Certificate stores |
 | `*.secret`, `credentials.json` | Credential files |

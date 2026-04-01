@@ -30,7 +30,8 @@ out/
 *.env
 *.env.local
 *.env.*.local
-!*.env.example
+*.env.example
+env.example
 
 # ==========================================================
 # SECRETS & CREDENTIALS — HARD BLOCK

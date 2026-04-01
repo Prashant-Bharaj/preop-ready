@@ -10,27 +10,29 @@ Only explain secrets if they want to use:
 
 ## Local Development (Quick Setup)
 
-For testing locally, there's a ready-made template:
+For testing locally, create a `.env` file in the backend directory. **Do NOT create `.env.example` files — they were removed for security reasons.**
 
-```
-📁 backend/env.example  ← Copy this to create your local secrets
-```
-
-**Help them set it up:**
-```
-To use secrets locally, I'll help you set up the environment file:
-```
-
-**Then run for them:**
+**Create the file for them:**
 ```bash
-cp backend/env.example backend/.env
+cat > backend/.env << 'EOF'
+# Local development secrets — this file is gitignored
+OPENAI_KEY=
+API_KEY=
+API_SECRET=
+JWT_SECRET=
+SECRET_1=
+SECRET_2=
+SECRET_3=
+EOF
 ```
 
 **Then say:**
 ```
 Done! Now open backend/.env and fill in your actual API keys.
-This file is private - it won't be uploaded to GitHub.
+This file is private — it's gitignored and will never be uploaded to GitHub.
 ```
+
+**For database credentials in local dev**, the docker-compose.yml handles this automatically. The AI should set credentials directly in `docker-compose.yml` environment section (these are local-only dev values, not production secrets).
 
 ## How to Explain It Simply
 

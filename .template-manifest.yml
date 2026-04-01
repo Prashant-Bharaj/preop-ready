@@ -53,9 +53,6 @@ auto_update:
     description: "PostgreSQL database template"
   - path: "database/Dockerfile.mysql"
     description: "MySQL database template"
-  - path: "database/.env.example"
-    description: "Database environment template (rename of database/env.example)"
-
   # Vector Database Dockerfile templates
   - path: "vectordb/Dockerfile.pgvector"
     description: "pgvector vector database template"
@@ -63,8 +60,6 @@ auto_update:
     description: "ChromaDB vector database template"
   - path: "vectordb/Dockerfile.qdrant"
     description: "Qdrant vector database template"
-  - path: "vectordb/env.example"
-    description: "Vector database environment example"
 
   # AI instructions - always use latest guidance
   - path: ".cursorrules"
@@ -208,6 +203,18 @@ cleanup:
   - path: ".chat"
     type: "gitignore_entry"
     reason: "Chat runtime data entry no longer needed"
+  - path: "backend/env.example"
+    type: "file"
+    reason: "Removed — flagged by cybersecurity (credentials in repo)"
+  - path: "database/env.example"
+    type: "file"
+    reason: "Removed — flagged by cybersecurity (credentials in repo)"
+  - path: "database/.env.example"
+    type: "file"
+    reason: "Removed — flagged by cybersecurity (credentials in repo)"
+  - path: "vectordb/env.example"
+    type: "file"
+    reason: "Removed — flagged by cybersecurity (credentials in repo)"
 
 # -----------------------------------------------------------------------------
 # Changelog

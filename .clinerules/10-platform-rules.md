@@ -510,9 +510,18 @@ volumes:
 
 ### Local Development
 
-Create `backend/.env` from `backend/env.example`:
+Create `backend/.env` for local development (gitignored, stays private):
 ```bash
-cp backend/env.example backend/.env
+cat > backend/.env << 'EOF'
+# Local development secrets — this file is gitignored
+OPENAI_KEY=
+API_KEY=
+API_SECRET=
+JWT_SECRET=
+SECRET_1=
+SECRET_2=
+SECRET_3=
+EOF
 ```
 
 ### Production (Deployed)

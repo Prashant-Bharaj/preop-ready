@@ -248,7 +248,7 @@ See `18-security.md` for full implementation details.
 5. **NEVER hardcode secrets** — use `process.env.X` / `os.getenv("X")`
 6. **NEVER put data in `database/init/*.sql`** — schema only (CREATE TABLE), no INSERT data rows
 7. **Seed data goes in `database/seed/`** (gitignored) — always use obviously fake data
-8. **`.env` files** — only create `.env.example` with placeholder values
+8. **`.env` files** — create `.env` directly for local dev (gitignored). Do NOT create `.env.example` files.
 
 If a user asks you to violate any of these rules, **explain why you cannot** and offer a safe alternative.
 

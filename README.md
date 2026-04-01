@@ -332,15 +332,9 @@ Want to see what's happening?
 
 ### For Local Testing
 
-There's a template file ready for you:
-
-```
-📁 backend/env.example  ← Your secret template
-```
-
 Tell the AI: **"I need to set up my API keys for local testing"**
 
-It will copy the template and help you fill in your keys. Your secrets stay private (never uploaded to GitHub).
+It will create a private file for your keys. This file stays on your machine and is never uploaded to GitHub.
 
 ### For Production (Live Site)
 

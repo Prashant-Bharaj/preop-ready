@@ -40,11 +40,10 @@ while IFS= read -r file; do
     basename=$(basename "$file")
     dirname=$(dirname "$file")
 
-    # Environment files (allow .env.example)
-    # Matches: .env, .env.local, .env.production, backend/.env, etc.
-    # Does NOT match: .env.example, backend/.env.example
-    if [[ "$basename" == .env || "$basename" == .env.* ]] && [[ "$basename" != *.env.example && "$basename" != .env.example ]]; then
-        BLOCKED_FILES+=("$file|Environment file — may contain secrets. Use .env.example with placeholders instead.")
+    # Environment files — ALL blocked, including .env.example
+    # Matches: .env, .env.local, .env.example, env.example, backend/.env, etc.
+    if [[ "$basename" == .env || "$basename" == .env.* || "$basename" == env.example || "$basename" == *.env.example ]]; then
+        BLOCKED_FILES+=("$file|Environment file — must not be committed. Create .env locally (gitignored).")
         continue
     fi
 
