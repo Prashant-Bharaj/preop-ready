@@ -40,7 +40,7 @@
 | File Upload | JS | `file-handling/upload-handler.js` | Handle file uploads (memory, not disk!) |
 | File Upload | Python | `file-handling/upload-handler.py` | Handle file uploads (FastAPI UploadFile) |
 | Document Text Extractor | JS | `file-handling/document-text-extractor.js` | Extract text from PDF, DOCX, XLSX, PPTX, CSV for AI analysis |
-| Document Text Extractor | Python | `file-handling/document-text-extractor.py` | Extract text from documents (PyPDF2, python-docx, openpyxl) |
+| Document Text Extractor | Python | `file-handling/document-text-extractor.py` | Extract text from documents (pypdf, python-docx, openpyxl) |
 
 ### AI / LLM
 

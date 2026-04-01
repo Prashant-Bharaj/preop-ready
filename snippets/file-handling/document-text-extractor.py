@@ -10,7 +10,7 @@ DESCRIPTION:
     Works with FastAPI UploadFile or file paths.
 
 DEPENDENCIES:
-    pip install PyPDF2 python-docx openpyxl python-pptx
+    pip install pypdf python-docx openpyxl python-pptx
 
 USAGE:
     from document_text_extractor import extract_text, extract_text_from_path
@@ -45,7 +45,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import docx
 import openpyxl
 from pptx import Presentation

@@ -142,7 +142,7 @@ File shared by user
 |-----------|----------|
 | **CSV** | Read headers + first 10 rows → infer schema → build `csv-parse` streaming import |
 | **JSON** | Read structure with `head` → build `JSONStream` or chunked reader |
-| **Excel** | Don't read directly → build `xlsx`/`exceljs` parser in backend |
+| **Excel** | Don't read directly → build `exceljs` parser in backend |
 | **SQL dump** | Read first 50 lines for schema → build migration or import endpoint |
 | **Log files** | `tail -100` for recent entries → build log viewer in app |
 

@@ -10,7 +10,7 @@
  *   Works with multer for file uploads — process in memory or from disk.
  *
  * DEPENDENCIES:
- *   npm install multer pdf-parse mammoth xlsx adm-zip
+ *   npm install multer pdf-parse mammoth exceljs adm-zip
  *
  * USAGE:
  *   const { extractText, uploadAndExtract } = require('./document-text-extractor');
@@ -51,7 +51,7 @@ const path = require('path');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const AdmZip = require('adm-zip');
 
 // ---------------------------------------------------------------------------
@@ -112,12 +112,16 @@ async function extractText(filePath, mimetype, originalname) {
     mimetype === 'application/vnd.ms-excel' ||
     ext === 'xlsx' || ext === 'xls'
   ) {
-    const workbook = XLSX.readFile(filePath);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
     const sheets = [];
-    for (const sheetName of workbook.SheetNames) {
-      const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-      sheets.push(`[Sheet: ${sheetName}]\n${csv}`);
-    }
+    workbook.eachSheet((sheet) => {
+      const rows = [];
+      sheet.eachRow((row) => {
+        rows.push(row.values.slice(1).join(','));
+      });
+      sheets.push(`[Sheet: ${sheet.name}]\n${rows.join('\n')}`);
+    });
     return sheets.join('\n\n');
   }
 

@@ -109,7 +109,7 @@ from scratch. This will be custom code for your project.
 | **File uploads** | `multer` | Express standard, memory + disk storage |
 | **PDF text extraction** | `pdf-parse` | Simple, no native deps |
 | **DOCX text extraction** | `mammoth` | Clean text output, lightweight |
-| **Excel parsing** | `xlsx` | Reads XLS + XLSX, no native deps |
+| **Excel parsing** | `exceljs` | Reads XLS + XLSX, streaming support |
 | **PPTX text extraction** | `adm-zip` | Extract text from zip-based formats |
 | **CSV parsing** | `csv-parse` | Streaming support for large files |
 | **Email** | `nodemailer` | Standard Node.js mailer |
@@ -129,7 +129,7 @@ from scratch. This will be custom code for your project.
 | **Web framework** | `fastapi` | Async, auto-docs, type hints |
 | **ASGI server** | `uvicorn` | Standard FastAPI server |
 | **HTTP client** | `httpx` | Async support, similar to requests |
-| **PDF text extraction** | `PyPDF2` or `pdfplumber` | pdfplumber for tables, PyPDF2 for simple text |
+| **PDF text extraction** | `pypdf` or `pdfplumber` | pdfplumber for tables, pypdf for simple text |
 | **DOCX text extraction** | `python-docx` | Read/write Word documents |
 | **Excel parsing** | `openpyxl` | Read/write XLSX (or `pandas` for data analysis) |
 | **CSV parsing** | `csv` (built-in) | Standard library, no install needed |
@@ -159,7 +159,7 @@ from scratch. This will be custom code for your project.
 | **Rich text editor** | `@tiptap/react` | Extensible, ProseMirror-based |
 | **Markdown rendering** | `react-markdown` | Safe rendering, supports GFM |
 | **PDF generation** | `@react-pdf/renderer` | React components to PDF output |
-| **Export to CSV/Excel** | `xlsx` (same lib) | `XLSX.utils.json_to_sheet()` for export |
+| **Export to CSV/Excel** | `exceljs` | `workbook.xlsx.writeBuffer()` for export |
 | **Drag and drop** | `@dnd-kit/core` | Accessible, flexible, performant |
 | **Syntax highlighting** | `react-syntax-highlighter` | Code blocks with theme support |
 
