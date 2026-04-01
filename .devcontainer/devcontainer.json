@@ -46,8 +46,8 @@
     }
   },
 
-  "onCreateCommand": "bash .devcontainer/install-cline.sh; rm -f backend/env.example database/env.example database/.env.example vectordb/env.example",
-  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh",
+  "onCreateCommand": "bash .devcontainer/install-cline.sh",
+  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; rm -f backend/env.example database/env.example database/.env.example vectordb/env.example",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 

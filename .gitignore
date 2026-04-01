@@ -24,8 +24,7 @@ build/
 out/
 
 # ==========================================================
-# ENVIRONMENT FILES — NEVER COMMIT SECRETS
-# Only .env.example files (with placeholder values) are allowed.
+# ENVIRONMENT FILES — NEVER COMMIT (including .env.example)
 # ==========================================================
 *.env
 *.env.local

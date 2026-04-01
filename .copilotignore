@@ -28,7 +28,6 @@ scripts/install-hooks.sh
 # ENVIRONMENT FILES & SECRETS
 # ==========================================================
 *.env
-!*.env.example
 *.pem
 *.key
 *.cert
