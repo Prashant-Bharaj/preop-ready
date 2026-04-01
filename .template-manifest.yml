@@ -10,7 +10,7 @@
 #   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
-version: "1.2.24"
+version: "1.2.25"
 template_repo: "bayer-int/dd-template-repository"
 template_branch: "master"
 
