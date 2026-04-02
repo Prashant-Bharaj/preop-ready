@@ -100,78 +100,119 @@ Jane,jane@example.com,Engineering
 
 ---
 
-## 📏 Large File Handling (>2MB or >5000 lines)
+## 📏 Large File Handling — MANDATORY SIZE CHECK
 
-### When Files Are Too Large for AI Context
+### ⛔ ALWAYS check file size BEFORE reading any file in `context/`
 
-AI assistants have context limits. Don't try to read entire large files — it wastes tokens and may fail silently.
+**This is not optional.** Reading a large file without checking will crash with a 400 error and waste the user's time.
+
+**BEFORE reading any file, run this:**
+```bash
+wc -c context/filename.ext | awk '{print $1}'
+# If > 1000000 (1MB), DO NOT read the full file
+```
+
+**Or for line count:**
+```bash
+wc -l context/filename.ext | awk '{print $1}'
+# If > 3000 lines, DO NOT read the full file
+```
 
 **Decision flow:**
 
 ```
-File shared by user
+User asks AI to read a file in context/
      │
-     ├─── <2MB / <5000 lines ──► Read directly, analyze in context
+     ▼
+  CHECK FILE SIZE FIRST (wc -c / wc -l)
      │
-     └─── >2MB / >5000 lines ──► Use chunking strategy below
+     ├─── <1MB AND <3000 lines ──► Read directly
+     │
+     └─── >1MB OR >3000 lines ──► Chunk + use subagents (see below)
 ```
 
 ### Strategy for Large Files
 
-1. **Read the first 100 lines** to understand the structure:
-   ```bash
-   head -100 context/large-file.csv
-   ```
+**Step 1:** Read only the first 50 lines to understand the structure:
+```bash
+head -50 context/large-file.csv
+```
 
-2. **Identify the format** — CSV headers, JSON schema, Excel structure
+**Step 2:** Split the file into chunks in the `context/` folder (already gitignored) and use subagents to process each chunk in parallel:
+```bash
+# Split into 500-line chunks inside context/ (gitignored, safe)
+mkdir -p context/chunks
+split -l 500 context/large-file.csv context/chunks/chunk_
 
-3. **Don't read the whole file.** Instead, build a parsing feature in the app:
-   ```
-   This file is too large for me to analyze directly (X MB / Y lines).
-   Instead, I'll build a parsing feature in your backend that can
-   process it efficiently. This is better because:
+# Count how many chunks were created
+ls context/chunks/ | wc -l
+```
 
-   - It handles files of any size
-   - Users can upload similar files through the app
-   - Processing happens on the server, not in AI context
-   ```
+Then dispatch a subagent for each chunk:
+- Each subagent reads one chunk file from `context/chunks/`
+- Each subagent extracts the relevant information (column names, data patterns, value ranges, etc.)
+- Main agent collects results from all subagents and combines them
+- Clean up when done: `rm -rf context/chunks`
+
+This approach handles files of any size without hitting context limits.
+
+**Step 3:** For very large files (>50MB) or binary formats (Excel, PDF), write an inline script to extract what you need:
+
+```bash
+# Example: Extract structure from a large CSV
+python3 -c "
+import csv, json
+with open('context/large-file.csv') as f:
+    reader = csv.DictReader(f)
+    columns = reader.fieldnames
+    rows = []
+    for i, row in enumerate(reader):
+        if i >= 10: break
+        rows.append(row)
+    total = sum(1 for _ in reader) + len(rows)
+    print(json.dumps({
+        'columns': columns,
+        'total_rows': total,
+        'sample_rows': rows,
+        'column_count': len(columns)
+    }, indent=2))
+"
+```
+
+```bash
+# Example: Extract structure from an Excel file
+python3 -c "
+import json
+from openpyxl import load_workbook
+wb = load_workbook('context/large-file.xlsx', read_only=True)
+result = {}
+for sheet in wb.sheetnames:
+    ws = wb[sheet]
+    rows = list(ws.iter_rows(max_row=11, values_only=True))
+    result[sheet] = {
+        'headers': [str(c) for c in (rows[0] if rows else [])],
+        'sample_rows': [[str(c) for c in r] for r in rows[1:11]],
+        'dimensions': ws.dimensions
+    }
+wb.close()
+print(json.dumps(result, indent=2))
+"
+```
+
+These inline scripts run locally, extract just the structure and sample data you need to understand the file, and output JSON you can read in context. **No app feature needed** — the goal is to understand the data so you can build the app from it.
 
 ### Chunking Patterns by File Type
 
 | File Type | Strategy |
 |-----------|----------|
-| **CSV** | Read headers + first 10 rows → infer schema → build `csv-parse` streaming import |
-| **JSON** | Read structure with `head` → build `JSONStream` or chunked reader |
-| **Excel** | Don't read directly → build `exceljs` parser in backend |
-| **SQL dump** | Read first 50 lines for schema → build migration or import endpoint |
-| **Log files** | `tail -100` for recent entries → build log viewer in app |
+| **CSV** | `head -50` for headers + sample → `split -l 500` into `context/chunks/` → subagents |
+| **JSON** | Inline `python3` script to extract schema + sample entries |
+| **Excel** | Inline `python3` + `openpyxl` script (read_only mode) to extract sheet names, headers, sample rows |
+| **PDF** | Inline `python3` + `pypdf` script to extract page count + text from first 5 pages |
+| **SQL dump** | `head -100` for schema → `grep -c INSERT` for row count |
+| **Log files** | `tail -200` for recent entries + `wc -l` for total size |
 
-### Implementation: Build a Parsing Endpoint
-
-When user has a large file, build an upload + parse feature instead of reading it in AI context:
-
-```javascript
-// Use the file-handling snippet (snippets/file-handling/upload-handler.js)
-// Process in memory, return structured results
-const csv = require('csv-parse');
-const { Readable } = require('stream');
-
-app.post('/import', upload.single('file'), async (req, res) => {
-  const records = [];
-  const parser = Readable.from(req.file.buffer).pipe(
-    csv.parse({ columns: true })
-  );
-
-  for await (const record of parser) {
-    records.push(record);
-  }
-
-  // Process records (insert to DB, validate, etc.)
-  res.json({ imported: records.length });
-});
-```
-
-> **See also:** `14-file-handling.md` for memory vs persistent storage decisions, and `snippets/file-handling/upload-handler.js` for the upload snippet.
+> **See also:** `14-file-handling.md` for memory vs persistent storage decisions when building file upload features in the app.
 
 ---
 

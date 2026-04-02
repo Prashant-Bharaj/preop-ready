@@ -61,6 +61,15 @@ secrets/
 *.db
 
 # ==========================================================
+# EXCEPTION: context/ folder — AI CAN read files here
+# Users share reference data via context/ for AI to analyze.
+# AI may read these but must NEVER copy real data into
+# tracked files. See .clinerules/19-sensitive-files.md
+# ==========================================================
+!context/
+!context/**
+
+# ==========================================================
 # DATA DIRECTORIES
 # ==========================================================
 data/
