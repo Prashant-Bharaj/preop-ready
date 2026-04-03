@@ -508,15 +508,48 @@ const apiKey = "sk-abc123xyz";
 const apiKey = process.env.API_KEY;
 ```
 
-### Don't Log Sensitive Data
+### ⛔ Logging Restrictions — Must Not Log
+
+These rules are mandatory. The pre-commit hook will warn if it detects dangerous logging patterns.
+
+**NEVER log any of the following:**
+
+| Forbidden | Examples | Why |
+|-----------|----------|-----|
+| Request/response payloads | `console.log(req.body)`, `print(request.json())` | May contain user-submitted PII or sensitive data |
+| File content or upload data | `console.log(req.file)`, `console.log(req.files)` | Uploaded files may contain confidential documents |
+| Secrets, tokens, credentials | `console.log(apiKey)`, `console.log(req.headers.authorization)` | Secrets end up in CloudWatch, visible to platform admins |
+| Auth headers | `console.log(req.headers)` | Contains OIDC tokens and session data |
+| PII fields | `console.log(user.email)`, `console.log(user.name)` | Personal data in logs violates GDPR principles |
+
+**Safe logging patterns:**
 
 ```javascript
-// ❌ WRONG - logging sensitive data
-console.log('User login:', { email, password });
+// ❌ NEVER — logs entire request body (may contain PII, passwords, sensitive data)
+console.log('Request:', req.body);
+console.log('Headers:', req.headers);
+console.log('File:', req.file);
+console.log('User:', { email, password });
 
-// ✅ CORRECT - redact sensitive fields
+// ✅ SAFE — log only what you need, redact sensitive fields
+console.log('Request received:', { path: req.path, method: req.method });
+console.log('User action:', { userId: req.user?.userId, action: 'login' });
+console.log('Upload:', { filename: req.file?.originalname, size: req.file?.size });
 console.log('User login:', { email, password: '[REDACTED]' });
 ```
+
+```python
+# ❌ NEVER
+print(request.body)
+logger.info(f"Request: {request.json()}")
+logger.info(f"Headers: {request.headers}")
+
+# ✅ SAFE
+logger.info(f"Request: {request.method} {request.url.path}")
+logger.info(f"Upload: filename={file.filename} size={file.size}")
+```
+
+**When debugging locally**, you may temporarily log payloads — but **remove all debug logging before committing**. The pre-commit hook will warn you if it detects `console.log(req.body)` or similar patterns in staged files.
 
 ### Use GitHub Secrets for Production
 

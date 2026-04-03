@@ -234,6 +234,57 @@ while IFS= read -r file; do
 done <<< "$STAGED_FILES"
 
 # ============================================================
+# PHASE 4: Dangerous logging patterns (warn, not block)
+# ============================================================
+
+while IFS= read -r file; do
+    [ -z "$file" ] && continue
+
+    # Only check JS/TS and Python source files
+    case "$file" in
+        *.js|*.ts|*.jsx|*.tsx|*.py)
+            ;;
+        *)
+            continue
+            ;;
+    esac
+
+    # Skip hook scripts, node_modules, test files
+    case "$file" in
+        scripts/pre-commit-security-check.sh|scripts/install-hooks.sh)
+            continue
+            ;;
+        */node_modules/*|*test*|*spec*|*.test.*|*.spec.*)
+            continue
+            ;;
+    esac
+
+    content=$(git show ":$file" 2>/dev/null || true)
+    [ -z "$content" ] && continue
+
+    # JS/TS: logging request body, headers, files, or secrets
+    if echo "$content" | grep -qE 'console\.(log|info|debug|warn)\(.*req\.(body|headers|file[s]?)'; then
+        WARNED_FILES+=("$file|Logs request payload/headers/files — remove debug logging before committing. See .clinerules/18-security.md § Logging Restrictions.")
+    fi
+
+    # JS/TS: logging variables named password, secret, token, key
+    if echo "$content" | grep -qiE 'console\.(log|info|debug|warn)\(.*\b(password|secret|token|apiKey|api_key)\b'; then
+        WARNED_FILES+=("$file|Logs sensitive variable (password/secret/token/key) — redact before committing.")
+    fi
+
+    # Python: logging request body, headers
+    if echo "$content" | grep -qE '(print|logger\.\w+)\(.*request\.(body|headers|json|files)'; then
+        WARNED_FILES+=("$file|Logs request payload/headers — remove debug logging before committing. See .clinerules/18-security.md § Logging Restrictions.")
+    fi
+
+    # Python: logging variables named password, secret, token
+    if echo "$content" | grep -qiE '(print|logger\.\w+)\(.*\b(password|secret|token|api_key)\b'; then
+        WARNED_FILES+=("$file|Logs sensitive variable (password/secret/token) — redact before committing.")
+    fi
+
+done <<< "$STAGED_FILES"
+
+# ============================================================
 # OUTPUT RESULTS
 # ============================================================
 

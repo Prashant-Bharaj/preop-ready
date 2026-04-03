@@ -15,6 +15,8 @@
 
 **We have automated checks that will block your work if any data that even resembles real data is detected.** Your project will refuse to save if it finds spreadsheets, documents, passwords, or anything that looks like it could be real. Your AI assistant also follows these rules and will help you stay on the safe side.
 
+> **This platform is approved for non-production, non-regulated, dummy or synthetic data only. Processing of Bayer Confidential, PII, PHI, or regulated datasets is explicitly prohibited without prior security review and ITLM approval for elevated data classification.**
+
 > For the full details, see `.clinerules/19-sensitive-files.md`.
 
 ---
