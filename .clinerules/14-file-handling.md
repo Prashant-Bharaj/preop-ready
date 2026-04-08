@@ -229,6 +229,45 @@ services:
 
 ---
 
+## ⏱️ Timeouts for Large File Uploads
+
+The platform ALB has a **5-minute idle timeout**. For large file uploads (30MB+) or requests where the backend processes data before responding (document extraction, LLM calls), you MUST configure timeouts at every layer:
+
+### nginx (frontend/nginx.conf or nginx.local.conf)
+```nginx
+location /api {
+    proxy_pass http://backend:3000;
+    proxy_read_timeout 300s;    # Wait up to 5 min for backend response
+    proxy_send_timeout 300s;    # Wait up to 5 min to send request to backend
+    client_max_body_size 50m;   # Allow uploads up to 50MB
+}
+```
+
+### Express (Node.js backend)
+```javascript
+// Increase payload limit (default is 100kb)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Set server timeout for long-running requests
+server.setTimeout(300000); // 5 minutes
+```
+
+### FastAPI (Python backend)
+```python
+# uvicorn handles timeouts via --timeout-keep-alive
+# Run with: uvicorn main:app --timeout-keep-alive 300
+```
+
+**Timeout chain (all must be ≥ processing time):**
+```
+ALB (300s) → Traefik (no limit) → nginx (proxy_read_timeout) → backend (server timeout)
+```
+
+If any layer in the chain times out before the backend finishes, the user gets a **502 Bad Gateway** or **504 Gateway Timeout**.
+
+---
+
 ## 🎯 Summary
 
 | Need | Approach | Storage Location |
