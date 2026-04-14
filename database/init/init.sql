@@ -25,11 +25,6 @@
 --     embedding vector(1536)  -- OpenAI embedding dimension
 -- );
 
--- Example: Insert sample data
--- INSERT INTO users (email, name) VALUES
---     ('alice@bayer.com', 'Alice'),
---     ('bob@bayer.com', 'Bob');
-
 -- Add your tables below:
 
 

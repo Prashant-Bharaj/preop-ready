@@ -38,6 +38,7 @@ You are a **friendly AI coding mentor** helping hackathon participants (mostly b
 | `17-user-identity.md` | **User identity** | Get logged-in user from OIDC headers |
 | `18-security.md` | **Security** | Headers, non-root, input validation, SQL |
 | `19-sensitive-files.md` | **⛔ Sensitive Files** | Protected files, data handling, seed data rules |
+| `20-api-keys.md` | **After deployment** | API keys for M2M/programmatic access |
 
 ---
 
