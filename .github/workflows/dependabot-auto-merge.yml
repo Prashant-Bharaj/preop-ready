@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Verify dependencies install
+      - name: Verify dependencies install and build
         if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         id: verify
         run: |
@@ -71,8 +71,19 @@ jobs:
           for lockfile in $(find . -name "package-lock.json" -not -path "*/node_modules/*" 2>/dev/null); do
             DIR=$(dirname "$lockfile")
             echo "📦 Testing npm install in $DIR..."
-            if (cd "$DIR" && npm install --ignore-scripts 2>&1); then
+            if (cd "$DIR" && npm install 2>&1); then
               echo "   ✅ $DIR — install succeeded"
+              # Run build to catch breaking changes (e.g., Vite 5→8 API incompatibility)
+              # This is the real gate — install alone doesn't catch major version breaks
+              if [ -f "$DIR/package.json" ] && grep -q '"build"' "$DIR/package.json"; then
+                echo "   🔨 Testing npm run build in $DIR..."
+                if (cd "$DIR" && npm run build 2>&1); then
+                  echo "   ✅ $DIR — build succeeded"
+                else
+                  echo "   ❌ $DIR — build FAILED (likely a breaking change)"
+                  FAILED=true
+                fi
+              fi
             else
               echo "   ❌ $DIR — install FAILED"
               FAILED=true
