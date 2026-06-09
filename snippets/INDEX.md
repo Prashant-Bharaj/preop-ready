@@ -62,8 +62,8 @@
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| SMTP Client | JS | `email/smtp-client.js` | Send emails via Bayer's internal SMTP server |
-| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer SMTP (built-in smtplib) |
+| SMTP Client | JS | `email/smtp-client.js` | Send emails via Bayer EBR (ebr.bayer.com:2525, no auth, sender must be @bayer.com) |
+| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer EBR (built-in smtplib, sender must be @bayer.com) |
 
 ### UI Components
 
