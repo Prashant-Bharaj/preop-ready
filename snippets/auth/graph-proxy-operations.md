@@ -119,6 +119,23 @@ header. Body is JSON. Response is JSON.
 - **Use when:** showing the user's most-recent OneDrive items (e.g. a
   "pick a file" UI without making the user paste a URL).
 
+### sharepoint/url/resolve
+
+- **Scope:** `Files.Read.All`
+- **Body:** `{url: "<SharePoint/OneDrive sharing URL>"}`
+- **Returns:** `{item_id, drive_id, site_id, name, webUrl, size, type, isFolder}`
+- **Use when:** you need the Graph identifiers behind a sharing URL -- e.g.
+  resolve a link, then list a folder or address the file by id.
+
+### sharepoint/folder/list
+
+- **Scope:** `Files.Read.All`
+- **Body:** `{url: "<folder sharing URL>", limit?: 100}` (1..200)
+- **Returns:** `{items: [{id, name, mimeType, size, lastModifiedDateTime,
+  webUrl, downloadUrl, isFolder}]}`
+- **Use when:** listing the contents of a shared SharePoint/OneDrive folder
+  (not just a single file).
+
 ### calendar/upcoming
 
 - **Scope:** `Calendars.Read`
@@ -135,6 +152,33 @@ header. Body is JSON. Response is JSON.
 - **Returns:** `{messages: [{id, subject, from: {name, email},
   receivedDateTime, bodyPreview, isRead, hasAttachments, importance, webLink}]}`
 - **Order:** newest first.
+
+### teams/chats/list
+
+- **Scope:** `Chat.ReadBasic`
+- **Body:** `{limit?: 20}` (1..50)
+- **Returns:** `{chats: [{id, topic, chatType, webUrl, lastUpdatedDateTime,
+  members: [{displayName, email}]}]}`
+- **Order:** most recently active first.
+- **Use when:** showing the user's Teams chats (e.g. a chat picker).
+
+### teams/chats/messages
+
+- **Scope:** `Chat.Read`
+- **Body:** `{chatId: "<id from teams/chats/list>", limit?: 20}` (1..50)
+- **Returns:** `{messages: [{id, from, body, contentType, createdDateTime}]}`
+- **Order:** newest first.
+- **Use when:** reading the messages of a specific Teams chat.
+
+### onlineMeetings/createOrGet
+
+- **Scope:** `OnlineMeetings.ReadWrite`
+- **Body:** `{externalId?: "<your stable id>", subject?, startDateTime?,
+  endDateTime?}` (ISO 8601 times)
+- **Returns:** `{id, joinUrl, subject, startDateTime, endDateTime}`
+- **Use when:** creating a Teams meeting link for the user. Pass a stable
+  `externalId` to make retries idempotent (createOrGet); omit it for a plain
+  one-off create.
 
 ## Auth + consent flow
 
