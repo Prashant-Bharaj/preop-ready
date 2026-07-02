@@ -69,7 +69,9 @@ auto_update:
   - path: ".clinerules/"
     description: "AI assistant detailed rules"
     is_directory: true
-    
+  - path: "CLAUDE.md"
+    description: "AI assistant instructions (Claude Code) — imports .cursorrules, points to .clinerules"
+
   # Security — AI ignore files and pre-commit hook
   - path: ".clineignore"
     description: "Cline AI ignore file (blocks sensitive files from auto-context)"
@@ -93,8 +95,10 @@ auto_update:
   # Development environment
   - path: ".devcontainer/devcontainer.json"
     description: "Codespaces/devcontainer configuration"
-  - path: ".devcontainer/install-cline.sh"
-    description: "Cline extension installer for Codespaces"
+  - path: ".devcontainer/setup-claude-router.sh"
+    description: "Installs Claude Code + claude-code-router, connects to myGenAssist"
+  - path: ".devcontainer/mga-login.sh"
+    description: "Interactive myGenAssist key prompt for Claude Code"
   - path: ".devcontainer/auto-update-template.sh"
     description: "Auto-check and apply template updates on Codespace start"
     
@@ -107,7 +111,9 @@ auto_update:
     description: "Migration guide for existing projects"
   - path: "docs/EXAMPLES.md"
     description: "Example prompts for describing app ideas"
-    
+  - path: "docs/CODESPACE_CLAUDE_CODE_SETUP.md"
+    description: "How Claude Code connects to myGenAssist in a Codespace"
+
   # Code Snippet Library
   - path: "snippets/"
     description: "Reusable code snippets"
@@ -197,6 +203,9 @@ ignore:
 # These were previously part of the template but have been deprecated
 # -----------------------------------------------------------------------------
 cleanup:
+  - path: ".devcontainer/install-cline.sh"
+    type: "file"
+    reason: "Replaced by setup-claude-router.sh (Cline → Claude Code)"
   - path: "chat"
     type: "directory"
     reason: "Chat app moved to feat/chat branch"

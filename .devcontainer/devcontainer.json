@@ -16,8 +16,9 @@
         // 📁 Better file icons
         "vscode-icons-team.vscode-icons",
 
-        // 🤖 Cline AI coding assistant
-        "saoudrizwan.claude-dev"
+        // 🤖 Claude Code — AI coding assistant (routed to Bayer myGenAssist
+        //    via claude-code-router; see .devcontainer/setup-claude-router.sh)
+        "Anthropic.claude-code"
       ],
       
       "settings": {
@@ -37,7 +38,7 @@
         
         // === TERMINAL ===
         "terminal.integrated.defaultProfile.linux": "bash",
-        
+
         // === FILES ===
         "files.autoSave": "afterDelay",
         "files.autoSaveDelay": 1000,
@@ -46,13 +47,30 @@
     }
   },
 
-  "onCreateCommand": "bash .devcontainer/install-cline.sh",
+  "secrets": {
+    "MYGENASSIST_API_KEY": {
+      "description": "Bayer myGenAssist API key — powers Claude Code in this Codespace via claude-code-router. Leave unset to enter it interactively via `mga-login`. See docs/CODESPACE_CLAUDE_CODE_SETUP.md"
+    }
+  },
+
+  // Point Claude Code at the local router from first launch (no reload needed).
+  // Non-secret + Codespace-only (does NOT affect maintainers' local Claude Code).
+  // The real API key lives in the CCR config, not here.
+  "remoteEnv": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:3456",
+    "ANTHROPIC_AUTH_TOKEN": "dummy",
+    "ANTHROPIC_MODEL": "myGenAssist,claude-opus-4.5-azure",
+    "ANTHROPIC_SMALL_FAST_MODEL": "myGenAssist,claude-sonnet-4.5-azure"
+  },
+
+  "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
   "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; rm -f backend/env.example database/env.example database/.env.example vectordb/env.example",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 
   "portsAttributes": {
     "8888": { "label": "Chat UI", "onAutoForward": "openBrowser" },
-    "5050": { "label": "Runner API", "onAutoForward": "silent" }
+    "5050": { "label": "Runner API", "onAutoForward": "silent" },
+    "3456": { "label": "Claude Code Router", "onAutoForward": "silent" }
   }
 }
