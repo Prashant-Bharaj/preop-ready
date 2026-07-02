@@ -17,14 +17,27 @@
 set -e
 
 TEMPLATE_REPO="bayer-int/dd-template-repository"
+TEMPLATE_URL="https://github.com/${TEMPLATE_REPO}.git"
+TEMPLATE_BRANCH="master"
 MANIFEST_FILE=".template-manifest.yml"
 TMP_MANIFEST="/tmp/template-manifest.yml"
 
 echo "Fetching update manifest..."
 
-# Fetch manifest
-gh api "repos/$TEMPLATE_REPO/contents/$MANIFEST_FILE" --jq '.content' 2>/dev/null | base64 -d > "$TMP_MANIFEST" 2>/dev/null || {
-    echo "UPDATE_FAILED|Could not fetch manifest"
+# Sync via git — the Codespace gh-api token is often restricted (403), but git
+# fetch of the template works. Ensure a 'template' remote, fetch it, then read
+# from the fetched ref.
+if git remote get-url template >/dev/null 2>&1; then
+    git remote set-url template "$TEMPLATE_URL" || true
+else
+    git remote add template "$TEMPLATE_URL" 2>/dev/null || true
+fi
+git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/template/${TEMPLATE_BRANCH}" 2>/dev/null || {
+    echo "UPDATE_FAILED|Could not fetch template (git)"
+    exit 1
+}
+git show "template/${TEMPLATE_BRANCH}:${MANIFEST_FILE}" > "$TMP_MANIFEST" 2>/dev/null || {
+    echo "UPDATE_FAILED|Could not read manifest from template"
     exit 1
 }
 
@@ -47,7 +60,7 @@ fetch_file() {
     # Create parent directory if needed
     mkdir -p "$(dirname "$FILE_PATH")"
     
-    gh api "repos/$TEMPLATE_REPO/contents/$FILE_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FILE_PATH" 2>/dev/null || {
+    git show "template/${TEMPLATE_BRANCH}:${FILE_PATH}" > "$FILE_PATH" 2>/dev/null || {
         echo "  Warning: Could not fetch $FILE_PATH"
         return 1
     }
@@ -61,30 +74,28 @@ fetch_directory() {
     DIR_PATH="${DIR_PATH%/}"
     
     echo "Updating directory: $DIR_PATH/"
-    
-    # Get list of items in directory
-    local DIR_CONTENTS=$(gh api "repos/$TEMPLATE_REPO/contents/$DIR_PATH" 2>/dev/null) || {
+
+    # List every file under the directory in the template (recursive) and copy
+    # each. git ls-tree -r handles nested subdirectories for us.
+    local FILES
+    FILES=$(git ls-tree -r --name-only "template/${TEMPLATE_BRANCH}" -- "$DIR_PATH" 2>/dev/null) || {
         echo "  Warning: Could not list $DIR_PATH"
         return 1
     }
-    
-    # Create directory if needed
-    mkdir -p "$DIR_PATH"
-    
-    # Process each item
-    echo "$DIR_CONTENTS" | jq -r '.[] | "\(.type) \(.name)"' 2>/dev/null | while read -r TYPE NAME; do
-        local FULL_PATH="$DIR_PATH/$NAME"
-        
-        if [ "$TYPE" = "file" ]; then
-            echo "  - $FULL_PATH"
-            gh api "repos/$TEMPLATE_REPO/contents/$FULL_PATH" --jq '.content' 2>/dev/null | base64 -d > "$FULL_PATH" 2>/dev/null || {
-                echo "    Warning: Could not fetch $FULL_PATH"
-            }
-        elif [ "$TYPE" = "dir" ]; then
-            # Recursively fetch subdirectory
-            fetch_directory "$FULL_PATH"
+    if [ -z "$FILES" ]; then
+        echo "  Warning: $DIR_PATH not found in template"
+        return 1
+    fi
+
+    while IFS= read -r FILE; do
+        [ -z "$FILE" ] && continue
+        mkdir -p "$(dirname "$FILE")"
+        if git show "template/${TEMPLATE_BRANCH}:${FILE}" > "$FILE" 2>/dev/null; then
+            echo "  - $FILE"
+        else
+            echo "    Warning: Could not fetch $FILE"
         fi
-    done
+    done <<< "$FILES"
     return 0
 }
 

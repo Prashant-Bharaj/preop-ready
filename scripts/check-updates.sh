@@ -30,9 +30,21 @@ else
     LOCAL_VERSION="0.0.0"
 fi
 
-# Try to get latest version from template repo
-# Uses gh api which is pre-authenticated in Codespaces
-LATEST_CONTENT=$(gh api "repos/$TEMPLATE_REPO/contents/$MANIFEST_FILE" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null) || {
+# Read the template manifest via git. The Codespace gh-api token is often
+# restricted (403), but git fetch of the template works. Ensure a 'template'
+# remote, fetch it, then read the manifest from the fetched ref.
+TEMPLATE_URL="https://github.com/${TEMPLATE_REPO}.git"
+TEMPLATE_BRANCH="master"
+if git remote get-url template >/dev/null 2>&1; then
+    git remote set-url template "$TEMPLATE_URL" || true
+else
+    git remote add template "$TEMPLATE_URL" 2>/dev/null || true
+fi
+git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/template/${TEMPLATE_BRANCH}" 2>/dev/null || {
+    echo "CHECK_FAILED"
+    exit 0
+}
+LATEST_CONTENT=$(git show "template/${TEMPLATE_BRANCH}:${MANIFEST_FILE}" 2>/dev/null) || {
     echo "CHECK_FAILED"
     exit 0
 }
