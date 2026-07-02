@@ -110,18 +110,37 @@ LOG=$(find ~/.claude-code-router -name '*.log' -printf '%T@ %p\n' | sort -rn | h
 
 ## Existing repos: migrating from Cline
 
-Repos created before this change get it automatically through the template auto-update:
+An existing repo still has the *old* update scripts, which can't fetch the new files on their own
+(the Codespace API token is restricted in this org). So there's a **one-time** migration — done
+through **Cline** (no workflow, no admin, no rebuild needed). After that, updates are automatic.
 
-1. Open (or restart) your Codespace. The auto-update syncs the new files and removes the old
-   Cline installer (`install-cline.sh`).
-2. On the **next** start, Claude Code + the router are set up for you — the update runs
-   `setup-claude-router.sh` automatically (no rebuild required). Open a terminal and paste your
-   key when prompted.
-3. For the cleanest result (extension env applied with no reload), rebuild the container once:
-   **Cmd/Ctrl+Shift+P → "Codespaces: Rebuild Container"**.
+### One-time: ask Cline to migrate
 
-The old Cline VS Code extension isn't auto-uninstalled (it's harmless) — remove it from the
-Extensions sidebar if you want.
+Open the **Cline** chat, paste this message, and approve the commands when prompted:
+
+> Update this project to the latest platform template and set up Claude Code. Run:
+>
+> ```
+> git remote remove template 2>/dev/null; git remote add template https://github.com/bayer-int/dd-template-repository.git
+> git fetch template master
+> git show template/master:scripts/apply-updates.sh > scripts/apply-updates.sh
+> chmod +x scripts/apply-updates.sh
+> bash scripts/apply-updates.sh
+> ```
+
+Cline fetches the new (git-based) `apply-updates.sh` and runs it. That single script syncs every
+platform file **via git** (which works where the API is blocked), removes `install-cline.sh`, and
+**activates Claude Code** — installing it and starting the router. Paste your myGenAssist key when
+the terminal prompts (or set it as a personal Codespaces secret so you're never asked).
+
+### After that — automatic
+
+Once the new scripts are in place you never repeat this:
+- **Cline** checks for template updates at session start and applies them (activating Claude Code).
+- **Opening/rebuilding a Codespace** runs the same update on start.
+
+The old Cline VS Code extension isn't auto-uninstalled (harmless) — remove it from the Extensions
+sidebar if you want.
 
 ## Notes
 
