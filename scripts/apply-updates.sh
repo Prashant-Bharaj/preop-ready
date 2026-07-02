@@ -233,6 +233,15 @@ template_repo: "$TEMPLATE_REPO"
 last_updated: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
 EOF
 
+# Activate Claude Code if the template ships it — idempotent: installs only
+# what's missing, then starts the router. Runs here so a template update takes
+# effect immediately (same session), not just on the next Codespace start.
+if [ -f .devcontainer/setup-claude-router.sh ]; then
+  echo ""
+  echo "Activating Claude Code..."
+  bash .devcontainer/setup-claude-router.sh || true
+fi
+
 echo ""
 echo "UPDATE_COMPLETE|$LATEST_VERSION"
 echo ""
