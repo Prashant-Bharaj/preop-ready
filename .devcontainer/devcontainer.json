@@ -47,6 +47,17 @@
     }
   },
 
+  // Optional: lets users provide the myGenAssist key before the Codespace
+  // starts (shows in the "Recommended secrets" step on the create page).
+  // Set the value in Codespaces Settings; leave unset to enter it in the
+  // terminal via `mga-login`. This is only a UI hint — it does NOT request
+  // any repo permissions, so it can't trigger a permission-authorization wall.
+  "secrets": {
+    "MYGENASSIST_API_KEY": {
+      "description": "Bayer myGenAssist API key — powers Claude Code via claude-code-router. Set it in Codespaces Settings to auto-configure on start, or leave unset and run `mga-login` in the terminal. See docs/CODESPACE_CLAUDE_CODE_SETUP.md"
+    }
+  },
+
   // Point Claude Code at the local router from first launch (no reload needed).
   // Non-secret + Codespace-only (does NOT affect maintainers' local Claude Code).
   // The real API key lives in the CCR config, not here.
