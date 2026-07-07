@@ -2,17 +2,6 @@
   "name": "Vibe Hackathon Dev Environment",
   
   "customizations": {
-    // Let the Codespace token read the template repo so the on-open
-    // auto-update (check-updates.sh / apply-updates.sh) can fetch platform
-    // files. Without this, gh api returns 403 and updates silently no-op.
-    // GitHub prompts the user to authorize this access on Codespace creation.
-    "codespaces": {
-      "repositories": {
-        "bayer-int/dd-template-repository": {
-          "permissions": { "contents": "read" }
-        }
-      }
-    },
     "vscode": {
       "extensions": [
         // ✨ Auto-formatting - Makes your code look pretty automatically
