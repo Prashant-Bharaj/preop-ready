@@ -69,13 +69,21 @@ if ! grep -q 'mga-auto-connect' "$HOME/.bashrc" 2>/dev/null; then
   cat >> "$HOME/.bashrc" <<BASHRC
 
 # mga-auto-connect: on the first interactive terminal, prompt for the
-# myGenAssist key until Claude Code is connected. Self-clears once the
-# config exists. (\$SCRIPT_DIR baked in at setup time.)
+# myGenAssist key until Claude Code is connected. Deferred to the first ready
+# prompt via PROMPT_COMMAND (not run inline at startup) so the terminal is
+# fully interactive and the key input masks with '*', exactly like running
+# mga-login by hand. Runs once, then restores PROMPT_COMMAND. Self-clears once
+# the config exists. (\$SCRIPT_DIR baked in at setup time.)
 if [[ \$- == *i* ]] && [ -t 0 ] \\
    && [ ! -s "\$HOME/.claude-code-router/config.json" ] \\
    && [ -z "\${MYGENASSIST_API_KEY:-}" ] \\
    && [ -f "$SCRIPT_DIR/mga-login.sh" ]; then
-  bash "$SCRIPT_DIR/mga-login.sh"
+  __mga_connect() {
+    PROMPT_COMMAND="\$__mga_prev_pc"; unset __mga_prev_pc; unset -f __mga_connect
+    [ -s "\$HOME/.claude-code-router/config.json" ] || bash "$SCRIPT_DIR/mga-login.sh"
+  }
+  __mga_prev_pc="\${PROMPT_COMMAND:-}"
+  PROMPT_COMMAND="__mga_connect"
 fi
 BASHRC
 fi
