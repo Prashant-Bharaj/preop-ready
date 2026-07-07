@@ -47,12 +47,6 @@
     }
   },
 
-  "secrets": {
-    "MYGENASSIST_API_KEY": {
-      "description": "Bayer myGenAssist API key — powers Claude Code in this Codespace via claude-code-router. Leave unset to enter it interactively via `mga-login`. See docs/CODESPACE_CLAUDE_CODE_SETUP.md"
-    }
-  },
-
   // Point Claude Code at the local router from first launch (no reload needed).
   // Non-secret + Codespace-only (does NOT affect maintainers' local Claude Code).
   // The real API key lives in the CCR config, not here.
