@@ -1,6 +1,6 @@
 ---
 scopes: [backend, frontend]
-flags: [microsoft-graph, sharepoint, onedrive, calendar, mail, people, teams]
+flags: [microsoft-graph, sharepoint, onedrive, calendar, mail, people, teams, mygenassist]
 description: Operations catalog for the Microsoft Graph platform OBO proxy -- every op, scope, body shape, response shape. Read this before writing Graph code.
 ---
 
@@ -15,9 +15,11 @@ own Entra app. Everything routes through the platform OBO proxy at
 Before writing any code that touches Microsoft 365 data:
 - SharePoint files / OneDrive
 - Mail (inbox)
-- Calendar
+- Calendar / attendee availability (free/busy)
 - People search / directory lookup
 - User profile / manager / photo
+- Teams chats / online meeting links
+- myGenAssist API tokens and knowledge-base sync (proxied MGA API)
 
 If the user wants something Graph supports but NOT in the catalog below,
 surface that as a platform gap rather than building a workaround.
@@ -145,6 +147,32 @@ header. Body is JSON. Response is JSON.
 - **Window:** 30 days forward from now. Recurring series are expanded into
   individual occurrences (uses `/me/calendarView`, not `/me/events`).
 
+### calendar/getSchedule
+
+- **Scope:** `Calendars.Read`
+- **Body:** `{schedules: ["ana@bayer.com", ...], start: ISO8601, end: ISO8601,
+  intervalMinutes?: 30}` -- 1..20 email addresses; `end` after `start`;
+  interval 5..1440; window capped at 2016 intervals (7 days at 30-min slots).
+- **Returns:**
+  ```json
+  {
+    "intervalMinutes": 30,
+    "schedules": [
+      {"email": "ana@bayer.com",
+       "availabilityView": "022000...",
+       "busy": [{"status": "busy", "start": "...", "end": "...",
+                 "subject": null, "location": null}],
+       "error": {"message": "...", "responseCode": "..."}}
+    ]
+  }
+  ```
+  `availabilityView` is one digit per interval (0 free, 1 tentative, 2 busy,
+  3 out of office, 4 working elsewhere). `error` appears per schedule when an
+  address can't be resolved (external user, no mailbox, sharing policy) --
+  treat that attendee as "availability unknown", NOT the whole call as failed.
+- **Use when:** follow-up scheduling, Outlook-style day grids, "when is my
+  team free" features.
+
 ### mail/recent
 
 - **Scope:** `Mail.ReadWrite` (admin-consented; this operation only reads)
@@ -165,10 +193,17 @@ header. Body is JSON. Response is JSON.
 ### teams/chats/messages
 
 - **Scope:** `Chat.Read`
-- **Body:** `{chatId: "<id from teams/chats/list>", limit?: 20}` (1..50)
-- **Returns:** `{messages: [{id, from, body, contentType, createdDateTime}]}`
+- **Body:** `{chatId: "<id from teams/chats/list>", limit?: 20, top?: alias
+  for limit, since?: ISO8601}` (limit 1..50; `limit` wins if both given)
+- **Returns:** `{messages: [{id, from, body, contentType, createdDateTime,
+  lastModifiedDateTime}]}`
 - **Order:** newest first.
-- **Use when:** reading the messages of a specific Teams chat.
+- **`since` caveat:** filters on `lastModifiedDateTime` (the only field Graph
+  allows here). Edits and reactions bump it, so already-seen messages can
+  reappear -- dedupe by `id` and cursor on `lastModifiedDateTime`, not
+  `createdDateTime`.
+- **Use when:** reading the messages of a specific Teams chat, incremental
+  imports.
 
 ### onlineMeetings/createOrGet
 
@@ -179,6 +214,58 @@ header. Body is JSON. Response is JSON.
 - **Use when:** creating a Teams meeting link for the user. Pass a stable
   `externalId` to make retries idempotent (createOrGet); omit it for a plain
   one-off create.
+
+## myGenAssist operations (proxied MGA API, not Graph)
+
+These ops proxy Bayer's myGenAssist (BayChatGPT) API on the signed-in user's
+behalf instead of `graph.microsoft.com`. They all share one consent scope
+(`User.Impersonation`), so a user consents once for the whole family. Token
+endpoints ride the MGA **v2** API; knowledge endpoints ride **v3**.
+
+### mygenassist/token
+
+- **Scope:** `User.Impersonation`
+- **Body:** `{}` (no inputs)
+- **Returns:** the MGA create-token response as-is -- `{account_id, id, name,
+  creation_datetime, last_used_datetime, key}`. `key` (`mga-...`) is the API
+  token your app then uses against `chat.int.bayer.com` directly. **Shown
+  once** -- it is never returned by `tokens/list`.
+- **Note:** the token is named after your project automatically; you cannot
+  mint a token labelled as another project.
+- **Use when:** your app needs an MGA API token for the user without asking
+  them to create one in myGenAssist Settings.
+
+### mygenassist/tokens/list
+
+- **Scope:** `User.Impersonation`
+- **Body:** `{}` (no inputs)
+- **Returns:** `{tokens: [{id, name, creation_datetime, last_used_datetime}]}`
+  -- only the tokens **this project** minted for the user (never other
+  projects' or the user's personal tokens, and never the secret `key`).
+- **Use when:** checking whether a token already exists before minting
+  another, or rendering a "connected" indicator.
+
+### mygenassist/tokens/delete
+
+- **Scope:** `User.Impersonation`
+- **Body:** `{tokenId: "<id from create/list>"}`
+- **Returns:** `{deleted: true, id}`. `404 token_not_found` if the id doesn't
+  exist; `403 token_not_owned_by_project` if it belongs to another project --
+  a project can only revoke its own tokens.
+- **Use when:** sign-out / disconnect flows, rotating a token (delete, then
+  mint a fresh one).
+
+### mygenassist/knowledge/onedrive/sync-all
+
+- **Scope:** `User.Impersonation`
+- **Body:** `{knowledgeBaseId: "<uuid>", documentIds?: ["<uuid>", ...] (1..100),
+  folderPath?: "<string>"}` -- both optional fields may be omitted.
+- **Returns:** the MGA v3 response as-is. myGenAssist downloads the latest
+  version of each OneDrive/SharePoint-linked document in the knowledge base,
+  re-processes it, and updates the vector embeddings; documents without drive
+  links are skipped.
+- **Use when:** "re-sync my documents" buttons, scheduled refreshes of a
+  knowledge base backed by SharePoint/OneDrive files.
 
 ## Auth + consent flow
 
