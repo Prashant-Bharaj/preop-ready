@@ -64,7 +64,7 @@
   "remoteEnv": {
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:3456",
     "ANTHROPIC_AUTH_TOKEN": "dummy",
-    "ANTHROPIC_MODEL": "myGenAssist,claude-opus-4.5-azure",
+    "ANTHROPIC_MODEL": "myGenAssist,claude-opus-4.8-bedrock",
     "ANTHROPIC_SMALL_FAST_MODEL": "myGenAssist,claude-sonnet-4.5-azure"
   },
 
