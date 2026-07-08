@@ -53,11 +53,11 @@
 
 ### Microsoft 365 Integration
 
-> **PREFERRED**: All Microsoft Graph access goes through the platform OBO proxy. No per-project Entra app, no client_secret, no MSAL in the browser. See snippet headers for the full operations catalog (whoami, sharepoint/fetch, users/search, me/photo, me/manager, calendar/upcoming, mail/recent, files/recent).
+> **PREFERRED**: All Microsoft Graph access goes through the platform OBO proxy. No per-project Entra app, no client_secret, no MSAL in the browser. The operations catalog covers identity (whoami, me/manager, me/photo), people search, SharePoint/OneDrive (fetch, url/resolve, folder/list, files/recent), calendar (upcoming, getSchedule free/busy), mail, Teams chats, online meetings, and proxied myGenAssist ops (token create/list/delete, knowledge onedrive/sync-all).
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| **Microsoft Graph -- Operations Catalog** | Markdown | `auth/graph-proxy-operations.md` | **READ FIRST.** Every operation (whoami, sharepoint/fetch, users/search, me/photo, me/manager, calendar/upcoming, mail/recent, files/recent) with scope, body shape, response shape, and when to use it. |
+| **Microsoft Graph -- Operations Catalog** | Markdown | `auth/graph-proxy-operations.md` | **READ FIRST.** Every operation -- identity, people search, SharePoint/OneDrive, calendar + free/busy (getSchedule), mail, Teams chats, online meetings, myGenAssist (tokens, knowledge sync) -- with scope, body shape, response shape, and when to use it. |
 | **Microsoft Graph -- Platform Proxy (frontend)** | JS | `auth/graph-proxy-client.js` | **PREFERRED.** Vanilla-JS client. Session bootstrap from `#sid=` fragment, auto-redirect to bouncer on missing session, auto-redirect to consent screen on 403 consent_required. |
 | **Microsoft Graph -- Platform Proxy (backend)** | JS | `auth/graph-proxy-backend.js` | **PREFERRED.** Express handlers. SigV4-signs to the platform proxy with the ECS task role; forwards consent_required + consent_url verbatim. |
 | **Microsoft Graph -- Platform Proxy (backend)** | Python | `auth/graph-proxy-backend.py` | **PREFERRED.** FastAPI/Flask version of the platform-proxy backend pattern. |
