@@ -88,6 +88,27 @@ fi
 BASHRC
 fi
 
+# ─── 3b. Point the Claude Code extension at the router ──────────────
+# Runs BEFORE the key check so the extension always knows the router URL —
+# even with no key yet. Otherwise a migrated Codespace (which lacks remoteEnv
+# until a rebuild) shows Claude Code's login screen instead of the chat.
+# Written to $HOME (Codespace-scoped), merged so we don't clobber other settings.
+mkdir -p "$CLAUDE_DIR"
+CLAUDE_DIR="$CLAUDE_DIR" node -e '
+const fs = require("fs");
+const f = process.env.CLAUDE_DIR + "/settings.json";
+let c = {};
+try { c = JSON.parse(fs.readFileSync(f)); } catch (e) {}
+c.env = Object.assign({}, c.env, {
+  ANTHROPIC_BASE_URL: "http://127.0.0.1:3456",
+  ANTHROPIC_AUTH_TOKEN: "dummy",
+  ANTHROPIC_MODEL: "myGenAssist,claude-opus-4.8-bedrock",
+  ANTHROPIC_SMALL_FAST_MODEL: "myGenAssist,claude-sonnet-4.5-azure"
+});
+fs.writeFileSync(f, JSON.stringify(c, null, 2));
+console.log("✅ Merged env into " + f);
+' || echo "⚠️  Failed to update $CLAUDE_DIR/settings.json"
+
 # ─── 4. Resolve the myGenAssist key ─────────────────────────────────
 if [ -n "${MYGENASSIST_API_KEY:-}" ]; then
   WRITE_CONFIG=1                       # key from secret / mga-login
@@ -189,26 +210,6 @@ module.exports = async function router(req, config) {
   return 'myGenAssist,claude-opus-4.8-bedrock';
 };
 EOF
-
-# ─── 7. Point the Claude Code extension at the router ───────────────
-# Written to $HOME (Codespace-scoped) — NOT the repo's .claude/settings.json,
-# which would break maintainers' local Claude Code (no router on :3456).
-# Merge so we don't clobber other user settings.
-mkdir -p "$CLAUDE_DIR"
-CLAUDE_DIR="$CLAUDE_DIR" node -e '
-const fs = require("fs");
-const f = process.env.CLAUDE_DIR + "/settings.json";
-let c = {};
-try { c = JSON.parse(fs.readFileSync(f)); } catch (e) {}
-c.env = Object.assign({}, c.env, {
-  ANTHROPIC_BASE_URL: "http://127.0.0.1:3456",
-  ANTHROPIC_AUTH_TOKEN: "dummy",
-  ANTHROPIC_MODEL: "myGenAssist,claude-opus-4.8-bedrock",
-  ANTHROPIC_SMALL_FAST_MODEL: "myGenAssist,claude-sonnet-4.5-azure"
-});
-fs.writeFileSync(f, JSON.stringify(c, null, 2));
-console.log("✅ Merged env into " + f);
-' || echo "⚠️  Failed to update $CLAUDE_DIR/settings.json"
 
 # ─── 8. Start the router daemon ─────────────────────────────────────
 # TLS override scoped to the daemon (the Codespace reaches Bayer directly;
