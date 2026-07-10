@@ -102,7 +102,7 @@ try { c = JSON.parse(fs.readFileSync(f)); } catch (e) {}
 c.env = Object.assign({}, c.env, {
   ANTHROPIC_BASE_URL: "http://127.0.0.1:3456",
   ANTHROPIC_AUTH_TOKEN: "dummy",
-  ANTHROPIC_MODEL: "myGenAssist,claude-opus-4.8-bedrock",
+  ANTHROPIC_MODEL: "myGenAssist,claude-sonnet-5",
   ANTHROPIC_SMALL_FAST_MODEL: "myGenAssist,claude-sonnet-4.5-azure"
 });
 fs.writeFileSync(f, JSON.stringify(c, null, 2));
@@ -145,7 +145,7 @@ if [ "$WRITE_CONFIG" = "1" ]; then
   "LOG_LEVEL": "debug",
   "OPENAI_API_KEY": "${MYGENASSIST_API_KEY}",
   "OPENAI_BASE_URL": "${MGA_BASE}",
-  "OPENAI_MODEL": "claude-opus-4.8-bedrock",
+  "OPENAI_MODEL": "claude-sonnet-5",
   "CUSTOM_ROUTER_PATH": "${CCR_DIR}/custom-router.js",
   "Providers": [
     {
@@ -153,8 +153,7 @@ if [ "$WRITE_CONFIG" = "1" ]; then
       "api_base_url": "${MGA_BASE}/chat/completions",
       "api_key": "${MYGENASSIST_API_KEY}",
       "models": [
-        "claude-opus-4.8-bedrock",
-        "claude-opus-4.8",
+        "claude-sonnet-5",
         "claude-opus-4.5-azure",
         "claude-sonnet-4.5-azure",
         "gemini-2.5-pro",
@@ -172,7 +171,7 @@ if [ "$WRITE_CONFIG" = "1" ]; then
     }
   ],
   "Router": {
-    "default": "myGenAssist,claude-opus-4.8-bedrock"
+    "default": "myGenAssist,claude-sonnet-5"
   }
 }
 EOF
@@ -183,6 +182,7 @@ fi
 # ─── 6. Model-mapping custom router (idempotent) ────────────────────
 cat > "$CCR_DIR/custom-router.js" <<'EOF'
 const MODEL_MAPPING = {
+  'claude-sonnet-5': 'claude-sonnet-5',
   'claude-sonnet-4-5': 'claude-sonnet-4.5-azure',
   'claude-sonnet-4-5-20250929': 'claude-sonnet-4.5-azure',
   'claude-opus-4-5': 'claude-opus-4.5-azure',
@@ -199,7 +199,7 @@ module.exports = async function router(req, config) {
     return `myGenAssist,${MODEL_MAPPING[requestedModel]}`;
   }
   if (requestedModel && requestedModel.toLowerCase().includes('opus')) {
-    return 'myGenAssist,claude-opus-4.8-bedrock';
+    return 'myGenAssist,claude-opus-4.5-azure';
   }
   if (requestedModel && requestedModel.toLowerCase().includes('sonnet')) {
     return 'myGenAssist,claude-sonnet-4.5-azure';
@@ -207,7 +207,7 @@ module.exports = async function router(req, config) {
   if (requestedModel && requestedModel.toLowerCase().includes('gemini')) {
     return `myGenAssist,${requestedModel}`;
   }
-  return 'myGenAssist,claude-opus-4.8-bedrock';
+  return 'myGenAssist,claude-sonnet-5';
 };
 EOF
 
