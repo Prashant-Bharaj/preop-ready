@@ -49,7 +49,7 @@ USAGE (FastAPI)
 
   # 1. Enroll after an offline (&offline=1) sign-in: the frontend POSTs here
   #    with the X-Platform-Session header once it has a sid.
-  @app.post("/api/offline/enroll")
+  @app.post("/offline/enroll")
   async def enroll(request: Request, x_platform_session: str = Header(...)):
       enroll_offline(get_user(request)["sub"], x_platform_session)
       return {"ok": True}

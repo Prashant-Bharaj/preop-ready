@@ -1,0 +1,10 @@
+---
+description: Add or change the relational database: PostgreSQL/MySQL setup, init scripts, EFS persistence, schema migrations
+globs: database/**
+alwaysApply: false
+---
+
+@.platform-rules/scope-database.md
+
+Follow `.platform-rules/scope-database.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

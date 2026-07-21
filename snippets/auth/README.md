@@ -19,7 +19,7 @@ No authentication code needed! User identity is passed via HTTP headers:
 
 Use the `user-identity.js` or `user-identity.py` snippets to extract this info.
 
-See `.clinerules/17-user-identity.md` for full documentation.
+See `.platform-rules/reference/user-identity.md` for full documentation.
 
 ## For Custom Authentication
 

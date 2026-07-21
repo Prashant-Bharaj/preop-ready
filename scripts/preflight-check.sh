@@ -72,7 +72,12 @@ fi
 
 # Check frontend structure (only if Dockerfile exists — directory alone is not an error)
 if [[ -d "frontend" ]] && [[ ! -f "frontend/Dockerfile" ]]; then
-    info "frontend/ folder exists but no Dockerfile — skipping frontend checks (not deploying frontend)"
+    # App files without a Dockerfile = the frontend silently won't deploy
+    if compgen -G "frontend/*.html" > /dev/null || [[ -d "frontend/src" ]]; then
+        warn "frontend/ has app files but NO Dockerfile — the frontend will NOT deploy. Copy a template: cp frontend/Dockerfile.vanilla frontend/Dockerfile (or Dockerfile.react)"
+    else
+        info "frontend/ folder exists but no Dockerfile — skipping frontend checks (not deploying frontend)"
+    fi
 fi
 
 if [[ -f "frontend/Dockerfile" ]]; then
@@ -206,6 +211,22 @@ if [[ -f "backend/Dockerfile" ]]; then
         fi
     done
 
+    # /api prefix in backend routes = guaranteed 404 in production.
+    # Traefik (prod) and nginx.local.conf (local) strip /api before the request
+    # reaches the backend: frontend calls /api/users -> backend must define /users.
+    API_PREFIX_HITS=$(grep -rnE \
+        "(app|router)\.(get|post|put|delete|patch|use)\(\s*['\"]/api|@app\.(get|post|put|delete|patch|route)\(\s*['\"]/api|web::(resource|scope)\(\s*\"/api" \
+        backend --include="*.js" --include="*.py" --include="*.rs" \
+        --exclude-dir=node_modules --exclude-dir=target 2>/dev/null \
+        | grep -vE "^[^:]+:[0-9]+:\s*(\*|//|#)" || true)
+    if [[ -n "$API_PREFIX_HITS" ]]; then
+        fail "Backend routes defined WITH /api prefix — these will 404 (the /api prefix is stripped before reaching the backend)" \
+             "Remove the prefix: app.get('/api/users') -> app.get('/users'). Found:
+$API_PREFIX_HITS"
+    else
+        pass "No /api-prefixed routes in backend code"
+    fi
+
     # Check Dockerfile has non-root user
     if [[ -f "backend/Dockerfile" ]]; then
         if grep -qE "USER (appuser|node|python|rust|app)" backend/Dockerfile; then
@@ -227,31 +248,7 @@ if [[ -f "backend/Dockerfile" ]]; then
         pass "No hardcoded localhost URLs in frontend code"
     fi
 
-    # Check backend routes don't have /api prefix (Traefik strips it)
-    # Node.js: app.get('/api/...'), app.post('/api/...')
-    for file in backend/server.js backend/index.js backend/app.js; do
-        if [[ -f "$file" ]]; then
-            if grep -qE "\.(get|post|put|delete|patch)\s*\(\s*['\"]\/api\/" "$file" 2>/dev/null; then
-                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
-            fi
-        fi
-    done
-    # Python: @app.get("/api/..."), @app.route("/api/...")
-    for file in backend/app.py backend/main.py; do
-        if [[ -f "$file" ]]; then
-            if grep -qE "@app\.(get|post|put|delete|patch|route)\s*\(\s*['\"]\/api\/" "$file" 2>/dev/null; then
-                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
-            fi
-        fi
-    done
-    # Rust: .route("/api/..."), "/api/" string patterns
-    for file in backend/src/main.rs backend/main.rs; do
-        if [[ -f "$file" ]]; then
-            if grep -qE "['\"]\/api\/" "$file" 2>/dev/null; then
-                warn "Backend routes use /api/ prefix in $file - Traefik strips /api, so use routes without it (e.g., '/users' not '/api/users')"
-            fi
-        fi
-    done
+    # (route /api-prefix violations are FAILED above with file:line detail)
 fi
 
 # Check vectordb structure (optional, for dual-database setups)
@@ -425,7 +422,8 @@ if [[ $FAILED -eq 0 ]]; then
     echo ""
     echo "Next steps:"
     echo "  1. Test locally:  docker-compose up --build"
-    echo "  2. Deploy:        git add . && git commit -m 'Ready to deploy' && git push"
+    echo "  2. Deploy:        git add <your changed files> && git commit -m 'Ready to deploy' && git push"
+    echo "                    (stage specific files by name — never 'git add .')"
     echo ""
     exit 0
 else

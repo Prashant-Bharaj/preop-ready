@@ -58,15 +58,27 @@ sio = socketio.AsyncServer(
 
 @sio.event
 async def connect(sid, environ, auth=None):
-    """Authenticate on connection using OIDC headers forwarded by ALB."""
+    """Authenticate on connection using OIDC headers forwarded by ALB.
+
+    Requires the user-identity snippet copied alongside (user_identity.py) —
+    its verify_oidc_token checks the ES256 signature against the ALB's
+    regional public key and the expiry claim. A connection with a
+    present-but-invalid token is refused, never given the dev fallback.
+    """
+    from user_identity import verify_oidc_token  # snippets/auth/user-identity.py
+
     headers = {k.lower(): v for k, v in environ.items() if isinstance(v, str)}
+    oidc_data = headers.get("http_x_amzn_oidc_data")
 
-    oidc_id = headers.get("http_x_amzn_oidc_identity")
-    email = headers.get("http_x_amzn_oidc_email", "")
-    name = headers.get("http_x_amzn_oidc_name", "")
-
-    if oidc_id:
-        user = {"id": oidc_id, "email": email, "name": name}
+    if oidc_data:
+        payload = verify_oidc_token(oidc_data)
+        if not payload:
+            raise socketio.exceptions.ConnectionRefusedError("Not authenticated")
+        user = {
+            "id": payload.get("sub"),
+            "email": payload.get("email", ""),
+            "name": payload.get("name", ""),
+        }
     elif os.getenv("NODE_ENV") != "production":
         user = {"id": "dev-user", "email": "dev@local", "name": "Dev User"}
     else:

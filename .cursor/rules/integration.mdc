@@ -1,0 +1,10 @@
+---
+description: Wire services together: docker-compose per architecture, nginx config mounting, cross-service consistency checks
+globs: docker-compose.yml,frontend/nginx*.conf
+alwaysApply: false
+---
+
+@.platform-rules/scope-integration.md
+
+Follow `.platform-rules/scope-integration.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

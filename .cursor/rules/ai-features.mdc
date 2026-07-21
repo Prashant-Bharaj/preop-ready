@@ -1,0 +1,9 @@
+---
+description: Add AI to the app: chat with a model, assistants, summarize, embeddings/semantic search, RAG, chat with documents, knowledge base, model selection — always via the internal myGenAssist API
+alwaysApply: false
+---
+
+@.platform-rules/reference/ai-features.md
+
+Follow `.platform-rules/reference/ai-features.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -37,7 +37,7 @@
  *   } = require('./sharepoint-client');
  *
  *   // In an Express route behind ALB OIDC:
- *   app.get('/api/sharepoint-file', async (req, res) => {
+ *   app.get('/sharepoint-file', async (req, res) => {
  *     const graphToken = req.headers['x-amzn-oidc-accesstoken'];
  *     const fileUrl = req.query.url; // SharePoint sharing URL or Graph URL
  *

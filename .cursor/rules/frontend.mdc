@@ -1,0 +1,10 @@
+---
+description: Build or change the frontend: React+Vite or vanilla HTML served by nginx, the two-nginx-config model, UI libraries
+globs: frontend/**
+alwaysApply: false
+---
+
+@.platform-rules/scope-frontend.md
+
+Follow `.platform-rules/scope-frontend.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -11,7 +11,9 @@
  *
  * DEPENDENCIES:
  *   Server: npm install socket.io
- *   Client: npm install socket.io-client (or use CDN)
+ *   Client (vanilla): <script src="/socket.io/socket.io.js"></script> — served by
+ *     the Socket.IO server itself; NEVER a public CDN (unreachable on the intranet)
+ *   Client (React/bundled): npm install socket.io-client
  *
  * ENVIRONMENT VARIABLES:
  *   None required. Uses existing OIDC headers from ALB for authentication.
@@ -70,14 +72,18 @@ function createSocketServer(httpServer, options = {}) {
   });
 
   // --- Authentication middleware ---
-  // Extract user identity from OIDC headers (same as REST endpoints)
-  io.use((socket, next) => {
-    const user = extractUserFromSocket(socket);
-    if (!user) {
-      return next(new Error('Authentication required'));
+  // Extract AND VERIFY user identity from OIDC headers (same as REST endpoints)
+  io.use(async (socket, next) => {
+    try {
+      const user = await extractUserFromSocket(socket);
+      if (!user) {
+        return next(new Error('Authentication required'));
+      }
+      socket.user = user;
+      next();
+    } catch (err) {
+      next(new Error('Authentication required'));
     }
-    socket.user = user;
-    next();
   });
 
   // --- Connection handler ---
@@ -146,16 +152,22 @@ function createSocketServer(httpServer, options = {}) {
 }
 
 /**
- * Extract user identity from Socket.IO handshake headers.
+ * Extract AND VERIFY user identity from Socket.IO handshake headers.
  * The ALB injects OIDC headers on the initial WebSocket upgrade request.
+ *
+ * Requires the user-identity snippet copied alongside this file (same folder,
+ * as user-identity.js) — its verifyOidcToken checks the ES256 signature
+ * against the ALB's regional public key and the expiry claim. A socket with
+ * a present-but-invalid token is rejected, never given the dev fallback.
  */
-function extractUserFromSocket(socket) {
+const { verifyOidcToken } = require('./user-identity');
+
+async function extractUserFromSocket(socket) {
   const headers = socket.handshake.headers;
   const oidcData = headers['x-amzn-oidc-data'];
-  const oidcIdentity = headers['x-amzn-oidc-identity'];
 
-  if (!oidcData && !oidcIdentity) {
-    // Local development fallback
+  if (!oidcData) {
+    // Local development fallback (no ALB in front, no OIDC headers at all)
     if (process.env.NODE_ENV === 'development') {
       return {
         userId: 'local-dev-user',
@@ -167,18 +179,14 @@ function extractUserFromSocket(socket) {
     return null;
   }
 
-  try {
-    const parts = oidcData.split('.');
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-    return {
-      userId: payload.sub || oidcIdentity,
-      email: payload.email,
-      name: payload.name || `${payload.given_name || ''} ${payload.family_name || ''}`.trim(),
-      isLocalDev: false,
-    };
-  } catch {
-    return { userId: oidcIdentity, email: null, name: null, isLocalDev: false };
-  }
+  const payload = await verifyOidcToken(oidcData);
+  if (!payload) return null; // present but invalid -> reject
+  return {
+    userId: payload.sub,
+    email: payload.email,
+    name: payload.name || `${payload.given_name || ''} ${payload.family_name || ''}`.trim(),
+    isLocalDev: false,
+  };
 }
 
 /**

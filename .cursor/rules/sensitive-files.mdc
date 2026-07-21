@@ -1,0 +1,9 @@
+---
+description: Handle seed/test data, real data, gitignore, env files, and credentials without leaking anything into git
+alwaysApply: false
+---
+
+@.platform-rules/reference/sensitive-files.md
+
+Follow `.platform-rules/reference/sensitive-files.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

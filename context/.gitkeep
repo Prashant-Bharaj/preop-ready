@@ -7,4 +7,4 @@
 #   - Reference code
 #
 # This folder is GITIGNORED - files here are never committed.
-# See .clinerules/16-ai-file-input.md for details.
+# See .platform-rules/reference/file-handling.md for details.

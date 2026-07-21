@@ -8,6 +8,13 @@
 ///   Works automatically in production (Azure AD via ALB).
 ///   Falls back to test user for local development.
 ///
+/// SECURITY NOTE:
+///   Unlike the JS/Python variants, this Rust snippet does NOT yet verify the
+///   JWT's ES256 signature against the ALB's regional public key — it relies
+///   on the platform's network controls (ALB header overwrite + per-project
+///   security groups). If you use this in anything security-sensitive, port
+///   the verification from snippets/auth/user-identity.js (p256 + reqwest).
+///
 /// DEPENDENCIES (add to Cargo.toml):
 ///   serde = { version = "1", features = ["derive"] }
 ///   serde_json = "1"

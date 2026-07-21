@@ -61,16 +61,30 @@ auto_update:
   - path: "vectordb/Dockerfile.qdrant"
     description: "Qdrant vector database template"
 
-  # AI instructions - always use latest guidance
-  - path: ".cursorrules"
-    description: "AI assistant instructions (Cursor)"
-  - path: ".github/copilot-instructions.md"
-    description: "AI assistant instructions (GitHub Copilot)"
-  - path: ".clinerules/"
-    description: "AI assistant detailed rules"
+  # AI rules — canonical source + generated per-tool adapters
+  # (.platform-rules/ is the ONLY hand-edited rules location; the rest is
+  #  produced by scripts/build-rule-adapters.js in the template repo)
+  - path: ".platform-rules/"
+    description: "Canonical platform rules (core + scopes + reference)"
     is_directory: true
+  - path: ".claude/skills/"
+    description: "Generated: Claude Code skills (on-demand rule picking)"
+    is_directory: true
+  - path: ".cursor/rules/"
+    description: "Generated: Cursor rules (always-on core + glob-attached scopes)"
+    is_directory: true
+  - path: ".github/instructions/"
+    description: "Generated: Copilot path-scoped instructions"
+    is_directory: true
+  - path: ".github/copilot-instructions.md"
+    description: "Generated: Copilot always-on core mirror"
+  - path: ".clinerules/"
+    description: "Generated: Cline core mirror + router"
+    is_directory: true
+  - path: ".cursorrules"
+    description: "Deprecation stub (rules moved to .platform-rules/ + .cursor/rules/)"
   - path: "CLAUDE.md"
-    description: "AI assistant instructions (Claude Code) — imports .cursorrules, points to .clinerules"
+    description: "AI assistant instructions (Claude Code) — imports .platform-rules core"
 
   # Security — AI ignore files and pre-commit hook
   - path: ".clineignore"
@@ -226,9 +240,57 @@ cleanup:
     reason: "Removed — flagged by cybersecurity (credentials in repo)"
 
 # -----------------------------------------------------------------------------
+# Migrations - one-time steps applied when a child crosses a version boundary
+#
+# Unlike cleanup (permanent "must never exist" invariants, re-checked on every
+# sync), a migration block runs once: the engine applies every block with a
+# version greater than the child's local version, in ascending order, BEFORE
+# syncing files. Children jumping multiple versions replay each block in order.
+#
+# FORMAT IS RIGID (parsed by bash in apply-updates.sh) - keep exactly:
+#   2-space indent for the quoted version key, 6-space indent for steps,
+#   double-quoted single-line values.
+#
+# Supported steps (all idempotent):
+#   - delete: "path/to/file"                    # remove a file if present
+#   - delete_dir: "path/to/dir"                 # remove a directory if present
+#   - move: "old/path -> new/path"              # move if source exists, target doesn't
+#   - gitignore_add: "pattern"                  # ensure .gitignore line exists
+#   - gitignore_remove: "pattern"               # drop exact .gitignore line
+#   - run: "scripts/migrations/<ver>-name.sh"   # script executed FROM THE TEMPLATE
+#                                               # REF (must itself be idempotent)
+# Example:
+#   "1.5.0":
+#     description: "Rules reorg: retire .cursorrules"
+#     steps:
+#       - delete: ".cursorrules"
+# -----------------------------------------------------------------------------
+migrations:
+  # NOTE: the version key MUST equal the release version of the change it
+  # belongs to — adjust before merging if the numbering has moved on.
+  "1.4.0":
+    description: "Sync engine + rules restructure (.platform-rules/ canonical tree, generated adapters)"
+    steps:
+      # Old blanket ignore blocked .claude/skills/ from ever being committed;
+      # the template .gitignore now ships `.claude/*` + `!.claude/skills/`
+      # (re-added automatically by the gitignore merge after this runs).
+      - gitignore_remove: ".claude/"
+
+# -----------------------------------------------------------------------------
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "1.4.0":
+    date: "2026-07-15"
+    changes:
+      - "New sync engine: renames/deletions propagate, version-gated migrations, user-modified platform files backed up to .template-backup/ (gitignored), self-upgrading"
+      - "AI rules restructured: canonical .platform-rules/ tree; per-tool adapters generated (Claude Code skills, Cursor rules, Copilot instructions, Cline core)"
+      - "Cline always-loaded rules reduced from ~5,600 to ~270 lines"
+      - "Cursor/Copilot now auto-attach scope rules when editing backend/frontend/database/docker files"
+      - ".cursorrules deprecated to a stub; CLAUDE.md imports the core directly"
+      - "New snippets: security/error-handler.{js,py}, config/db-migrations.js, auth/user-identity-schema.sql"
+      - "Weekly template-sync PR schedule enabled in child repos"
+
   "1.3.1":
     date: "2026-03-23"
     note: "Version auto-bumped by version-bump.yml workflow"

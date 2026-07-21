@@ -1,0 +1,9 @@
+---
+description: Run a cross-scope consistency check on the whole project before testing or deploying — fix what fails
+alwaysApply: false
+---
+
+@.platform-rules/verify-checklist.md
+
+Follow `.platform-rules/verify-checklist.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

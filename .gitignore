@@ -1,7 +1,7 @@
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  ⛔ AI AGENTS: DO NOT MODIFY THIS FILE                         ║
 # ║  This file is protected. Only humans may edit .gitignore.      ║
-# ║  See .clinerules/19-sensitive-files.md for details.            ║
+# ║  See .platform-rules/reference/sensitive-files.md for details.            ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
 # ==========================================================
@@ -136,10 +136,10 @@ context/*
 !context/.gitkeep
 
 # ==========================================================
-# AI TOOL DATA — Chat history, Claude settings
+# AI TOOL DATA — Claude settings (skills are platform-shipped)
 # ==========================================================
-.chat/
-.claude/
+.claude/*
+!.claude/skills/
 
 # ==========================================================
 # IDE & OS

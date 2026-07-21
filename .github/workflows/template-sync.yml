@@ -1,29 +1,29 @@
 # =============================================================================
 # Template Sync Workflow (For Child Repos)
 # =============================================================================
-# This workflow checks for template updates and syncs platform files.
-# It runs in CHILD repos, not the template repo itself.
+# Checks for template updates and syncs platform files. Runs in CHILD repos,
+# not the template repo itself.
 #
 # Triggers:
-#   - Manual: "Actions" → "Check Template Updates" → "Run workflow"
-#   - Scheduled: Weekly on Monday 9 AM UTC (uncomment to enable)
-#   - Called from deploy workflow (optional integration)
+#   - Manual: "Actions" -> "Check Template Updates" -> "Run workflow"
+#   - Scheduled: Weekly on Monday 9 AM UTC (PR mode - safe, reviewable)
+#   - Called from other workflows via workflow_call
 #
 # What it does:
-#   1. Compares local .template-version with template repo's version
-#   2. If update available, fetches all platform files
-#   3. Creates a PR with the changes (or commits directly if configured)
+#   1. Fetches the template repo as a git remote
+#   2. Runs the shared update engine (scripts/apply-updates.sh --ci).
+#      The engine self-upgrades from the template ref, so even repos with an
+#      old engine copy execute the current sync logic.
+#   3. Opens a PR with the changes (or commits directly if configured)
 #
+# Auth: fetching the template uses TEMPLATE_READ_TOKEN if the org provides it
+# (org-level secret with read access to the template repo), otherwise falls
+# back to the workflow's GITHUB_TOKEN.
 # =============================================================================
 
 name: Check Template Updates
 
 on:
-  # IMPORTANT: This workflow should ONLY run manually or via workflow_call
-  # It should NEVER run automatically on push - if you see it running on every commit,
-  # check that this file doesn't have a 'push:' trigger added accidentally
-  
-  # Manual trigger
   workflow_dispatch:
     inputs:
       auto_merge:
@@ -36,12 +36,10 @@ on:
         required: false
         default: false
         type: boolean
-        
-  # Scheduled check - uncomment to enable
-  # schedule:
-  #   - cron: '0 9 * * 1'  # Weekly Monday 9 AM UTC
-  
-  # Can be called from other workflows (e.g., deploy)
+
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly Monday 9 AM UTC (PR mode)
+
   workflow_call:
     inputs:
       auto_merge:
@@ -67,7 +65,6 @@ env:
   TEMPLATE_BRANCH: master
 
 jobs:
-  # Skip if this IS the template repo OR if triggered by push (shouldn't happen)
   check-repo:
     runs-on: ubuntu-latest
     outputs:
@@ -81,14 +78,14 @@ jobs:
             echo "⏭️ Skipping - this IS the template repo"
             exit 0
           fi
-          
-          # Skip if triggered by push (this workflow should only run manually or via workflow_call)
+
+          # This workflow should never run on push
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "should_run=false" >> $GITHUB_OUTPUT
-            echo "⏭️ Skipping - this workflow should only run manually (workflow_dispatch) or via workflow_call"
+            echo "⏭️ Skipping - manual/scheduled/workflow_call only"
             exit 0
           fi
-          
+
           echo "should_run=true" >> $GITHUB_OUTPUT
 
   sync:
@@ -98,215 +95,48 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       updated: ${{ steps.result.outputs.updated }}
-      new_version: ${{ steps.check-version.outputs.template_version }}
-      
+      new_version: ${{ steps.run-engine.outputs.new_version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Check versions
-        id: check-version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run update engine
+        id: run-engine
         run: |
-          # Get local version
-          if [ -f .template-version ]; then
-            LOCAL=$(grep "^version:" .template-version | cut -d'"' -f2)
-          else
-            LOCAL="0.0.0"
-          fi
-          echo "local_version=$LOCAL" >> $GITHUB_OUTPUT
-          echo "📦 Local version: $LOCAL"
-          
-          # Get template version
-          TEMPLATE=$(gh api repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml \
-            --jq '.content' | base64 -d | grep "^version:" | head -1 | cut -d'"' -f2)
-          echo "template_version=$TEMPLATE" >> $GITHUB_OUTPUT
-          echo "📦 Template version: $TEMPLATE"
-          
-          # Compare versions
-          if [ "$LOCAL" = "$TEMPLATE" ]; then
-            echo "✅ Already up to date!"
+          # Embed auth in the template URL so the engine's git fetch works.
+          # TEMPLATE_READ_TOKEN (org secret) if present, else GITHUB_TOKEN.
+          TOKEN="${{ secrets.TEMPLATE_READ_TOKEN || secrets.GITHUB_TOKEN }}"
+          export TEMPLATE_URL="https://x-access-token:${TOKEN}@github.com/${{ env.TEMPLATE_REPO }}.git"
+          export TEMPLATE_BRANCH="${{ env.TEMPLATE_BRANCH }}"
+
+          set +e
+          OUTPUT=$(bash scripts/apply-updates.sh --ci 2>&1)
+          STATUS=$?
+          set -e
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "^UP_TO_DATE|"; then
             echo "needs_update=false" >> $GITHUB_OUTPUT
-          else
-            echo "📝 Update available: $LOCAL → $TEMPLATE"
-            echo "needs_update=true" >> $GITHUB_OUTPUT
-          fi
-          
-      - name: Sync platform files
-        if: steps.check-version.outputs.needs_update == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "📥 Fetching platform files from template..."
-
-          TEMPLATE_VERSION="${{ steps.check-version.outputs.template_version }}"
-
-          # Helper function to fetch file from template
-          fetch_file() {
-            local path=$1
-            local dir=$(dirname "$path")
-
-            # Create directory if needed
-            [ "$dir" != "." ] && mkdir -p "$dir"
-
-            # Fetch file content
-            CONTENT=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
-              --jq '.content' 2>/dev/null | base64 -d)
-
-            if [ -n "$CONTENT" ]; then
-              echo "$CONTENT" > "$path"
-              echo "  ✓ $path"
-              return 0
-            else
-              echo "  ⏭️ $path (not found in template)"
-              return 1
-            fi
-          }
-
-          # Helper to fetch directory
-          fetch_dir() {
-            local path=$1
-            rm -rf "$path"
-            mkdir -p "$path"
-
-            # Get list of files in directory
-            FILES=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/$path?ref=${{ env.TEMPLATE_BRANCH }}" \
-              --jq '.[].path' 2>/dev/null || echo "")
-
-            for file in $FILES; do
-              fetch_file "$file" || true
-            done
-          }
-
-          # Fetch manifest from template repo (single source of truth)
-          echo ""
-          echo "📋 Reading manifest from template..."
-          MANIFEST=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml?ref=${{ env.TEMPLATE_BRANCH }}" \
-            --jq '.content' | base64 -d)
-
-          # Parse auto_update entries and sync each one
-          echo ""
-          echo "📁 Syncing files from manifest..."
-          echo "$MANIFEST" | awk '
-          /^auto_update:/ { in_section=1; next }
-          /^[a-zA-Z]/ && in_section { exit }
-          in_section && /^  - path:/ {
-            if (path) print path, is_dir
-            gsub(/"/, "")
-            path=$3
-            is_dir="false"
-            next
-          }
-          in_section && /is_directory:/ {
-            is_dir=$2
-            next
-          }
-          END { if (path) print path, is_dir }
-          ' | while read -r path is_dir; do
-            if [ "$is_dir" = "true" ]; then
-              fetch_dir "$path"
-            else
-              fetch_file "$path" || true
-            fi
-          done
-
-          # Make scripts executable
-          chmod +x scripts/*.sh 2>/dev/null || true
-          chmod +x .devcontainer/*.sh 2>/dev/null || true
-
-          # Update version tracker
-          echo ""
-          echo "📝 Updating version tracker..."
-          cat > .template-version << EOF
-          # Template Version Tracker
-          # DO NOT DELETE - helps keep your project up to date!
-
-          version: "$TEMPLATE_VERSION"
-          template_repo: "bayer-int/dd-template-repo"
-          last_sync: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          EOF
-
-          echo ""
-          echo "✅ Sync complete!"
-
-      - name: Remove deprecated files
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🧹 Checking for deprecated files..."
-
-          # Fetch manifest to read cleanup entries
-          MANIFEST=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.template-manifest.yml?ref=${{ env.TEMPLATE_BRANCH }}" \
-            --jq '.content' 2>/dev/null | base64 -d || echo "")
-
-          if [ -z "$MANIFEST" ]; then
-            echo "  ⚠️ Could not fetch manifest for cleanup, skipping"
-          else
-            echo "$MANIFEST" | awk '
-            /^cleanup:/ { in_section=1; next }
-            /^[a-zA-Z]/ && in_section { exit }
-            in_section && /^  - path:/ {
-              gsub(/"/, "")
-              path=$3
-              next
-            }
-            in_section && /type:/ {
-              gsub(/"/, "")
-              type=$2
-              if (path) print path, type
-              path=""
-              type=""
-              next
-            }
-            END { if (path && type) print path, type }
-            ' | while read -r path type; do
-              case "$type" in
-                directory)
-                  if [ -d "$path" ]; then
-                    rm -rf "$path"
-                    echo "  ✓ Removed $path/"
-                  fi
-                  ;;
-                gitignore_entry)
-                  if [ -f .gitignore ] && grep -q "^${path}" .gitignore; then
-                    sed -i "/^${path//\//\\/}/d" .gitignore
-                    echo "  ✓ Cleaned $path from .gitignore"
-                  fi
-                  ;;
-              esac
-            done
+            echo "✅ Already up to date"
+            exit 0
           fi
 
-          echo "✅ Cleanup complete!"
-
-      - name: Merge .gitignore patterns
-        if: steps.check-version.outputs.needs_update == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ -f .gitignore ]; then
-            echo "📝 Merging .gitignore patterns..."
-            
-            # Fetch template .gitignore
-            TEMPLATE_GITIGNORE=$(gh api "repos/${{ env.TEMPLATE_REPO }}/contents/.gitignore?ref=${{ env.TEMPLATE_BRANCH }}" \
-              --jq '.content' 2>/dev/null | base64 -d || echo "")
-            
-            if [ -n "$TEMPLATE_GITIGNORE" ]; then
-              # Add missing patterns
-              while IFS= read -r pattern; do
-                [[ -z "$pattern" || "$pattern" =~ ^# ]] && continue
-                if ! grep -Fxq "$pattern" .gitignore 2>/dev/null; then
-                  echo "$pattern" >> .gitignore
-                  echo "  Added: $pattern"
-                fi
-              done <<< "$TEMPLATE_GITIGNORE"
-            fi
+          if [ $STATUS -ne 0 ] || ! echo "$OUTPUT" | grep -q "^UPDATE_COMPLETE|"; then
+            echo "❌ Engine failed"
+            exit 1
           fi
-          
+
+          NEW_VERSION=$(echo "$OUTPUT" | grep "^UPDATE_COMPLETE|" | cut -d'|' -f2)
+          echo "needs_update=true" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Backed-up user-modified files -> surfaced in the PR body
+          echo "$OUTPUT" | sed -n '/^Backed up /,/^$/p' > /tmp/backup-summary.txt || true
+
       - name: Check for changes
         id: changes
         run: |
@@ -318,7 +148,7 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "✅ No file changes needed"
           fi
-          
+
       - name: Commit directly (if configured)
         if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
         run: |
@@ -326,7 +156,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add -A
-          git commit -m "chore: sync platform files from template v${{ steps.check-version.outputs.template_version }}"
+          git commit -m "chore: sync platform files from template v${{ steps.run-engine.outputs.new_version }}"
           git push
 
           echo "✅ Changes committed directly"
@@ -337,16 +167,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOCAL="${{ steps.check-version.outputs.local_version }}"
-          TEMPLATE="${{ steps.check-version.outputs.template_version }}"
+          TEMPLATE="${{ steps.run-engine.outputs.new_version }}"
           BRANCH="template-sync/v$TEMPLATE"
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Check if PR already exists
+
+          # Changelog entry for the new version (best effort, for the PR body)
+          CHANGELOG=$(git show "template/${{ env.TEMPLATE_BRANCH }}:.template-manifest.yml" 2>/dev/null | awk -v ver="$TEMPLATE" '
+            /^changelog:/ { in_cl=1; next }
+            in_cl && $0 ~ "^  \"" ver "\":" { in_ver=1; next }
+            in_cl && /^  "/ { in_ver=0 }
+            in_ver && /^      - / { sub(/^      - /, "- "); gsub(/"/, ""); print }
+          ' || echo "")
+
+          BACKUPS=""
+          if [ -s /tmp/backup-summary.txt ]; then
+            BACKUPS=$(printf '### ⚠️ User-modified platform files\n\nThese files differed from the shipped version and were backed up to `.template-backup/` (gitignored) before being overwritten:\n\n```\n%s\n```\n' "$(cat /tmp/backup-summary.txt)")
+          fi
+
           EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          
+
           if [ -n "$EXISTING_PR" ]; then
             echo "📝 Updating existing PR #$EXISTING_PR..."
             git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH"
@@ -360,52 +201,43 @@ jobs:
             git add -A
             git commit -m "chore: sync platform files from template v$TEMPLATE"
             git push -u origin "$BRANCH"
-            
+
             PR_URL=$(gh pr create \
-              --title "⬆️ Platform Update: v$LOCAL → v$TEMPLATE" \
-              --body "## 📦 Template Update Available
+              --title "⬆️ Platform Update: v$TEMPLATE" \
+              --body "## 📦 Template Update
 
-          **Version:** \`$LOCAL\` → \`$TEMPLATE\`
+          **New version:** \`$TEMPLATE\`
 
-          ### What's Updated
+          ### What changed
 
-          Platform files only - **your code is NOT touched**:
+          ${CHANGELOG:-See the template changelog in \`.template-manifest.yml\`.}
 
-          | Category | Files |
-          |----------|-------|
-          | Workflows | \`.github/workflows/deploy.yml\`, \`template-sync.yml\` |
-          | Frontend | \`Dockerfile.vanilla\`, \`Dockerfile.react\` |
-          | Backend | \`Dockerfile.node\`, \`Dockerfile.python\` |
-          | Database | \`Dockerfile.postgres\`, \`mysql\`, \`pgvector\`, etc. |
-          | AI Rules | \`.cursorrules\`, \`.clinerules/\` |
-          | DevContainer | \`.devcontainer/devcontainer.json\` |
-          | Docs | \`MIGRATION.md\`, \`EXAMPLES.md\` |
-          | Snippets | \`snippets/\` |
+          ${BACKUPS}
 
           ### Your Code is Safe ✅
 
           These are **never modified**:
           - \`frontend/src/\`, \`frontend/index.html\`
-          - \`backend/server.js\`, \`backend/main.py\`
+          - \`backend/server.js\`, \`backend/main.py\`, \`backend/src/\`
           - \`database/init/\`
           - Your Dockerfiles (\`frontend/Dockerfile\`, \`backend/Dockerfile\`)
 
           ---
           🤖 Auto-generated by Template Sync" \
               --head "$BRANCH")
-              
+
             PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
             echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "✅ Created PR: $PR_URL"
           fi
-          
+
       - name: Auto-merge PR
         if: steps.create-pr.outputs.pr_number && inputs.auto_merge == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr merge ${{ steps.create-pr.outputs.pr_number }} --auto --squash || echo "⚠️ Auto-merge not available"
-          
+
       - name: Set outputs
         id: result
         run: |
@@ -414,19 +246,19 @@ jobs:
           else
             echo "updated=false" >> $GITHUB_OUTPUT
           fi
-          
+
   summary:
     name: Summary
     needs: [check-repo, sync]
     runs-on: ubuntu-latest
     if: always() && needs.check-repo.outputs.should_run == 'true'
-    
+
     steps:
       - name: Summary
         run: |
           echo "## 📊 Template Sync Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.sync.outputs.updated }}" = "true" ]; then
             echo "✅ **Update applied!** New version: v${{ needs.sync.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           else

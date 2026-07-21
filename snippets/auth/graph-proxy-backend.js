@@ -8,7 +8,8 @@
  * LANGUAGE: JavaScript (Node.js + Express)
  * STATUS: Ready
  *
- * WHAT THIS DOES:
+ * WHAT THIS DOES (URLs as the FRONTEND sees them — the backend defines the
+ * routes WITHOUT /api, because Traefik/nginx strip the prefix in transit):
  *   - GET  /api/graph/auth-start    -- 302 redirect to platform bouncer
  *   - POST /api/graph/<op>          -- SigV4-signs to platform proxy with
  *                                       X-Platform-Session forwarded from
@@ -47,12 +48,12 @@
  *   app.use(express.json())
  *   registerGraphProxyEndpoints(app)
  *
- * That's it. Per-operation Express routes are optional -- the snippet
- * exposes /api/graph/<op> as a catch-all that forwards every operation
- * the platform proxy supports. You can also wire specific routes if you
- * want to add app-side logging or input validation:
+ * That's it. Per-operation Express routes are optional -- the snippet's
+ * catch-all forwards every operation the platform proxy supports (the
+ * frontend calls /api/graph/<op>). You can also wire specific routes if
+ * you want app-side logging or input validation (no /api prefix!):
  *
- *   app.post('/api/graph/sharepoint/fetch', async (req, res) => {
+ *   app.post('/graph/sharepoint/fetch', async (req, res) => {
  *     const sid = req.headers['x-platform-session']
  *     try {
  *       res.json(await callGraphProxy('sharepoint/fetch', req.body, sid))
@@ -158,9 +159,11 @@ async function callGraphProxy(operation, body, sessionId) {
 }
 
 /**
- * Register both routes on an Express app:
- *   GET  /api/graph/auth-start   -> 302 to platform bouncer
- *   POST /api/graph/:op*         -> SigV4-forward to platform proxy
+ * Register both routes on an Express app. Backend paths have NO /api prefix
+ * (Traefik in production and nginx.local.conf locally strip it); the frontend
+ * reaches them at /api/graph/...:
+ *   GET  /graph/auth-start   -> 302 to platform bouncer
+ *   POST /graph/:op*         -> SigV4-forward to platform proxy
  *
  * Error response shape forwarded to the frontend is structured so
  * graph-proxy-client.js can detect consent_required and redirect:
@@ -168,14 +171,14 @@ async function callGraphProxy(operation, body, sessionId) {
  *     scope?: string, message: string, detail?: object }
  */
 function registerGraphProxyEndpoints(app) {
-  app.get('/api/graph/auth-start', (req, res) => {
+  app.get('/graph/auth-start', (req, res) => {
     const ret = String(req.query.return || '')
     if (!ret) return res.status(400).json({ error: 'missing_return' })
     const url = `${getAuthStartUrl()}?return=${encodeURIComponent(ret)}`
     res.redirect(302, url)
   })
 
-  app.post(/^\/api\/graph\/(.+)$/, async (req, res) => {
+  app.post(/^\/graph\/(.+)$/, async (req, res) => {
     const operation = req.params[0]
     const sid = req.headers['x-platform-session']
     try {

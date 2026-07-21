@@ -69,7 +69,7 @@
   },
 
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
-  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; rm -f backend/env.example database/env.example database/.env.example vectordb/env.example",
+  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh",
 
   "forwardPorts": [3000, 5050, 5173, 8080, 8888],
 

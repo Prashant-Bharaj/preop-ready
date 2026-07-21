@@ -1,0 +1,9 @@
+---
+description: Build file upload/import features in the app, or receive files from the user for the AI to analyze
+alwaysApply: false
+---
+
+@.platform-rules/reference/file-handling.md
+
+Follow `.platform-rules/reference/file-handling.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

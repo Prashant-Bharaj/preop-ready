@@ -23,10 +23,11 @@
  *   // Update a setting
  *   await setConfig(pool, 'mga_assistant_id', 'asst_new_id', 'admin@bayer.com');
  *
- *   // Mount admin routes
- *   app.use('/api', settingsRouter(pool));
- *   // GET  /api/settings       -> list all settings (admin only)
- *   // PUT  /api/settings/:key  -> update a setting (admin only)
+ *   // Mount admin routes — NO /api prefix in backend paths (Traefik/nginx
+ *   // strip it; the frontend calls /api/settings)
+ *   app.use(settingsRouter(pool));
+ *   // GET  /settings       -> list all settings (admin only)
+ *   // PUT  /settings/:key  -> update a setting (admin only)
  *
  * RELATED:
  *   - snippets/config/app-settings-schema.sql (database schema)

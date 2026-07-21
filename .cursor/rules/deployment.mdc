@@ -1,0 +1,9 @@
+---
+description: Deploy the app to production via git push, verify readiness, and handle deploy failures
+alwaysApply: false
+---
+
+@.platform-rules/reference/deployment.md
+
+Follow `.platform-rules/reference/deployment.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -5,32 +5,42 @@ LANGUAGE: Python (FastAPI/Flask)
 STATUS: ✅ Ready
 
 DESCRIPTION:
-    Extracts user identity from AWS ALB OIDC headers.
+    Extracts AND VERIFIES user identity from AWS ALB OIDC headers.
     Works automatically in production (Azure AD via ALB).
-    Falls back to test user for local development.
+    Falls back to test user for local development (no headers present).
+
+SECURITY MODEL:
+    The ALB overwrites x-amzn-oidc-* headers on every request, so a client
+    cannot inject identity through the front door. This middleware ALSO
+    cryptographically verifies the token (defense in depth): the JWT's
+    ES256 signature is checked against the ALB's regional public key
+    (fetched by key id, cached) and the expiry claim is enforced.
+    A present-but-invalid token is REJECTED with 401 — it never falls
+    back to the local dev user.
 
 DEPENDENCIES:
-    None - uses built-in Python modules
+    pip install cryptography
 
 HEADERS AVAILABLE:
-    - x-amzn-oidc-data: JWT with user claims (sub, email, name)
-    - x-amzn-oidc-identity: User's unique subject ID
+    - x-amzn-oidc-data: JWT with user claims (sub, email, name) — VERIFIED
+    - x-amzn-oidc-identity: User's unique subject ID (informational only;
+      never trusted on its own)
     - x-amzn-oidc-accesstoken: OIDC access token
 
 USAGE (FastAPI):
     from middleware.user_identity import get_current_user
-    
+
     @app.get("/profile")
     def profile(user: dict = Depends(get_current_user)):
         return {"name": user["name"], "email": user["email"]}
 
 USAGE (Flask):
     from middleware.user_identity import load_user
-    
+
     @app.before_request
     def before_request():
-        load_user()
-    
+        return load_user()   # returns a 401 response when the token is invalid
+
     @app.route("/profile")
     def profile():
         return {"name": g.user["name"], "email": g.user["email"]}
@@ -48,78 +58,112 @@ EXAMPLE:
 
 import base64
 import json
-from typing import Optional, Dict, Any
+import os
+import time
+import urllib.request
+from typing import Any, Dict, Optional
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+
+# ALB public keys, cached per key id (keys rotate rarely)
+_alb_key_cache: Dict[str, Any] = {}
 
 
-def extract_user_identity(headers: Dict[str, str]) -> Dict[str, Any]:
+def _b64url_decode(segment: str) -> bytes:
+    segment = segment.replace('-', '+').replace('_', '/')
+    padding = 4 - len(segment) % 4
+    if padding != 4:
+        segment += '=' * padding
+    return base64.b64decode(segment)
+
+
+def _get_alb_public_key(kid: str, region: str):
+    """Fetch (and cache) the ALB's public key for a key id.
+    Endpoint per AWS docs: https://public-keys.auth.elb.<region>.amazonaws.com/<kid>
     """
-    Extract user identity from AWS ALB OIDC headers.
-    
-    Args:
-        headers: Request headers dictionary
-        
-    Returns:
-        User identity dictionary with userId, email, name, etc.
+    if kid in _alb_key_cache:
+        return _alb_key_cache[kid]
+    url = f"https://public-keys.auth.elb.{region}.amazonaws.com/{kid}"
+    with urllib.request.urlopen(url, timeout=5) as res:
+        pem = res.read()
+    key = serialization.load_pem_public_key(pem)
+    _alb_key_cache[kid] = key
+    return key
+
+
+def verify_oidc_token(oidc_data: str) -> Optional[Dict[str, Any]]:
+    """Verify the ALB OIDC JWT: ES256 signature against the regional ALB
+    public key, plus expiry. Returns the verified payload, or None if invalid.
+    """
+    try:
+        parts = oidc_data.split('.')
+        if len(parts) != 3:
+            return None
+
+        header = json.loads(_b64url_decode(parts[0]))
+        region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION')
+        if not header.get('kid') or not region:
+            # No key id or no region to fetch it from -> cannot verify -> reject.
+            # (Deployed ECS tasks always have AWS_REGION set.)
+            print('OIDC verify: missing kid or AWS_REGION')
+            return None
+
+        key = _get_alb_public_key(header['kid'], region)
+        # ALB signs with ES256; the JOSE signature is raw r||s
+        signature = _b64url_decode(parts[2])
+        half = len(signature) // 2
+        der_sig = utils.encode_dss_signature(
+            int.from_bytes(signature[:half], 'big'),
+            int.from_bytes(signature[half:], 'big'),
+        )
+        signing_input = f"{parts[0]}.{parts[1]}".encode()
+        key.verify(der_sig, signing_input, ec.ECDSA(hashes.SHA256()))  # raises if invalid
+
+        payload = json.loads(_b64url_decode(parts[1]))
+        if payload.get('exp') and payload['exp'] < time.time():
+            return None
+        return payload
+    except Exception as e:
+        print(f'OIDC verify failed: {e}')
+        return None
+
+
+def extract_user_identity(headers: Dict[str, str]) -> Optional[Dict[str, Any]]:
+    """Extract user identity from AWS ALB OIDC headers (with verification).
+
+    Returns the user dict, or None when an OIDC token was present but
+    INVALID — the caller must reject the request with 401 in that case.
     """
     oidc_data = headers.get('x-amzn-oidc-data')
-    oidc_identity = headers.get('x-amzn-oidc-identity')
-    
-    # Try to decode the JWT from x-amzn-oidc-data header
+
     if oidc_data:
-        try:
-            # JWT structure: header.payload.signature
-            # We only need the payload (middle part)
-            parts = oidc_data.split('.')
-            if len(parts) >= 2:
-                # Add padding if needed for base64 decoding
-                payload_b64 = parts[1]
-                padding = 4 - len(payload_b64) % 4
-                if padding != 4:
-                    payload_b64 += '=' * padding
-                    
-                payload = json.loads(base64.b64decode(payload_b64).decode('utf-8'))
-                return {
-                    'user_id': payload.get('sub') or oidc_identity,
-                    'email': payload.get('email'),
-                    'name': payload.get('name'),
-                    'given_name': payload.get('given_name'),
-                    'family_name': payload.get('family_name'),
-                    'picture': payload.get('picture'),
-                    'is_local_dev': False
-                }
-        except Exception as e:
-            print(f'Failed to decode OIDC data: {e}')
-    
-    # Fallback: use identity header if JWT decode failed
-    if oidc_identity:
+        payload = verify_oidc_token(oidc_data)
+        if not payload:
+            return None  # present but invalid -> reject, never fall back
         return {
-            'user_id': oidc_identity,
-            'email': None,
-            'name': None,
-            'is_local_dev': False
+            'user_id': payload.get('sub'),
+            'email': payload.get('email'),
+            'name': payload.get('name'),
+            'given_name': payload.get('given_name'),
+            'family_name': payload.get('family_name'),
+            'picture': payload.get('picture'),
+            'is_local_dev': False,
         }
-    
-    # Fallback for local development (no ALB headers)
+
+    # Local development only (no ALB in front, no OIDC headers at all)
     return {
         'user_id': 'local-dev-user',
         'email': 'dev@localhost',
         'name': 'Local Developer',
         'given_name': 'Local',
         'family_name': 'Developer',
-        'is_local_dev': True
+        'is_local_dev': True,
     }
 
 
 def get_user_display_name(user: Dict[str, Any]) -> str:
-    """
-    Get user display name with graceful fallback.
-    
-    Args:
-        user: User dictionary from extract_user_identity
-        
-    Returns:
-        Display name string
-    """
+    """Get user display name with graceful fallback."""
     if user.get('name'):
         return user['name']
     if user.get('given_name') and user.get('family_name'):
@@ -133,36 +177,22 @@ def get_user_display_name(user: Dict[str, Any]) -> str:
 # FastAPI Integration
 # ============================================
 
-def get_current_user_fastapi():
-    """
-    FastAPI dependency for getting current user.
-    
-    Usage:
-        from fastapi import Depends
-        from middleware.user_identity import get_current_user
-        
-        @app.get("/profile")
-        def profile(user: dict = Depends(get_current_user)):
-            return {"name": user["name"]}
-    """
-    from fastapi import Request, Depends
-    
-    def _get_user(request: Request) -> Dict[str, Any]:
-        headers = dict(request.headers)
-        return extract_user_identity(headers)
-    
-    return _get_user
-
-
-# For FastAPI - import this
 try:
-    from fastapi import Request, Depends
-    
+    from fastapi import HTTPException, Request
+
     def get_current_user(request: Request) -> Dict[str, Any]:
-        """FastAPI dependency for getting current user."""
+        """FastAPI dependency for getting the VERIFIED current user.
+        Raises 401 when an OIDC token is present but fails verification.
+        """
         headers = {k.lower(): v for k, v in request.headers.items()}
-        return extract_user_identity(headers)
-        
+        user = extract_user_identity(headers)
+        if user is None:
+            raise HTTPException(
+                status_code=401,
+                detail='Identity token could not be verified',
+            )
+        return user
+
 except ImportError:
     # FastAPI not installed
     get_current_user = None
@@ -173,24 +203,24 @@ except ImportError:
 # ============================================
 
 try:
-    from flask import request, g
-    
+    from flask import g, jsonify, request
+
     def load_user():
-        """
-        Flask before_request handler to load user.
-        
-        Usage:
-            @app.before_request
-            def before_request():
-                load_user()
-            
-            @app.route("/profile")
-            def profile():
-                return {"name": g.user["name"]}
+        """Flask before_request handler to load the VERIFIED user.
+        Returns a 401 response (aborting the request) when an OIDC token
+        is present but fails verification; returns None to continue.
         """
         headers = {k.lower(): v for k, v in request.headers.items()}
-        g.user = extract_user_identity(headers)
-        
+        user = extract_user_identity(headers)
+        if user is None:
+            return jsonify({
+                'error': 'UNAUTHORIZED',
+                'message': 'Identity token could not be verified',
+                'statusCode': 401,
+            }), 401
+        g.user = user
+        return None
+
 except ImportError:
     # Flask not installed
     load_user = None

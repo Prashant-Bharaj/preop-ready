@@ -1,0 +1,9 @@
+---
+description: Run and test the app locally with Docker, set up hot reload, and show the user the right URL
+alwaysApply: false
+---
+
+@.platform-rules/reference/testing-local.md
+
+Follow `.platform-rules/reference/testing-local.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -29,6 +29,7 @@
 | User Roles & Whitelisting | JS + SQL | `auth/user-roles.js` + `auth/user-roles-schema.sql` | Role-based access control (user/expert/admin), approval workflow |
 | User Roles & Whitelisting | Python | `auth/user-roles.py` | RBAC with FastAPI dependencies (same SQL schema) |
 | User Management Page | React | `auth/UserManagement.jsx` | Admin page to approve/deny users and manage roles |
+| User Data Schema | SQL | `auth/user-identity-schema.sql` | User-specific data keyed on stable OIDC sub (PostgreSQL + MySQL) |
 
 ### File Handling
 
@@ -50,6 +51,10 @@
 | Bayer LLM Client | Python | `llm/bayer-llm-client.py` | Direct chat completions (async httpx) |
 | MGA Assistant Client | JS | `llm/mga-assistant-client.js` | MGA assistant via ChatCompletion API |
 | MGA Assistant Client | Python | `llm/mga-assistant-client.py` | MGA assistant via ChatCompletion API (async httpx) |
+| **Knowledge Base (managed RAG)** | JS | `llm/knowledge-base-client.js` | **PREFERRED for "chat with my documents"**: create KB, upload docs, retrieve chunks — no own vector DB needed |
+| **Knowledge Base (managed RAG)** | Python | `llm/knowledge-base-client.py` | Same, async httpx |
+| RAG Tools | JS | `llm/rag-tools.js` | Embeddings, rerank, chunking, model list — for custom semantic search over the app's OWN data (pairs with vectordb/) |
+| RAG Tools | Python | `llm/rag-tools.py` | Same, async httpx |
 
 ### Microsoft 365 Integration
 
@@ -96,10 +101,11 @@
 | App Settings Page | React | `config/AppSettings.jsx` | Admin page for managing app settings |
 | CORS & Proxy | JS | `config/cors-proxy.js` | CORS middleware (when needed) + explanation of platform routing |
 | CORS Middleware | Python | `config/cors-middleware.py` | FastAPI CORS middleware setup |
+| DB Migrations | JS | `config/db-migrations.js` | Ordered .sql migration runner for pg (schema changes after first deploy) |
 
 ### Security
 
-> **REQUIRED**: All projects MUST follow security best practices. See `.clinerules/18-security.md`
+> **REQUIRED**: All projects MUST follow security best practices. See `.platform-rules/02-security.md`
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
@@ -109,3 +115,5 @@
 | Input Validation | Python | `security/input-validation.py` | Pydantic models + sanitization helpers |
 | Parameterized Queries | JS | `security/parameterized-queries.js` | Safe SQL queries (PostgreSQL/MySQL) |
 | Parameterized Queries | Python | `security/parameterized-queries.py` | Safe SQL queries (asyncpg) |
+| Error Handler | JS | `security/error-handler.js` | Global JSON error responses, proper status codes, no stack traces |
+| Error Handler | Python | `security/error-handler.py` | FastAPI exception handlers (JSON errors, no stack traces) |

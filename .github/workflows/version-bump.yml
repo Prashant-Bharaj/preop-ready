@@ -1,8 +1,15 @@
 # =============================================================================
 # Template Version Bump Workflow
 # =============================================================================
-# Auto-bumps version in .template-manifest.yml when platform files change.
-# Child repos check this version to know if updates are available.
+# Auto-bumps version in .template-manifest.yml when platform files change,
+# and tags the bump commit as template-v<X.Y.Z>.
+# Child repos check this version to know if updates are available; the tag
+# lets the update engine detect user-modified platform files (it compares
+# against the version the child last received).
+#
+# Which pushes bump the version is decided by the MANIFEST, not a hand-kept
+# paths list: the job diffs the push and checks whether any changed file is
+# covered by an auto_update / merge_update entry.
 #
 # ARCHITECTURE (No releases needed):
 # ──────────────────────────────────
@@ -12,7 +19,7 @@
 #   [push platform files]                 │
 #        │                                │
 #        ▼                                │
-#   [Auto-bump version in manifest]      │
+#   [Auto-bump version + tag]             │
 #        │                                │
 #        └──────────────────────────────► Child fetches manifest
 #                                         Compares versions
@@ -27,39 +34,11 @@ on:
     branches:
       - main
       - master
-    paths:
-      # Platform files that trigger version bump
-      - '.github/workflows/deploy.yml'
-      - '.github/workflows/template-sync.yml'
-      - 'frontend/Dockerfile.*'
-      - 'frontend/nginx.conf'
-      - 'frontend/nginx.local.conf'
-      - 'backend/Dockerfile.*'
-      - 'database/Dockerfile.*'
-      - 'vectordb/Dockerfile.*'
-      - 'docker-compose.yml'
-      - '.cursorrules'
-      - '.clinerules/**'
-      - '.devcontainer/**'
-      - 'docs/MIGRATION.md'
-      - 'docs/EXAMPLES.md'
-      - 'snippets/**'
-      - 'examples/**'
-      - 'scripts/sync-from-template.sh'
-      - 'scripts/apply-updates.sh'
-      - 'scripts/check-updates.sh'
-      - 'scripts/preflight-check.sh'
-      - 'scripts/pre-commit-security-check.sh'
-      - 'scripts/install-hooks.sh'
-      - '.gitignore'
-      - '.clineignore'
-      - '.cursorignore'
-      - '.copilotignore'
-      - '.github/copilot-instructions.md'
-      - 'README.md'
-      - 'database/seed/.gitkeep'
-      # Don't trigger on manifest itself (would cause loop)
-      
+    # Broad trigger; the manifest decides (see check-paths job). The bump
+    # commit itself carries [skip ci] so it cannot loop.
+    paths-ignore:
+      - '.template-version'
+
   workflow_dispatch:
     inputs:
       bump_type:
@@ -90,38 +69,103 @@ jobs:
             echo "⏭️ Skipping - this workflow only runs in the template repo (bayer-int/dd-template-repository)"
             exit 0
           fi
-          
+
           echo "should_run=true" >> $GITHUB_OUTPUT
-          echo "✅ Running in template repo - proceeding with version bump"
+          echo "✅ Running in template repo - proceeding"
 
   bump-version:
     name: Bump Version
     needs: check-repo
     if: needs.check-repo.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
+      - name: Check if changed files are platform files
+        id: platform-check
+        run: |
+          # Manual dispatch always bumps
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "platform_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual dispatch - bumping"
+            exit 0
+          fi
+
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE="${{ github.sha }}^"
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          echo "Changed files:"
+          echo "$CHANGED" | sed 's/^/  /'
+
+          # Collect synced paths from the manifest (auto_update + merge_update)
+          PATTERNS=$(awk '
+            /^auto_update:|^merge_update:/ { in_section=1; next }
+            /^[a-zA-Z_]+:/ && !/^auto_update:|^merge_update:/ { in_section=0 }
+            in_section && /^  - path:/ {
+              line=$0
+              sub(/^  - path:[[:space:]]*/, "", line)
+              gsub(/"/, "", line)
+              sub(/[[:space:]]*#.*$/, "", line)
+              print line
+            }' .template-manifest.yml)
+
+          PLATFORM_CHANGED=false
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            # Manifest edits (migrations, cleanup entries) must reach children
+            # too - they're read from the template ref, but only after a bump.
+            # The bump commit itself is [skip ci], so this cannot loop.
+            if [ "$file" = ".template-manifest.yml" ]; then
+              PLATFORM_CHANGED=true
+              continue
+            fi
+            while IFS= read -r pattern; do
+              [ -z "$pattern" ] && continue
+              case "$pattern" in
+                */) [ "${file#$pattern}" != "$file" ] && PLATFORM_CHANGED=true ;;
+                *)  [ "$file" = "$pattern" ] && PLATFORM_CHANGED=true ;;
+              esac
+            done <<< "$PATTERNS"
+          done <<< "$CHANGED"
+
+          echo "platform_changed=$PLATFORM_CHANGED" >> $GITHUB_OUTPUT
+          if [ "$PLATFORM_CHANGED" = "true" ]; then
+            echo "✅ Platform files changed - bumping version"
+          else
+            echo "⏭️ No manifest-covered files changed - skipping bump"
+          fi
+
+      - name: Check generated rule adapters are current
+        if: steps.platform-check.outputs.platform_changed == 'true'
+        run: |
+          if [ -f scripts/build-rule-adapters.js ]; then
+            node scripts/build-rule-adapters.js --check
+          fi
+
       - name: Get current version
+        if: steps.platform-check.outputs.platform_changed == 'true'
         id: current
         run: |
           VERSION=$(grep "^version:" .template-manifest.yml | head -1 | cut -d'"' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Current version: $VERSION"
-          
+
       - name: Calculate new version
+        if: steps.platform-check.outputs.platform_changed == 'true'
         id: version
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          
+
           BUMP_TYPE="${{ inputs.bump_type || 'patch' }}"
-          
+
           case $BUMP_TYPE in
             major)
               MAJOR=$((MAJOR + 1))
@@ -136,46 +180,56 @@ jobs:
               PATCH=$((PATCH + 1))
               ;;
           esac
-          
+
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "📦 New version: $NEW_VERSION"
-          
+
       - name: Update manifest version
+        if: steps.platform-check.outputs.platform_changed == 'true'
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
-          
+
           # Update version in .template-manifest.yml
           sed -i "s/^version: \".*\"/version: \"$NEW_VERSION\"/" .template-manifest.yml
-          
+
           # Update .template-version
           cat > .template-version << EOF
           # Template Version Tracker
           # DO NOT DELETE - helps keep your project up to date!
-          
+
           version: "$NEW_VERSION"
-          template_repo: "bayer-int/dd-template-repo"
+          template_repo: "bayer-int/dd-template-repository"
           EOF
-          
-      - name: Commit version bump
+
+      - name: Commit version bump and tag
+        if: steps.platform-check.outputs.platform_changed == 'true'
         run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Check if there are changes
+
           if [ -n "$(git status --porcelain)" ]; then
             git add .template-manifest.yml .template-version
-            git commit -m "chore: bump template version to ${{ steps.version.outputs.new_version }} [skip ci]"
+            git commit -m "chore: bump template version to $NEW_VERSION [skip ci]"
             git push
-            echo "✅ Version bumped to ${{ steps.version.outputs.new_version }}"
+
+            # Tag the bump commit - the engine uses template-v<version> tags to
+            # detect user-modified platform files in child repos
+            git tag -a "template-v$NEW_VERSION" -m "Template version $NEW_VERSION"
+            git push origin "template-v$NEW_VERSION"
+
+            echo "✅ Version bumped to $NEW_VERSION and tagged template-v$NEW_VERSION"
           else
             echo "⏭️ No version change needed"
           fi
-          
+
       - name: Summary
+        if: steps.platform-check.outputs.platform_changed == 'true'
         run: |
           echo "## 📦 Template Version Updated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**${{ steps.current.outputs.version }}** → **${{ steps.version.outputs.new_version }}**" >> $GITHUB_STEP_SUMMARY
+          echo "**${{ steps.current.outputs.version }}** → **${{ steps.version.outputs.new_version }}** (tagged \`template-v${{ steps.version.outputs.new_version }}\`)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Child repos will detect this update when they run \`template-sync.yml\`" >> $GITHUB_STEP_SUMMARY
+          echo "Child repos pick this up on next Codespace start or via \`template-sync.yml\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,10 @@
+---
+description: Build or change the backend API: Express/FastAPI/Actix starters, database connection, libraries, backend snippets
+globs: backend/**
+alwaysApply: false
+---
+
+@.platform-rules/scope-backend.md
+
+Follow `.platform-rules/scope-backend.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

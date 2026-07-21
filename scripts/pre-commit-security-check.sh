@@ -264,7 +264,7 @@ while IFS= read -r file; do
 
     # JS/TS: logging request body, headers, files, or secrets
     if echo "$content" | grep -qE 'console\.(log|info|debug|warn)\(.*req\.(body|headers|file[s]?)'; then
-        WARNED_FILES+=("$file|Logs request payload/headers/files — remove debug logging before committing. See .clinerules/18-security.md § Logging Restrictions.")
+        WARNED_FILES+=("$file|Logs request payload/headers/files — remove debug logging before committing. See .platform-rules/02-security.md.")
     fi
 
     # JS/TS: logging variables named password, secret, token, key
@@ -274,7 +274,7 @@ while IFS= read -r file; do
 
     # Python: logging request body, headers
     if echo "$content" | grep -qE '(print|logger\.\w+)\(.*request\.(body|headers|json|files)'; then
-        WARNED_FILES+=("$file|Logs request payload/headers — remove debug logging before committing. See .clinerules/18-security.md § Logging Restrictions.")
+        WARNED_FILES+=("$file|Logs request payload/headers — remove debug logging before committing. See .platform-rules/02-security.md.")
     fi
 
     # Python: logging variables named password, secret, token

@@ -32,11 +32,11 @@ USAGE (FastAPI):
 
     app = FastAPI()
 
-    @app.get("/api/graph/auth-start")
+    @app.get("/graph/auth-start")  # frontend calls /api/graph/... — the /api prefix is stripped in transit
     def auth_start(return_url: str):
         return RedirectResponse(url=auth_start_url(return_url), status_code=302)
 
-    @app.post("/api/graph/{operation:path}")
+    @app.post("/graph/{operation:path}")
     async def graph(operation: str, body: dict, x_platform_session: str = Header(...)):
         try:
             return await call_graph_proxy(operation, body, x_platform_session)

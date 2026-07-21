@@ -1,0 +1,9 @@
+---
+description: Keep docs/PROJECT_STATUS.md current after milestones so every session resumes with full context
+alwaysApply: false
+---
+
+@.platform-rules/reference/status-tracking.md
+
+Follow `.platform-rules/reference/status-tracking.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -1,0 +1,9 @@
+---
+description: Guide the user from session start through onboarding to understanding what they want to build
+alwaysApply: false
+---
+
+@.platform-rules/reference/journey.md
+
+Follow `.platform-rules/reference/journey.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -1,0 +1,10 @@
+---
+description: Add a vector database for embeddings, semantic search, or RAG: pgvector, ChromaDB, or Qdrant
+globs: vectordb/**
+alwaysApply: false
+---
+
+@.platform-rules/scope-vectordb.md
+
+Follow `.platform-rules/scope-vectordb.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

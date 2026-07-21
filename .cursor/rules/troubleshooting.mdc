@@ -1,0 +1,9 @@
+---
+description: Diagnose and fix a broken, erroring, or non-loading app for the user
+alwaysApply: false
+---
+
+@.platform-rules/reference/troubleshooting.md
+
+Follow `.platform-rules/reference/troubleshooting.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

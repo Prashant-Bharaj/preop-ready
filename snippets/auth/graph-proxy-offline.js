@@ -51,13 +51,13 @@
  *
  *   // 1. Enroll: call after an offline (&offline=1) sign-in. The frontend POSTs
  *   //    here with the X-Platform-Session header once it has a sid.
- *   app.post('/api/offline/enroll', async (req, res) => {
+ *   app.post('/offline/enroll', async (req, res) => {
  *     const sid = req.headers['x-platform-session']
  *     const { sub } = getUser(req)               // user id from ALB OIDC headers
  *     await enrollOffline(sub, sid)
  *     res.json({ ok: true })
  *   })
- *   app.post('/api/offline/unenroll', async (req, res) => {
+ *   app.post('/offline/unenroll', async (req, res) => {
  *     await deleteEnrollment(getUser(req).sub); res.json({ ok: true })
  *   })
  *

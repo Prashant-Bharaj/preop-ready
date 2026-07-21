@@ -1,0 +1,9 @@
+---
+description: Show the logged-in user, store per-user data, add roles/admin access, or fix silent failures after the 1-hour session expires
+alwaysApply: false
+---
+
+@.platform-rules/reference/user-identity.md
+
+Follow `.platform-rules/reference/user-identity.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

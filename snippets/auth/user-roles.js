@@ -29,9 +29,10 @@
  *   // Attach after userIdentityMiddleware (see user-identity.js)
  *   app.use('/auth', createUserRouter(pool));
  *
- *   // Protect routes
- *   app.use('/api', requireApproved(pool));
- *   app.get('/api/admin/stats', requireRole(pool, 'admin'), handler);
+ *   // Protect routes — NO /api prefix in backend paths (Traefik/nginx strip it
+ *   // before the request reaches the backend; frontend calls /api/admin/stats)
+ *   app.use(requireApproved(pool));            // gate everything below this line
+ *   app.get('/admin/stats', requireRole(pool, 'admin'), handler);
  *
  * RELATED:
  *   - snippets/auth/user-roles-schema.sql (database schema)

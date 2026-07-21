@@ -17,7 +17,7 @@
 
 > **This platform is approved for non-production, non-regulated, dummy or synthetic data only. Processing of Bayer Confidential, PII, PHI, or regulated datasets is explicitly prohibited without prior security review and ITLM approval for elevated data classification.**
 
-> For the full details, see `.clinerules/19-sensitive-files.md`.
+> For the full details, see `.platform-rules/reference/sensitive-files.md`.
 
 ---
 
