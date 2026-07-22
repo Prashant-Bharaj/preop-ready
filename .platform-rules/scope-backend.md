@@ -9,6 +9,7 @@ globs: ["backend/**"]
 Core rules (routing, ports, `/health`, security musts, secrets table) are in `.platform-rules/01-common.md` — this file adds backend depth only. Two-line recap:
 - Routes are defined WITHOUT `/api` (`app.get('/users')` ← frontend calls `/api/users`); backend listens on port 3000; `/health` is required.
 - ⛔ When EDITING or REWRITING an existing server file, re-verify every route before finishing — rewrites are where the `/api` prefix sneaks back in. This applies to middleware mounts too: `app.use('/users', requireApproved)`, never `app.use('/api', ...)` (that path never reaches the backend). Self-check: `grep -n "('/api" backend/*.js` must return nothing.
+- ⛔ Database migration files belong in `backend/migrations/NNN_*.sql` — they are backend code, executed by the runner inside this container. NEVER put them under `database/` (invisible to the backend, they'd silently never run). See `.platform-rules/scope-database.md`.
 - Every endpoint returns descriptive JSON errors with proper HTTP status codes — never plain text, never stack traces.
 
 ## Setup

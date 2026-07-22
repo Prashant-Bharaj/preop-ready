@@ -43,8 +43,13 @@
 const fs = require('fs');
 const path = require('path');
 
-// Directory containing ordered .sql migration files
-const MIGRATIONS_DIR = path.join(__dirname, '..', '..', 'migrations');
+// Directory containing ordered .sql migration files. Resolved from the
+// process working directory — the backend always starts in its own root
+// (container WORKDIR /app, or `cd backend && node ...` locally) — so this is
+// backend/migrations/ NO MATTER where this runner file was copied to.
+// ⛔ Migration files MUST live in backend/migrations/: the backend image only
+// contains backend/, so files in database/ or the repo root can NEVER run.
+const MIGRATIONS_DIR = path.join(process.cwd(), 'migrations');
 
 /**
  * Run all pending migrations, in filename order.
@@ -62,7 +67,12 @@ async function runMigrations(pool) {
   `);
 
   if (!fs.existsSync(MIGRATIONS_DIR)) {
-    return; // No migrations yet
+    // Loud, not silent: a missing dir usually means migration files were
+    // placed somewhere the backend cannot see (database/migrations/ or the
+    // repo root are NOT inside the backend image).
+    console.warn(`[migrations] No ${MIGRATIONS_DIR} directory — 0 migrations ran. ` +
+      'Migration .sql files must live in backend/migrations/.');
+    return;
   }
 
   // Ordered by filename: 001_..., 002_..., etc.

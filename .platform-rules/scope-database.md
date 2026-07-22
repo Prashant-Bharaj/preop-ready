@@ -6,6 +6,18 @@ globs: ["database/**"]
 
 # Database Rules
 
+⛔ **READ FIRST — where SQL files go. Getting this wrong breaks the app silently:**
+
+| SQL file | ONLY correct location | Runs |
+|----------|----------------------|------|
+| Initial schema | `database/init/*.sql` | ONCE, first boot of an empty volume — FROZEN after that |
+| Every schema change after first boot | `backend/migrations/NNN_*.sql` | Backend startup, via the runner |
+| Seed/test data (fake only) | `database/seed/` (gitignored) | Manually |
+
+**NEVER create `database/migrations/` or a repo-root `migrations/`** — migrations execute
+inside the backend container, whose image contains ONLY `backend/`; files anywhere else
+can never run, locally or deployed. Preflight fails the build on misplaced files.
+
 Core rules (`/data` persistence rule, protected files, auto-injected secrets) are in `.platform-rules/01-common.md` — this file adds database depth only.
 
 ## Setup
@@ -21,6 +33,7 @@ Vector search / embeddings do NOT go here — use `vectordb/` (see `.platform-ru
 
 - `database/init/*.sql` runs ONCE, when the data directory is empty (first deployment). Editing existing files OR adding new ones afterwards has NO effect — the directory is only read on that first boot. This includes the LOCAL docker volume: if `docker-compose up` has ever initialized the database, new init files silently never run.
 - ⛔ **Once the app has a running database, treat `database/init/` as FROZEN.** EVERY new table or column goes into `backend/migrations/NNN_*.sql` (runner: `snippets/config/db-migrations.js`) — even mid-build, even for a brand-new feature. After adding schema, PROVE it exists before writing code that uses it: `docker compose exec db psql -U postgres -c '\d <table>'`.
+- ⛔ **Migrations live in `backend/migrations/` and NOWHERE else** — not `database/migrations/`, not the repo root. The runner executes INSIDE the backend container, whose image contains only `backend/`; a migration file anywhere else is invisible to it and will NEVER run, locally or deployed. Preflight fails on misplaced migration files. The only `.sql` allowed under `database/` is `init/` (schema, first boot only) and `seed/` (gitignored fake data).
 - Use `CREATE TABLE IF NOT EXISTS ...` so local re-runs are safe.
 - ⛔ **Schema only** in `database/init/` — CREATE TABLE / INDEX statements, **no INSERT data rows**.
 - Seed data goes in `database/seed/` (gitignored) and must be obviously fake data.

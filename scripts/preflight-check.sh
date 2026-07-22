@@ -227,6 +227,30 @@ $API_PREFIX_HITS"
         pass "No /api-prefixed routes in backend code"
     fi
 
+    # Migration files outside backend/migrations/ can NEVER run: the backend
+    # image contains only backend/, so database/migrations/ or a repo-root
+    # migrations/ dir are invisible to the runner (locally AND deployed).
+    MISPLACED_MIGRATIONS=$(find database migrations -name "*.sql" -type f 2>/dev/null \
+        | grep -vE "^database/(init|seed)/" || true)
+    if [[ -n "$MISPLACED_MIGRATIONS" ]]; then
+        fail "Migration .sql files outside backend/migrations/ — the backend container cannot see them, they will NEVER run:
+$MISPLACED_MIGRATIONS" \
+             "Move them: mkdir -p backend/migrations && git mv <file> backend/migrations/ — then rebuild: docker compose up -d --build backend"
+    else
+        pass "No misplaced migration files"
+    fi
+
+    # Migration files exist but no runner wired = they also never run
+    if compgen -G "backend/migrations/*.sql" > /dev/null; then
+        if grep -rqE "runMigrations|run_migrations" backend --include="*.js" --include="*.py" \
+             --exclude-dir=node_modules --exclude-dir=migrations 2>/dev/null; then
+            pass "Migration runner is wired into the backend"
+        else
+            fail "backend/migrations/ has .sql files but no runner is wired into the backend code" \
+                 "Copy snippets/config/db-migrations.js to backend/db/migrations.js and call runMigrations(pool) at startup"
+        fi
+    fi
+
     # Check Dockerfile has non-root user
     if [[ -f "backend/Dockerfile" ]]; then
         if grep -qE "USER (appuser|node|python|rust|app)" backend/Dockerfile; then

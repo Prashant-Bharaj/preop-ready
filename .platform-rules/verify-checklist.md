@@ -26,6 +26,8 @@ All four must agree on postgres vs mysql:
 - [ ] `database/Dockerfile` copied from the matching template (`Dockerfile.postgres` or `Dockerfile.mysql`)
 - [ ] `database/init/init.sql` syntax matches (e.g., `SERIAL`/`JSONB` = postgres; `AUTO_INCREMENT`/`ENGINE=` = mysql)
 - [ ] Every table the backend queries ACTUALLY EXISTS in the running DB: `docker compose exec db psql -U postgres -c '\dt'` — schema added to `database/init/` after the volume initialized never ran; move it to `backend/migrations/`
+- [ ] `find database migrations -name "*.sql" | grep -vE "^database/(init|seed)/"` returns nothing — migration files anywhere except `backend/migrations/` can never execute (the backend image only contains `backend/`)
+- [ ] If `backend/migrations/*.sql` exist: the runner is wired (`grep -r runMigrations backend --include="*.js" --exclude-dir=node_modules --exclude-dir=migrations` hits) and the startup log of the CURRENT boot shows the expected `Running migration:` lines
 - [ ] docker-compose env vars match (`POSTGRES_*` vs `MYSQL_*`) and port matches (5432 vs 3306)
 - [ ] Backend uses the matching client library (`pg` vs `mysql2`; `asyncpg` vs `aiomysql`)
 

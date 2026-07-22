@@ -36,12 +36,18 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 frontend/    nginx static (port 8080) — Dockerfile, nginx.conf (prod, no proxy),
              nginx.local.conf (local dev, proxies /api → backend:3000)
 backend/     Express / FastAPI / Flask / Actix (port 3000) — Dockerfile
-database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema), seed/ (gitignored)
+             migrations/ ← ALL schema changes after first boot live HERE
+database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema, first boot
+             ONLY), seed/ (gitignored) — ⛔ NO other .sql anywhere under database/
 vectordb/    pgvector / Chroma / Qdrant (optional, independent) — Dockerfile, init/
 docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend's default.conf
 ```
 
 Service names in docker-compose must stay `frontend`, `backend`, `db`/`database`, `vectordb`.
+
+⛔ **Database migrations are BACKEND code**: `backend/migrations/NNN_*.sql`, executed by
+the runner inside the backend container — which contains ONLY `backend/`. A migration
+file under `database/` or the repo root is invisible to it and will NEVER run.
 
 ## Environment Variables
 
