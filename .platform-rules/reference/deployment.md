@@ -38,6 +38,10 @@ git push
 
 Then: deployment takes **3–5 minutes**; progress is under GitHub repo → Actions tab. When done: "Your app is live at `https://<repo-name>.vibe.intranet.cnb` (Bayer VPN needed) — share it with your team!" Updates use the same flow: change code, preflight, push again.
 
+⛔ docker-compose plays NO role in deployment — production builds the Dockerfiles into
+ECS tasks and wires them itself (Traefik, EFS, injected env). `docker-compose up` is how
+you TEST locally, never how you deploy, and compose-only env vars don't exist in production.
+
 ## Pre-Deployment Checklist (condensed)
 
 - **Structure:** `frontend/Dockerfile` + `nginx.conf` (NO proxy_pass) + `nginx.local.conf` (WITH proxy_pass, mounted in docker-compose) if frontend; `backend/Dockerfile` if backend; `database/Dockerfile` if DB; `.github/workflows/deploy.yml` present

@@ -6,6 +6,19 @@ globs: ["docker-compose.yml", "frontend/nginx*.conf"]
 
 # Integration Rules
 
+⛔ **docker-compose.yml is LOCAL DEV ONLY.** Production ignores it entirely — the platform
+builds the Dockerfiles into ECS tasks and wires them itself. Never tell the user a compose
+change affects the deployed app, and never "deploy" with `docker-compose up`. What replaces
+what:
+
+| Locally (docker-compose) | In production (platform) |
+|--------------------------|--------------------------|
+| `nginx.local.conf` proxies `/api` → backend | Traefik routes and strips `/api` |
+| `env_file: [.env]` / `environment:` | GitHub Secrets (`APP_*`) + auto-injected `DATABASE_*`/`VECTORDB_*` |
+| named volumes (`db-data:/data`) | EFS mounted at `/data` |
+| `depends_on` ordering | ECS service orchestration + health checks |
+| `docker-compose up --build` | `git push` (deploy workflow) |
+
 Core rules (routing, ports, `/health`, nginx server-block-only format) are in `.platform-rules/01-common.md` — this file covers how the services fit together.
 
 ## docker-compose.yml per Architecture

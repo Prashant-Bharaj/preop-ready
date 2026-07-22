@@ -125,6 +125,14 @@ Service names in docker-compose must stay `frontend`, `backend`, `db`/`database`
 the runner inside the backend container — which contains ONLY `backend/`. A migration
 file under `database/` or the repo root is invisible to it and will NEVER run.
 
+⛔ **docker-compose.yml is LOCAL DEV ONLY — it plays ZERO role in production.**
+Production runs on ECS, built from the Dockerfiles, wired by the platform (Traefik
+routing, EFS volumes, injected env). NOTHING in docker-compose — services, environment,
+ports, volumes, depends_on — affects the deployed app. Deploying is `git push`, never
+`docker-compose up`. Production env comes from GitHub Secrets (`APP_*`) and auto-injected
+`DATABASE_*`/`VECTORDB_*` — a variable that only exists in docker-compose is undefined
+in production.
+
 ## Environment Variables
 
 **Secrets: FIXED list of exactly 10** — set as GitHub Secrets with `APP_` prefix; the prefix is
