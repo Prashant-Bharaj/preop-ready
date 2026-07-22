@@ -26,6 +26,8 @@ auto_update:
     description: "Template sync workflow (enables pull-based updates)"
   - path: ".github/workflows/dependabot-auto-merge.yml"
     description: "Auto-merge patch/minor Dependabot PRs after CI passes"
+  - path: ".github/dependabot.yml"
+    description: "Dependabot cadence: weekly grouped updates with cooldown (no per-push PR bursts)"
     
   # Frontend Dockerfile templates
   - path: "frontend/Dockerfile.vanilla"
@@ -147,6 +149,8 @@ auto_update:
     description: "AI-driven version check script (machine-readable output)"
   - path: "scripts/preflight-check.sh"
     description: "Pre-deployment validation checks"
+  - path: "scripts/check-dependabot-prs.sh"
+    description: "Codespace-start Dependabot handler: auto-merge green patch/minor, surface majors"
 
 # -----------------------------------------------------------------------------
 # Files to merge intelligently

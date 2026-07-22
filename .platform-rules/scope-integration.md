@@ -12,8 +12,19 @@ Core rules (routing, ports, `/health`, nginx server-block-only format) are in `.
 
 **Full-stack** (frontend + backend + database):
 
+⛔ NEVER put credentials directly in docker-compose.yml (it is tracked in git). All
+credential values live in a gitignored `.env` next to docker-compose.yml — compose
+loads it via `env_file:` and `${VAR}` substitution. Create it once:
+
+```bash
+cat > .env << 'EOF'
+DATABASE_NAME=myapp
+DATABASE_USER=myapp_user
+DATABASE_PASSWORD=localdev123
+EOF
+```
+
 ```yaml
-version: '3.8'
 services:
   frontend:
     build: ./frontend
@@ -24,19 +35,17 @@ services:
   backend:
     build: ./backend
     ports: ["3000:3000"]
+    env_file: [.env]
     environment:
       - PORT=3000
       - DATABASE_HOST=database          # MUST equal the db service name below
-      - DATABASE_NAME=myapp
-      - DATABASE_USER=myapp_user
-      - DATABASE_PASSWORD=localdev123
     depends_on: [database]
   database:
     build: ./database
     environment:
-      POSTGRES_DB: myapp                # MySQL instead: MYSQL_DATABASE/_USER/_PASSWORD/_ROOT_PASSWORD
-      POSTGRES_USER: myapp_user
-      POSTGRES_PASSWORD: localdev123
+      POSTGRES_DB: ${DATABASE_NAME}     # MySQL instead: MYSQL_DATABASE/_USER/_PASSWORD/_ROOT_PASSWORD
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes: [db-data:/data]
   # Optional vector DB (independent service):
   # vectordb:
@@ -44,19 +53,22 @@ services:
   #   environment:                      # pgvector only; Chroma/Qdrant need no env vars
   #     POSTGRES_DB: vectors
   #     POSTGRES_USER: vectordb_user
-  #     POSTGRES_PASSWORD: localdev123
+  #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
   #   volumes: [vectordb-data:/data]
 volumes:
   db-data:
   # vectordb-data:
 ```
 
+(Compose reads `${...}` values from the `.env` file automatically; the backend gets them
+via `env_file:`. The values are dev-only fakes, but the PATTERN must be env_file — a
+tracked compose file with literal credentials teaches the wrong habit and fails preflight.)
+
 **Frontend + backend** (no database): delete the `database` service, the backend's `depends_on: [database]` and `DATABASE_*` env vars, and the `volumes:` block.
 
 **Frontend-only**:
 
 ```yaml
-version: '3.8'
 services:
   frontend:
     build: ./frontend

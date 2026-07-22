@@ -1,0 +1,68 @@
+# =============================================================================
+# Dependabot configuration
+# =============================================================================
+# Without this file, org-level Dependabot opens PRs immediately and one-by-one
+# whenever a pushed manifest matches an advisory. This config batches the noise:
+#   - version updates: WEEKLY, one grouped PR per ecosystem, 7-day cooldown
+#     (a fresh release must be a week old before it's proposed)
+#   - security updates: still open as soon as detected (that's the point),
+#     but grouped into a single PR instead of one per package
+# Patch/minor PRs are then handled by dependabot-auto-merge.yml after CI.
+# =============================================================================
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directories:
+      - "/backend"
+      - "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    groups:
+      npm-all:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    groups:
+      pip-all:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      pip-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/frontend"
+      - "/backend"
+      - "/database"
+      - "/vectordb"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 2
+    groups:
+      docker-all:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2

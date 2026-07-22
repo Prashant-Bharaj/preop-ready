@@ -118,15 +118,14 @@ elif [ -s "$CONFIG" ]; then
 else
   cat <<'BANNER'
 
-  ┌────────────────────────────────────────────────────────────────┐
+  ┌──────────────────────────────────────────────────────────────────┐
   │  Claude Code is installed but not yet connected to myGenAssist.  │
   │                                                                  │
-  │  Run this once to paste your key and connect:                    │
+  │  ➜  OPEN A NEW TERMINAL — it will ask for your key by itself.    │
   │                                                                  │
-  │      mga-login                                                   │
-  │                                                                  │
-  │  (equivalently: bash .devcontainer/mga-login.sh)                 │
-  └────────────────────────────────────────────────────────────────┘
+  │  (or connect right here, in this terminal:                       │
+  │       bash .devcontainer/mga-login.sh )                          │
+  └──────────────────────────────────────────────────────────────────┘
 
 BANNER
   exit 0

@@ -25,6 +25,16 @@ Run in order, silently — never narrate these steps:
 | `UP_TO_DATE` or `CHECK_FAILED` | Don't mention updates |
 | `UPDATE_AVAILABLE\|old\|new` | Offer the update in your greeting |
 
+5. **Dependabot PRs:** `./scripts/check-dependabot-prs.sh` (safe: auto-merges only green
+   patch/minor, never majors). The startup flow then fast-forwards the default branch so
+   the working tree already contains merged updates. In your greeting:
+   - items under "Needs attention" → mention them, offer to review together (majors need
+     the user's decision)
+   - "Dependencies changed" was printed → remind that the next local test needs
+     `docker compose build --no-cache`
+   - "Could not fast-forward" was printed → offer to help sync (stash/rebase) before
+     any other work.
+
 5. **Read status:** `cat docs/PROJECT_STATUS.md 2>/dev/null`. Project Idea = `_Awaiting user input_` → **NEW** user; anything else → **RETURNING**. A fresh file with defaults is still NEW — never say "Welcome back" to a new user.
 
 ### Update flow (if user accepts)
