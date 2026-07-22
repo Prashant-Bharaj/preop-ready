@@ -77,8 +77,15 @@ if git remote get-url template >/dev/null 2>&1; then
 else
     git remote add template "$TEMPLATE_URL" 2>/dev/null || true
 fi
-git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_REF}" 2>/dev/null \
-    || fail "Could not fetch template (git)"
+if ! git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_REF}" 2>/dev/null; then
+    echo "Could not fetch the template repo (${TEMPLATE_REPO})."
+    echo "This usually means your current credentials lack read access to it."
+    echo "Fix: authenticate as yourself, then re-run this script:"
+    echo "    gh auth login --web --hostname github.com"
+    echo "    gh auth setup-git"
+    echo "    bash scripts/apply-updates.sh"
+    fail "Could not fetch template (git)"
+fi
 # Version tags enable user-modified detection; older templates have none.
 git fetch -q template '+refs/tags/template-v*:refs/tags/template-v*' 2>/dev/null || true
 
