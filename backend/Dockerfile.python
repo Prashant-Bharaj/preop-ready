@@ -4,7 +4,7 @@
 # Runs as non-root user for defense in depth
 # ============================================================================
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # ============================================
 # SECURITY: Create non-root user
