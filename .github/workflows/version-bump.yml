@@ -199,6 +199,7 @@ jobs:
           # DO NOT DELETE - helps keep your project up to date!
 
           version: "$NEW_VERSION"
+          migrations_applied: "$NEW_VERSION"
           template_repo: "bayer-int/dd-template-repository"
           EOF
 
