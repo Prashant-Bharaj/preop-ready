@@ -2,19 +2,6 @@
   "name": "Vibe Hackathon Dev Environment",
 
   "customizations": {
-    // Grant the Codespace token READ access to the template repo — without
-    // this, template sync (git fetch of dd-template-repository) 403s in
-    // Codespaces whose token is scoped to the project repo only. The user
-    // approves this once when creating the Codespace.
-    "codespaces": {
-      "repositories": {
-        "bayer-int/dd-template-repository": {
-          "permissions": {
-            "contents": "read"
-          }
-        }
-      }
-    },
     "vscode": {
       "extensions": [
         // ✨ Auto-formatting - Makes your code look pretty automatically

@@ -10,6 +10,8 @@ globs: []
 public LLM endpoints (`api.openai.com`, Azure OpenAI, Anthropic, Gemini, ...) from an app —
 public endpoints are unreachable/unapproved, and app data must stay inside Bayer. The MGA
 API is OpenAI-compatible, so OpenAI SDKs work by pointing `baseURL` at MGA.
+This includes FALLBACKS: `endpoint || 'https://api.openai.com/v1'` is forbidden — a
+missing endpoint config degrades to the mock response, never to a public API.
 
 ## Setup (same for every capability)
 

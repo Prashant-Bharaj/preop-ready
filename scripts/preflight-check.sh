@@ -227,6 +227,19 @@ $API_PREFIX_HITS"
         pass "No /api-prefixed routes in backend code"
     fi
 
+    # Hardcoded secret-shaped literals in app code (incl. sneaky || 'sk-...'
+    # fallbacks). Conservative patterns to avoid false positives.
+    SECRET_LITERALS=$(grep -rnE "['\"](sk-|mga-|ghp_|gho_|github_pat_)[A-Za-z0-9_-]{5,}['\"]" \
+        backend frontend --include="*.js" --include="*.py" --include="*.html" \
+        --exclude-dir=node_modules 2>/dev/null || true)
+    if [[ -n "$SECRET_LITERALS" ]]; then
+        fail "Hardcoded API-key-shaped literals in app code (fallback defaults count too):
+$SECRET_LITERALS" \
+             "Remove the literal; use process.env.X / os.getenv(\"X\") with the APP_* GitHub secret flow. Missing config must degrade to a mock, never to a hardcoded key."
+    else
+        pass "No hardcoded API-key literals in app code"
+    fi
+
     # Migration files outside backend/migrations/ can NEVER run: the backend
     # image contains only backend/, so database/migrations/ or a repo-root
     # migrations/ dir are invisible to the runner (locally AND deployed).

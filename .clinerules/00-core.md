@@ -64,7 +64,10 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 3. **NEVER copy real data** from `context/` files into any tracked file — no INSERTs, fixtures,
    comments, or "anonymized" versions. Read structure only; generate obviously fake equivalents.
 4. **NEVER use `git add .` / `-A`** — always stage specific files by name.
-5. **NEVER hardcode secrets** — use `process.env.X` / `os.getenv("X")`. No secrets in
+5. **NEVER hardcode secrets — including as fallbacks/defaults.**
+   `apiKey: process.env.API_KEY || 'sk-...'` IS a hardcoded secret; so is
+   `os.getenv("KEY") or "sk-..."`. "It's only a hackathon" changes nothing —
+   refuse and use the env/secret flow. Use `process.env.X` / `os.getenv("X")`. No secrets in
    `docker-compose.yml` either; use `env_file` pointing at gitignored `.env`.
 6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows.
 7. **Seed/test data goes in `database/seed/`** (gitignored) — always obviously fake values
