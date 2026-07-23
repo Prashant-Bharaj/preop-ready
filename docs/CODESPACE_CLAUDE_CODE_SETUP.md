@@ -35,9 +35,18 @@ or a key rotation).
 
 ## Optional: zero-touch via a secret
 
-For central/org provisioning, set a Codespaces secret named **`MYGENASSIST_API_KEY`**
-(org or account → Settings → Secrets and variables → Codespaces). If present, the Codespace
-wires up with no prompt at all.
+Set a Codespaces **user secret** named **`MYGENASSIST_API_KEY`** and the Codespace wires up
+with no prompt at all. Two steps, both on github.com → your **Settings → Codespaces**:
+
+1. **Create the secret** (`MYGENASSIST_API_KEY` = your `mga-...` key) — once, ever.
+2. **Grant it repository access**: open the secret → *Repository access* → add your repo →
+   **Save changes**. Repeat this step for each new repo you create from the template.
+
+⚠️ The **"Associate with repository?" checkbox on the codespace-create screen does NOT work
+reliably** — it can silently fail to save the association (the Codespace then starts without
+the key and prompts for it). Always grant access via the settings page instead. If a running
+Codespace is missing the key, fix the access there, then **stop and restart** the Codespace —
+secrets are injected on start, no rebuild needed.
 
 > Why a shell hook and not a devcontainer task? Lifecycle hooks (`onCreate`/`postStart`) run
 > without a terminal, so they can't prompt. A `folderOpen` VS Code task *can*, but VS Code makes
