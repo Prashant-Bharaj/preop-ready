@@ -1,6 +1,6 @@
 # Template Version Tracker
 # DO NOT DELETE - helps keep your project up to date!
 
-version: "1.4.7"
-migrations_applied: "1.4.7"
+version: "1.4.8"
+migrations_applied: "1.4.8"
 template_repo: "bayer-int/dd-template-repository"
