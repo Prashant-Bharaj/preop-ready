@@ -17,6 +17,7 @@
 | deploy, go live, push, production, is my site live, make it live, publish | `.platform-rules/reference/deployment.md` |
 | upload, import file, CSV, PDF, save files, share a file with you, analyze this file | `.platform-rules/reference/file-handling.md` |
 | session start, new user, welcome, what should we build, migrated code, getting started, start a project | `.platform-rules/reference/journey.md` |
+| SharePoint, OneDrive, Teams, calendar, Outlook, read my mail, send an email to a colleague, free/busy, people search, org chart, my manager, Graph API, Microsoft 365, M365, meeting | `.platform-rules/reference/microsoft-365.md` |
 | API key, secret, env var, .env, password, connect external API, M2M, call my API from a script | `.platform-rules/reference/secrets-and-keys.md` |
 | seed data, test data, real data, gitignore, env file, credentials | `.platform-rules/reference/sensitive-files.md` |
 | after any milestone, update status, project status | `.platform-rules/reference/status-tracking.md` |

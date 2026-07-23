@@ -1,0 +1,9 @@
+---
+description: Connect to Microsoft 365 via the platform Graph proxy: SharePoint/OneDrive files, Outlook calendar and free/busy, mail, Teams chats, people search, org chart, meetings — plus unattended/cron access
+alwaysApply: false
+---
+
+@.platform-rules/reference/microsoft-365.md
+
+Follow `.platform-rules/reference/microsoft-365.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.
