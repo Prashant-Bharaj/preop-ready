@@ -21,7 +21,9 @@
 #   - Ends with "UPDATE_FAILED|<reason>" on failure
 #
 # How it works (state convergence, not patch application):
-#   1. Fetch the template repo as a git remote (works where gh-api 403s).
+#   1. Fetch the template repo as a git remote (works where gh-api 403s), then
+#      pin the ref to the template-v<version> release TAG — everything below is
+#      read AND executed from it, so it must not be a moving branch.
 #   2. Self-upgrade: if this script differs from the template's copy, re-exec
 #      the template's copy. Every child always runs the CURRENT engine
 #      against the CURRENT manifest, no matter how old the child is.
@@ -50,9 +52,16 @@ TEMPLATE_REPO="bayer-int/dd-template-repository"
 # Env overrides exist for the template repo's own test harness only.
 TEMPLATE_URL="${TEMPLATE_URL:-https://github.com/${TEMPLATE_REPO}.git}"
 TEMPLATE_BRANCH="${TEMPLATE_BRANCH:-master}"
-TEMPLATE_REF="template/${TEMPLATE_BRANCH}"
+TEMPLATE_BRANCH_REF="template/${TEMPLATE_BRANCH}"
+# Provisional — repointed at the release tag in step 1b, before anything is
+# read or executed from it.
+TEMPLATE_REF="$TEMPLATE_BRANCH_REF"
 MANIFEST_FILE=".template-manifest.yml"
 BACKUP_ROOT=".template-backup"
+
+extract_version() {
+    echo "$1" | grep "^version:" | head -1 | sed 's/version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' | tr -d '[:space:]'
+}
 
 MODE="silent"
 case "${1:-}" in
@@ -77,7 +86,7 @@ if git remote get-url template >/dev/null 2>&1; then
 else
     git remote add template "$TEMPLATE_URL" 2>/dev/null || true
 fi
-if ! git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_REF}" 2>/dev/null; then
+if ! git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_BRANCH_REF}" 2>/dev/null; then
     echo "Could not fetch the template repo (${TEMPLATE_REPO})."
     echo "In Codespaces this is expected sometimes: the built-in token only sees THIS"
     echo "repo, and it also OVERRIDES gh logins. Fix (one-time per Codespace) — use"
@@ -90,6 +99,41 @@ if ! git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLA
 fi
 # Version tags enable user-modified detection; older templates have none.
 git fetch -q template '+refs/tags/template-v*:refs/tags/template-v*' 2>/dev/null || true
+
+# ------------------------------------------------------------------------------
+# 1b. Pin the template ref to the release tag
+#
+# Everything below is READ AND EXECUTED from ${TEMPLATE_REF}: the engine
+# re-execs the template's own copy of THIS script, and `run:` migration steps
+# are piped straight into bash. Anchoring that on a mutable branch means every
+# child repo runs whatever happens to be on ${TEMPLATE_BRANCH} at the moment it
+# fires — unattended, and in CI with contents: write.
+#
+# So: read the target version off the branch manifest (a version string —
+# nothing is executed yet), then repoint the ref at the matching
+# template-v<version> tag. Same tags version-bump.yml already creates and the
+# engine already uses as the user-modification baseline.
+#
+# LIMITS — this is a speed bump, not a signature check:
+#   * The tags are UNSIGNED, and movable by anyone who can push tags.
+#   * If the manifest names a version with no tag yet (the window between the
+#     bump commit and the tag push, or a template that predates tagging) we
+#     fall back to the branch and print it.
+#   Branch protection plus mandatory review on the template repo therefore
+#   remain a load-bearing security control, not a nice-to-have.
+#
+# TEMPLATE_ALLOW_UNPINNED=1 disables pinning — template's own test harness only.
+# ------------------------------------------------------------------------------
+if [ "${TEMPLATE_ALLOW_UNPINNED:-0}" = "1" ]; then
+    echo "Note: TEMPLATE_ALLOW_UNPINNED=1 — reading from ${TEMPLATE_BRANCH} (unpinned)."
+else
+    TARGET_VERSION=$(extract_version "$(git show "${TEMPLATE_BRANCH_REF}:${MANIFEST_FILE}" 2>/dev/null)")
+    if [ -n "$TARGET_VERSION" ] && git rev-parse -q --verify "refs/tags/template-v${TARGET_VERSION}" >/dev/null 2>&1; then
+        TEMPLATE_REF="template-v${TARGET_VERSION}"
+    else
+        echo "Note: no template-v${TARGET_VERSION:-?} tag in the template — falling back to the ${TEMPLATE_BRANCH} branch."
+    fi
+fi
 
 # ------------------------------------------------------------------------------
 # 2. Self-upgrade: always run the template's current engine
@@ -108,12 +152,10 @@ fi
 # ------------------------------------------------------------------------------
 # 3. Versions
 # ------------------------------------------------------------------------------
+# Re-read from the PINNED ref so the manifest and the files/scripts we act on
+# come from the same commit.
 MANIFEST=$(git show "${TEMPLATE_REF}:${MANIFEST_FILE}" 2>/dev/null) \
     || fail "Could not read manifest from template"
-
-extract_version() {
-    echo "$1" | grep "^version:" | head -1 | sed 's/version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' | tr -d '[:space:]'
-}
 
 LATEST_VERSION=$(extract_version "$MANIFEST")
 [ -n "$LATEST_VERSION" ] || fail "Could not determine template version"
