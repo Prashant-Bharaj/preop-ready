@@ -71,11 +71,11 @@
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
   "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh",
 
-  "forwardPorts": [3000, 5050, 5173, 8080, 8888],
+  // 3000 backend · 5173 Vite dev server · 8080 frontend (nginx)
+  // 5050/8888 were the removed chat/ app — deleted by the manifest cleanup.
+  "forwardPorts": [3000, 5173, 8080],
 
   "portsAttributes": {
-    "8888": { "label": "Chat UI", "onAutoForward": "openBrowser" },
-    "5050": { "label": "Runner API", "onAutoForward": "silent" },
     "3456": { "label": "Claude Code Router", "onAutoForward": "silent" }
   }
 }

@@ -140,6 +140,38 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
+          # Build the explicit staging helper used by the commit/PR steps below.
+          #
+          # `git add -A` is banned by the platform's own rules (and enforced for
+          # users by scripts/pre-commit-security-check.sh): it sweeps up whatever
+          # else happens to be sitting in the working tree — a .env a previous
+          # step wrote, context/ files, .template-backup/ — into a commit that is
+          # frequently auto-merged. Stage exactly the paths the sync touched, and
+          # refuse the sensitive ones outright.
+          cat > "$RUNNER_TEMP/stage-sync-changes.sh" <<'HELPER'
+          stage_sync_changes() {
+            local entry path n=0
+            while IFS= read -r -d '' entry; do
+              path="${entry:3}"
+              case "${entry:0:2}" in
+                R*|C*) echo "  skipped (rename/copy — the engine never produces these): $path"; continue ;;
+              esac
+              case "$path" in
+                .env|.env.*|*/.env|*/.env.*)          echo "  skipped (deny-list): $path"; continue ;;
+                context/|context/*)                   echo "  skipped (deny-list): $path"; continue ;;
+                .template-backup/|.template-backup/*) echo "  skipped (deny-list): $path"; continue ;;
+              esac
+              git add -- "$path"
+              echo "  staged: $path"
+              n=$((n + 1))
+            # -uall is load-bearing: without it git reports a wholly-untracked
+            # directory as one entry ("?? backend/") and staging that would
+            # sweep in a backend/.env the deny-list never got to see.
+            done < <(git status --porcelain -z -uall)
+            echo "Staged $n path(s)."
+          }
+          HELPER
+
           if [ -n "$(git status --porcelain)" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "📝 Changes detected:"
@@ -152,10 +184,16 @@ jobs:
       - name: Commit directly (if configured)
         if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
         run: |
+          source "$RUNNER_TEMP/stage-sync-changes.sh"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add -A
+          stage_sync_changes
+          if git diff --cached --quiet; then
+            echo "⏭️ Nothing left to commit after the deny-list — skipping."
+            exit 0
+          fi
           git commit -m "chore: sync platform files from template v${{ steps.run-engine.outputs.new_version }}"
           git push
 
@@ -167,6 +205,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          source "$RUNNER_TEMP/stage-sync-changes.sh"
+
           TEMPLATE="${{ steps.run-engine.outputs.new_version }}"
           BRANCH="template-sync/v$TEMPLATE"
 
@@ -191,14 +231,14 @@ jobs:
           if [ -n "$EXISTING_PR" ]; then
             echo "📝 Updating existing PR #$EXISTING_PR..."
             git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH"
-            git add -A
+            stage_sync_changes
             git commit -m "chore: update platform files to v$TEMPLATE" --allow-empty
             git push --force origin "$BRANCH"
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
           else
             echo "📝 Creating new PR..."
             git checkout -b "$BRANCH"
-            git add -A
+            stage_sync_changes
             git commit -m "chore: sync platform files from template v$TEMPLATE"
             git push -u origin "$BRANCH"
 
