@@ -135,13 +135,18 @@ fi
 # Without them CCR cannot resolve the default model and every request
 # crashes in ImageAgent.shouldHandle ("Cannot read properties of
 # undefined (reading 'image')"). Do not remove them.
+#
+# LOG_LEVEL stays at "info". At "debug" CCR writes full request and response
+# bodies to disk — i.e. every prompt, every file the assistant reads and every
+# code fragment it writes, in cleartext, in a file that outlives the session.
+# Only raise it temporarily while debugging the router itself.
 mkdir -p "$CCR_DIR/plugins"
 
 if [ "$WRITE_CONFIG" = "1" ]; then
   cat > "$CONFIG" <<EOF
 {
   "LOG": true,
-  "LOG_LEVEL": "debug",
+  "LOG_LEVEL": "info",
   "OPENAI_API_KEY": "${MYGENASSIST_API_KEY}",
   "OPENAI_BASE_URL": "${MGA_BASE}",
   "OPENAI_MODEL": "claude-sonnet-5",
@@ -211,12 +216,39 @@ module.exports = async function router(req, config) {
 EOF
 
 # ─── 8. Start the router daemon ─────────────────────────────────────
-# TLS override scoped to the daemon (the Codespace reaches Bayer directly;
-# this is belt-and-suspenders for internal-CA certs).
+# TLS trust for the daemon. CCR carries the myGenAssist API key and every
+# prompt/code fragment to chat.int.bayer.com, so its TLS verification must
+# stay ON. Bayer terminates TLS with an internal CA, so Node is pointed at the
+# system trust store (which the Codespace image already has the CA in) via
+# NODE_EXTRA_CA_CERTS — it ADDS roots, it does not replace them.
+#
+# ⛔ Never NODE_TLS_REJECT_UNAUTHORIZED=0 here: that disables verification
+#    outright, so anything on the path can present its own certificate and
+#    read the key and the code being sent.
+CA_BUNDLE=""
+for _ca in \
+  "${NODE_EXTRA_CA_CERTS:-}" \
+  /etc/ssl/certs/ca-certificates.crt \
+  /etc/pki/tls/certs/ca-bundle.crt \
+  /etc/ssl/cert.pem
+do
+  if [ -n "$_ca" ] && [ -r "$_ca" ]; then CA_BUNDLE="$_ca"; break; fi
+done
+unset _ca
+
 if command -v ccr &>/dev/null; then
+  if [ -n "$CA_BUNDLE" ]; then
+    export NODE_EXTRA_CA_CERTS="$CA_BUNDLE"
+  else
+    # No system bundle: fall back to Node's built-in roots, still verifying.
+    unset NODE_EXTRA_CA_CERTS
+    echo "⚠️  No system CA bundle found — starting with Node's built-in roots."
+    echo "   If the router reports a certificate error, point it at your CA:"
+    echo "     export NODE_EXTRA_CA_CERTS=/path/to/bayer-ca.pem"
+    echo "     bash .devcontainer/setup-claude-router.sh"
+  fi
   echo "🚀 Starting claude-code-router..."
-  NODE_TLS_REJECT_UNAUTHORIZED=0 ccr restart >/dev/null 2>&1 \
-    || NODE_TLS_REJECT_UNAUTHORIZED=0 ccr start >/dev/null 2>&1
+  ccr restart >/dev/null 2>&1 || ccr start >/dev/null 2>&1
   sleep 1
   if ccr status 2>/dev/null | grep -qi running; then
     echo "✅ Router running on http://127.0.0.1:3456 — Claude Code is ready."
