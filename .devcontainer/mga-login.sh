@@ -7,6 +7,11 @@
 #   mga-login                        (alias registered by setup-claude-router.sh)
 #   bash .devcontainer/mga-login.sh  (equivalent)
 
+# Fail fast — this script handles an API key. The read loop below is the only
+# place a non-zero status is expected, and it sits in a `while` condition,
+# which set -e does not act on.
+set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Read the key with '*' masking. Plain `read -s` shows nothing at all, which

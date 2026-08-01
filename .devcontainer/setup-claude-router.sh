@@ -17,25 +17,45 @@
 # ║  Idempotent — safe to re-run. Runs on onCreate + postStart.        ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
+# Fail fast: this script writes an API key to disk and starts a daemon that
+# talks to Bayer. Silently continuing past a failed step leaves a half-wired
+# Codespace that is harder to diagnose than a clean stop. Every step where
+# failure is EXPECTED (optional tooling, a daemon that may already be dead)
+# handles its own status explicitly below.
+set -euo pipefail
+
 CCR_VERSION="2.0.0"
+CLAUDE_CODE_VERSION="2.1.220"
 CCR_DIR="$HOME/.claude-code-router"
 CLAUDE_DIR="$HOME/.claude"
 CONFIG="$CCR_DIR/config.json"
 MGA_BASE="https://chat.int.bayer.com/api/v2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# cli_version <bin> — best-effort "x.y.z" from a CLI. Empty when not installed.
+# `command -v` alone is not enough: a Codespace resumed from an old image has
+# the binary but a stale version, and a plain presence check would never
+# upgrade it — which is exactly how an unpinned install drifts.
+cli_version() {
+  command -v "$1" >/dev/null 2>&1 || return 0
+  { "$1" --version 2>/dev/null || "$1" version 2>/dev/null || true; } \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+}
+
 # ─── 1. Install Claude Code CLI + claude-code-router (idempotent) ────
-if command -v claude &>/dev/null; then
-  echo "✅ Claude Code CLI already installed."
+# Both are PINNED: they sit in the path of the myGenAssist key and of every
+# prompt, so the version that runs must be the version that was reviewed.
+if [ "$(cli_version claude)" = "$CLAUDE_CODE_VERSION" ]; then
+  echo "✅ Claude Code CLI ${CLAUDE_CODE_VERSION} already installed."
 else
-  echo "📦 Installing Claude Code CLI..."
-  npm install -g @anthropic-ai/claude-code --silent 2>&1 | tail -3 \
+  echo "📦 Installing Claude Code CLI ${CLAUDE_CODE_VERSION}..."
+  npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" --silent 2>&1 | tail -3 \
     && echo "✅ Claude Code CLI installed." \
-    || echo "⚠️  Claude Code CLI install failed. Run: npm install -g @anthropic-ai/claude-code"
+    || echo "⚠️  Claude Code CLI install failed. Run: npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 fi
 
-if command -v ccr &>/dev/null; then
-  echo "✅ claude-code-router already installed ($(ccr version 2>/dev/null | head -1))."
+if [ "$(cli_version ccr)" = "$CCR_VERSION" ]; then
+  echo "✅ claude-code-router ${CCR_VERSION} already installed."
 else
   echo "📦 Installing claude-code-router@${CCR_VERSION}..."
   npm install -g "@musistudio/claude-code-router@${CCR_VERSION}" --silent 2>&1 | tail -3 \
@@ -143,6 +163,14 @@ fi
 mkdir -p "$CCR_DIR/plugins"
 
 if [ "$WRITE_CONFIG" = "1" ]; then
+  # Lock the file down BEFORE the key goes into it. `cat > "$CONFIG"` creates
+  # it at the ambient umask (0022 → world-readable) and the chmod only landed
+  # afterwards — a window in which any other user or process on the machine
+  # could read the raw myGenAssist key. Truncating an existing file with `>`
+  # keeps its mode, so 600 holds for the write below.
+  : > "$CONFIG"
+  chmod 600 "$CONFIG"
+
   cat > "$CONFIG" <<EOF
 {
   "LOG": true,
@@ -179,7 +207,6 @@ if [ "$WRITE_CONFIG" = "1" ]; then
   }
 }
 EOF
-  chmod 600 "$CONFIG"
   echo "✅ Wrote $CONFIG"
 fi
 
@@ -248,7 +275,9 @@ if command -v ccr &>/dev/null; then
     echo "     bash .devcontainer/setup-claude-router.sh"
   fi
   echo "🚀 Starting claude-code-router..."
-  ccr restart >/dev/null 2>&1 || ccr start >/dev/null 2>&1
+  # Expected to fail on a first run (nothing to restart) — the status check
+  # below is what decides, so neither call may abort the script.
+  ccr restart >/dev/null 2>&1 || ccr start >/dev/null 2>&1 || true
   sleep 1
   if ccr status 2>/dev/null | grep -qi running; then
     echo "✅ Router running on http://127.0.0.1:3456 — Claude Code is ready."
