@@ -51,6 +51,52 @@ header() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
+# nginx_header_inheritance <conf> — print every location block that declares
+# an add_header of its own but not the three security headers.
+#
+# WHY: nginx add_header REPLACES the inherited set, it does not merge. A
+# location{} with `add_header Cache-Control ...` inherits NONE of the
+# server-level security headers. Grepping the file for "X-Frame-Options"
+# therefore proves nothing — the config can contain all three and still serve
+# every HTML page and every JS/CSS asset with none of them.
+nginx_header_inheritance() {
+    local conf="$1"
+    [[ -f "$conf" ]] || return 0
+    awk '
+    function flush(   missing) {
+        if (in_loc && has_add) {
+            missing = ""
+            if (!xfo)  missing = missing " X-Frame-Options"
+            if (!xcto) missing = missing " X-Content-Type-Options"
+            if (!xss)  missing = missing " X-XSS-Protection"
+            if (missing != "") printf "   %s  -> missing:%s\n", loc, missing
+        }
+        in_loc = 0; loc = ""; has_add = 0; xfo = 0; xcto = 0; xss = 0
+    }
+    {
+        line = $0
+        sub(/#.*/, "", line)                       # strip comments
+        if (in_loc) {
+            if (line ~ /add_header/)                            has_add = 1
+            if (line ~ /add_header[ \t]+X-Frame-Options/)        xfo  = 1
+            if (line ~ /add_header[ \t]+X-Content-Type-Options/) xcto = 1
+            if (line ~ /add_header[ \t]+X-XSS-Protection/)       xss  = 1
+        }
+        if (!in_loc && line ~ /^[ \t]*location[ \t]/) {
+            loc = line
+            sub(/^[ \t]*/, "", loc)
+            sub(/[ \t]*\{.*$/, "", loc)
+            in_loc = 1
+            start_depth = depth
+        }
+        depth += gsub(/\{/, "{", line)
+        depth -= gsub(/\}/, "}", line)
+        if (in_loc && depth <= start_depth) flush()
+    }
+    END { flush() }
+    ' "$conf"
+}
+
 # check_dockerignore <dir> — a build context without a .dockerignore bakes the
 # local .env into the image (Docker ignores .gitignore). For the vanilla
 # frontend the image is the public web root, so the key is then SERVED.
@@ -161,6 +207,26 @@ if [[ -f "frontend/Dockerfile" ]]; then
             pass "nginx.conf has X-XSS-Protection header"
         else
             fail "nginx.conf missing X-XSS-Protection header" "Add: add_header X-XSS-Protection \"1; mode=block\" always;"
+        fi
+
+        # The greps above only prove the directives EXIST somewhere in the file.
+        # They pass happily on a config that never actually emits the headers —
+        # see nginx_header_inheritance() for why.
+        NGINX_BAD_LOCATIONS=$(nginx_header_inheritance frontend/nginx.conf)
+        if [[ -n "$NGINX_BAD_LOCATIONS" ]]; then
+            fail "nginx.conf location blocks set their own add_header, so they emit NO security headers:
+$NGINX_BAD_LOCATIONS" \
+                 "nginx add_header is replace-not-merge. Repeat all three security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection) inside each block listed above — see the shipped frontend/nginx.conf."
+        else
+            pass "nginx.conf security headers survive in every location block"
+        fi
+
+        if [[ -f "frontend/nginx.local.conf" ]]; then
+            # Local dev only — no production impact, so warn rather than block.
+            NGINX_LOCAL_BAD=$(nginx_header_inheritance frontend/nginx.local.conf)
+            if [[ -n "$NGINX_LOCAL_BAD" ]]; then
+                warn "nginx.local.conf location blocks drop the security headers (local dev only, but it hides the problem you would ship): $(echo "$NGINX_LOCAL_BAD" | tr '\n' ' ')"
+            fi
         fi
 
         # Check for proxy_pass (should NOT be in production nginx.conf)
