@@ -47,7 +47,7 @@ This is your **hackathon project workspace**. You're going to build a web applic
 - ❌ Server setup knowledge
 - ❌ DevOps skills
 
-**Your AI assistant (Cline) will write all the code for you!**
+**Your AI assistant (Claude Code) will write all the code for you!**
 
 ---
 
@@ -58,18 +58,27 @@ This is your **hackathon project workspace**. You're going to build a web applic
 
 ### Architecture
 ```
-frontend/          → nginx (port 80) - static or React build
+frontend/          → nginx (port 8080) - static or React build
 backend/           → Express/FastAPI/Actix-web (port 3000)
 database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
 ```
 
-### Deployment Types (Auto-Detected!)
+> nginx listens on **8080**, not 80: the container runs as a non-root user and
+> non-root cannot bind a privileged port. `./scripts/preflight-check.sh` fails
+> the build on `listen 80;`.
+
+### Deployment: ECS only
 | Project Type | Detection | URL |
 |-------------|-----------|-----|
-| **Frontend-only** (Vanilla/React) | No `backend/Dockerfile` | `https://docs.int.bayer.com/-/<repo>/` |
 | **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.intranet.cnb` |
 
-### Routing (Full-Stack/ECS only)
+**A project with no `backend/Dockerfile` does not deploy.** The old
+frontend-only static publish to DevOps Docs is switched off (the job is
+commented out in `.github/workflows/deploy.yml`). If your app is pure
+front-end, add a minimal backend so it has a `backend/Dockerfile` — ask your
+AI assistant and it will set one up.
+
+### Routing (ECS)
 ```
 https://[project].vibe.intranet.cnb      → frontend
 https://[project].vibe.intranet.cnb/api  → backend (stripped)
@@ -99,12 +108,16 @@ docker-compose down             # Stop
 ### Deploy
 ```bash
 # First time: Contact admin to whitelist your repo in variables.tf
-git add . && git commit -m "feat: description" && git push
+
+# Stage the files you changed BY NAME. `git add .` / `git add -A` is not
+# allowed here — it sweeps up .env files, context/ material and local test
+# data, and the pre-commit hook will block the commit.
+git add frontend/index.html backend/server.js   # ← your actual files
+git commit -m "feat: description"
+git push
 # → GitHub Actions builds & deploys (~3-5 min)
 
-# URL depends on project type:
-# Frontend-only: https://docs.int.bayer.com/-/[repo-name]/
-# Full-stack:    https://[repo-name].vibe.intranet.cnb
+# URL: https://[repo-name].vibe.intranet.cnb
 ```
 
 ### Secrets (GitHub → Settings → Secrets → Actions)
@@ -126,7 +139,7 @@ git add . && git commit -m "feat: description" && git push
   - `Dockerfile.qdrant` - Qdrant vector database
 
 ### Tell the AI
-When you open Cline, just say: **"I'm a developer"** - it'll skip the hand-holding.
+When you open Claude Code, just say: **"I'm a developer"** - it'll skip the hand-holding.
 
 </details>
 
@@ -136,7 +149,10 @@ When you open Cline, just say: **"I'm a developer"** - it'll skip the hand-holdi
 
 ### Step 1: Talk to Your AI Assistant
 
-Look for the **Cline** extension in the sidebar (robot icon 🤖).
+Look for the **Claude Code** extension in the sidebar (🤖).
+
+*(First time in a Codespace, it asks for your myGenAssist API key — paste it
+and you're connected. See [docs/CODESPACE_CLAUDE_CODE_SETUP.md](./docs/CODESPACE_CLAUDE_CODE_SETUP.md).)*
 
 Click on it and say something like:
 
@@ -183,13 +199,12 @@ The AI will save your work and deploy it automatically!
 
 **Wait 3-5 minutes**, then visit your live site:
 
-**Your URL depends on your project type:**
-| Project Type | URL |
-|-------------|-----|
-| Frontend-only (no backend) | `https://docs.int.bayer.com/-/YOUR-REPO-NAME/` |
-| Full-stack (has backend) | `https://YOUR-REPO-NAME.vibe.intranet.cnb` |
+**Your URL:**
 
-*(Requires Bayer VPN)*
+`https://YOUR-REPO-NAME.vibe.intranet.cnb`
+
+*(Requires Bayer VPN. Your project needs a `backend/Dockerfile` to deploy —
+the AI adds one for you.)*
 
 ---
 
@@ -277,15 +292,15 @@ When you say **"Let's deploy!"**, here's what happens:
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────┐                       │
-│  │  3️⃣  GitHub Actions detects type    │  ← Automatic!        │
-│  │     • Frontend-only → Static deploy │    (3-5 mins)        │
-│  │     • Has backend → ECS deploy      │                       │
+│  │  3️⃣  GitHub Actions builds & ships  │  ← Automatic!        │
+│  │     backend/Dockerfile → ECS deploy │    (3-5 mins)        │
+│  │                                     │                       │
 │  └─────────────────────────────────────┘                       │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────┐                       │
 │  │  4️⃣  YOUR APP IS LIVE! 🎉           │                       │
-│  │     (URL depends on project type)   │                       │
+│  │     <repo>.vibe.intranet.cnb        │                       │
 │  └─────────────────────────────────────┘                       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘

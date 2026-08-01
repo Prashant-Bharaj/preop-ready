@@ -9,6 +9,21 @@
 #   - Push-triggered CodeQL: deploy if passed, block if failed
 #   - Schedule-triggered CodeQL: skip deploy; if failed, stop containers
 #
+# ⚠️  THE "CodeQL" WORKFLOW BELOW IS NOT SHIPPED IN THIS REPO.
+# The `workflow_run: workflows: ["CodeQL"]` trigger refers to the workflow
+# GitHub's own **code scanning default setup** creates. There is deliberately
+# no .github/workflows/codeql.yml here: a second CodeQL workflow cannot coexist
+# with default setup (the SARIF upload is refused).
+#
+# CONSEQUENCE: if code scanning is not enabled on this repo, nothing ever emits
+# a "CodeQL" workflow_run — so this workflow NEVER FIRES and the project
+# silently never deploys. There is no error anywhere; the Actions tab is simply
+# empty after a push.
+#
+# If a push does not deploy, CHECK THIS FIRST:
+#   Settings → Code security → Code scanning → CodeQL analysis = Default setup
+# (scripts/preflight-check.sh warns about this too, when `gh` is authenticated.)
+#
 # URL: https://<repo-name>.vibe.intranet.cnb
 # =============================================================================
 

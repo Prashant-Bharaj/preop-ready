@@ -501,6 +501,39 @@ else
     fail "Deploy workflow missing" "This should exist in the template - check .github/workflows/"
 fi
 
+# Code scanning gate.
+# deploy.yml is triggered by `workflow_run: workflows: ["CodeQL"]`, and that
+# "CodeQL" workflow is GitHub's own code-scanning DEFAULT SETUP — it is
+# deliberately not a file in this repo (a second CodeQL workflow cannot coexist
+# with default setup). If code scanning is off, nothing ever emits the event,
+# so pushes silently never deploy and no error appears anywhere.
+#
+# WARN only, never fail: this needs an authenticated gh CLI and admin rights on
+# the repo, and neither is guaranteed in a hackathon Codespace.
+if ! command -v gh &> /dev/null; then
+    info "gh CLI not available — skipping the code-scanning check (deploy needs GitHub's CodeQL default setup to be enabled)"
+elif ! gh auth status &> /dev/null; then
+    info "gh CLI not authenticated — skipping the code-scanning check (run: gh auth login)"
+else
+    REPO_SLUG=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
+    if [[ -z "$REPO_SLUG" ]]; then
+        info "Could not determine the GitHub repo — skipping the code-scanning check"
+    else
+        SCAN_STATE=$(gh api "repos/${REPO_SLUG}/code-scanning/default-setup" -q .state 2>/dev/null || true)
+        case "$SCAN_STATE" in
+            configured)
+                pass "Code scanning (CodeQL default setup) is enabled — deploy.yml can be triggered"
+                ;;
+            not-configured)
+                warn "Code scanning is OFF for ${REPO_SLUG}. deploy.yml only runs after a \"CodeQL\" workflow_run, which ONLY GitHub's default setup emits — with it off your pushes will never deploy and nothing will report an error. Enable it: Settings > Code security > Code scanning > CodeQL analysis > Set up > Default"
+                ;;
+            *)
+                info "Could not read the code-scanning status for ${REPO_SLUG} (needs admin rights) — if a push never deploys, check Settings > Code security > Code scanning first"
+                ;;
+        esac
+    fi
+fi
+
 # Check .template-version
 if [[ -f ".template-version" ]]; then
     pass ".template-version exists"
