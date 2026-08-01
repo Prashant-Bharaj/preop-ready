@@ -2,16 +2,29 @@
 # Dependabot Auto-Merge Workflow
 # =============================================================================
 # Automatically approves and merges Dependabot PRs for patch and minor updates,
-# but ONLY after verifying the dependencies actually install correctly.
+# but ONLY after verifying the dependencies actually install and build.
 #
 # How it works:
 #   1. Dependabot opens a PR
-#   2. This workflow checks the update type (patch/minor/major)
+#   2. `metadata` reads the update type (patch/minor/major) — no code checked out
 #   3. Major: skip — requires manual review
-#   4. Patch & minor: checkout PR code, run npm install / pip install
-#   5. If install succeeds: auto-approve + enable auto-merge (squash)
-#   6. If install fails: post comment, do NOT approve
+#   4. Patch & minor: `verify` checks out the PR and installs/builds it
+#   5. `merge` auto-approves + enables auto-merge (squash) if verify passed
+#   6. If verify failed: post a comment, do NOT approve
 #   7. Auto-merge waits for CI (CodeQL) to pass before completing
+#
+# ⚠️  SECURITY — WHY THIS IS THREE JOBS
+# Installing and building a proposed dependency tree EXECUTES third-party code
+# on the runner. That must never happen in a job that can write to the repo.
+#   - `verify` runs the untrusted code: contents: read only, no other scopes,
+#     and persist-credentials: false so no token is left in .git/config for it
+#     to steal.
+#   - `merge` holds the write scopes but checks out NOTHING and runs only gh
+#     commands.
+# `npm ci --ignore-scripts` blocks install-time lifecycle hooks (preinstall /
+# postinstall), but it is only PARTIAL protection: `npm run build` still loads
+# and executes the dependency's own code by design. The permission split above
+# is the real control — treat --ignore-scripts as defence in depth, not the fix.
 # =============================================================================
 
 name: Dependabot Auto-Merge
@@ -19,20 +32,28 @@ name: Dependabot Auto-Merge
 on:
   pull_request:
 
-permissions:
-  pull-requests: write
-  contents: write
+# No workflow-level grant: every job declares the minimum it needs.
+permissions: {}
 
 jobs:
-  auto-merge:
-    name: Auto-merge Dependabot PR
+  # ---------------------------------------------------------------------------
+  # 1. Metadata — reads the PR only, checks out no code
+  # ---------------------------------------------------------------------------
+  metadata:
+    name: Read Dependabot metadata
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
-
+    permissions:
+      pull-requests: read
+    outputs:
+      update-type: ${{ steps.metadata.outputs.update-type }}
+      dependency-names: ${{ steps.metadata.outputs.dependency-names }}
+      previous-version: ${{ steps.metadata.outputs.previous-version }}
+      new-version: ${{ steps.metadata.outputs.new-version }}
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -43,26 +64,40 @@ jobs:
           echo "   ${{ steps.metadata.outputs.previous-version }} → ${{ steps.metadata.outputs.new-version }}"
           echo "   Skipping auto-merge — manual review required."
 
+  # ---------------------------------------------------------------------------
+  # 2. Verify — THIS JOB EXECUTES UNTRUSTED DEPENDENCY CODE
+  #    contents: read, nothing else. No credentials persisted. No write scopes
+  #    anywhere in this job, so a malicious package cannot push, approve,
+  #    merge, or read secrets.
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Verify dependencies install and build
+    needs: metadata
+    if: needs.metadata.outputs.update-type != 'version-update:semver-major'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      install_ok: ${{ steps.verify.outputs.install_ok }}
+    steps:
       - name: Checkout PR code
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          # Do not leave the token in .git/config for the dependency code to find
+          persist-credentials: false
 
       - name: Setup Node.js
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
       - name: Setup Python
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
       - name: Verify dependencies install and build
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         id: verify
         run: |
           FAILED=false
@@ -70,8 +105,12 @@ jobs:
           # Check all directories with package-lock.json (npm projects)
           for lockfile in $(find . -name "package-lock.json" -not -path "*/node_modules/*" 2>/dev/null); do
             DIR=$(dirname "$lockfile")
-            echo "📦 Testing npm install in $DIR..."
-            if (cd "$DIR" && npm install 2>&1); then
+            echo "📦 Testing npm ci in $DIR..."
+            # `npm ci` (not install): installs exactly the lockfile Dependabot
+            # proposed. --ignore-scripts blocks preinstall/postinstall hooks —
+            # partial only, see the header: the build below still runs
+            # dependency code.
+            if (cd "$DIR" && npm ci --ignore-scripts 2>&1); then
               echo "   ✅ $DIR — install succeeded"
               # Run build to catch breaking changes (e.g., Vite 5→8 API incompatibility)
               # This is the real gate — install alone doesn't catch major version breaks
@@ -108,17 +147,29 @@ jobs:
             echo "install_ok=true" >> $GITHUB_OUTPUT
           fi
 
+  # ---------------------------------------------------------------------------
+  # 3. Merge — holds the write scopes, checks out NO code, runs only gh
+  # ---------------------------------------------------------------------------
+  merge:
+    name: Approve and auto-merge
+    needs: [metadata, verify]
+    if: needs.metadata.outputs.update-type != 'version-update:semver-major'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
       - name: Comment on failed install
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major' && steps.verify.outputs.install_ok == 'false'
+        if: needs.verify.outputs.install_ok == 'false'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr comment "$PR_URL" --body "## ❌ Auto-merge blocked
 
-          The dependency update from **${{ steps.metadata.outputs.dependency-names }}** (${{ steps.metadata.outputs.previous-version }} → ${{ steps.metadata.outputs.new-version }}) failed the install verification.
+          The dependency update from **${{ needs.metadata.outputs.dependency-names }}** (${{ needs.metadata.outputs.previous-version }} → ${{ needs.metadata.outputs.new-version }}) failed the install verification.
 
-          \`npm install\` or \`pip install\` failed with errors. This PR will **not** be auto-merged.
+          \`npm ci\` or \`pip install\` failed with errors. This PR will **not** be auto-merged.
 
           **Next steps:**
           - Check the workflow logs for the specific error
@@ -127,14 +178,14 @@ jobs:
           🤖 _Dependabot Auto-Merge_"
 
       - name: Auto-approve patch and minor updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major' && steps.verify.outputs.install_ok == 'true'
+        if: needs.verify.outputs.install_ok == 'true'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major' && steps.verify.outputs.install_ok == 'true'
+        if: needs.verify.outputs.install_ok == 'true'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
