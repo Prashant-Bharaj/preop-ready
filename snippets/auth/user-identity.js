@@ -7,7 +7,8 @@
  * DESCRIPTION:
  *   Extracts AND VERIFIES user identity from AWS ALB OIDC headers.
  *   Works automatically in production (Azure AD via ALB).
- *   Falls back to test user for local development (no headers present).
+ *   Falls back to a test user for local development ONLY when the
+ *   ALLOW_LOCAL_DEV_IDENTITY=true opt-in is set (see below).
  *
  * SECURITY MODEL:
  *   The ALB overwrites x-amzn-oidc-* headers on every request, so a client
@@ -17,6 +18,18 @@
  *   (fetched by key id, cached) and the expiry claim is enforced.
  *   A present-but-invalid token is REJECTED with 401 — it never falls
  *   back to the local dev user.
+ *
+ *   A MISSING header is also a 401. The backend is reachable through a
+ *   second ingress path that carries no OIDC at all (API Gateway ->
+ *   VPC Link -> NLB -> the machine-to-machine ALB, which has no
+ *   authenticate-oidc action -> Traefik -> this backend). Treating "no
+ *   header" as "local developer" would hand that path a logged-in user.
+ *   The local-dev fallback therefore requires an explicit opt-in:
+ *
+ *     ALLOW_LOCAL_DEV_IDENTITY=true   # docker-compose / .env, local only
+ *
+ *   Production task definitions never set it, so a header-less request in
+ *   production yields null and the caller rejects with 401.
  *
  * DEPENDENCIES:
  *   None - uses built-in Node.js modules (crypto, global fetch; Node >= 18)
@@ -118,8 +131,8 @@ async function verifyOidcToken(oidcData) {
 /**
  * Extract user identity from AWS ALB OIDC headers (with verification).
  * @param {Request} req - Express request object
- * @returns {Promise<Object|null>} User identity object, or null when an
- *   OIDC token was present but INVALID (caller must reject the request)
+ * @returns {Promise<Object|null>} User identity object, or null when the OIDC
+ *   token is missing or INVALID (caller must reject the request with 401)
  */
 async function extractUserIdentity(req) {
   const oidcData = req.headers['x-amzn-oidc-data'];
@@ -138,20 +151,29 @@ async function extractUserIdentity(req) {
     };
   }
 
-  // Local development only (no ALB in front, no OIDC headers at all)
-  return {
-    userId: 'local-dev-user',
-    email: 'dev@localhost',
-    name: 'Local Developer',
-    givenName: 'Local',
-    familyName: 'Developer',
-    isLocalDev: true
-  };
+  // No OIDC header at all. Only a machine that explicitly opted in gets the
+  // local-dev user; everywhere else this is an unauthenticated request.
+  if (process.env.ALLOW_LOCAL_DEV_IDENTITY === 'true') {
+    return {
+      userId: 'local-dev-user',
+      email: 'dev@localhost',
+      name: 'Local Developer',
+      givenName: 'Local',
+      familyName: 'Developer',
+      isLocalDev: true
+    };
+  }
+
+  console.warn(
+    'No x-amzn-oidc-data header — rejecting as unauthenticated. ' +
+    'For local development set ALLOW_LOCAL_DEV_IDENTITY=true (never in production).'
+  );
+  return null;
 }
 
 /**
  * Express middleware to attach VERIFIED user identity to the request.
- * Responds 401 when an OIDC token is present but fails verification.
+ * Responds 401 when the OIDC token is missing or fails verification.
  */
 async function userIdentityMiddleware(req, res, next) {
   try {
@@ -159,7 +181,7 @@ async function userIdentityMiddleware(req, res, next) {
     if (!user) {
       return res.status(401).json({
         error: 'UNAUTHORIZED',
-        message: 'Identity token could not be verified',
+        message: 'Identity token missing or could not be verified',
         statusCode: 401
       });
     }

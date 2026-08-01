@@ -7,7 +7,8 @@ STATUS: ✅ Ready
 DESCRIPTION:
     Extracts AND VERIFIES user identity from AWS ALB OIDC headers.
     Works automatically in production (Azure AD via ALB).
-    Falls back to test user for local development (no headers present).
+    Falls back to a test user for local development ONLY when the
+    ALLOW_LOCAL_DEV_IDENTITY=true opt-in is set (see below).
 
 SECURITY MODEL:
     The ALB overwrites x-amzn-oidc-* headers on every request, so a client
@@ -17,6 +18,18 @@ SECURITY MODEL:
     (fetched by key id, cached) and the expiry claim is enforced.
     A present-but-invalid token is REJECTED with 401 — it never falls
     back to the local dev user.
+
+    A MISSING header is also a 401. The backend is reachable through a
+    second ingress path that carries no OIDC at all (API Gateway ->
+    VPC Link -> NLB -> the machine-to-machine ALB, which has no
+    authenticate-oidc action -> Traefik -> this backend). Treating "no
+    header" as "local developer" would hand that path a logged-in user.
+    The local-dev fallback therefore requires an explicit opt-in:
+
+        ALLOW_LOCAL_DEV_IDENTITY=true   # docker-compose / .env, local only
+
+    Production task definitions never set it, so a header-less request in
+    production yields None and the caller rejects with 401.
 
 DEPENDENCIES:
     pip install cryptography
@@ -132,7 +145,7 @@ def verify_oidc_token(oidc_data: str) -> Optional[Dict[str, Any]]:
 def extract_user_identity(headers: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """Extract user identity from AWS ALB OIDC headers (with verification).
 
-    Returns the user dict, or None when an OIDC token was present but
+    Returns the user dict, or None when the OIDC token is missing or
     INVALID — the caller must reject the request with 401 in that case.
     """
     oidc_data = headers.get('x-amzn-oidc-data')
@@ -151,15 +164,23 @@ def extract_user_identity(headers: Dict[str, str]) -> Optional[Dict[str, Any]]:
             'is_local_dev': False,
         }
 
-    # Local development only (no ALB in front, no OIDC headers at all)
-    return {
-        'user_id': 'local-dev-user',
-        'email': 'dev@localhost',
-        'name': 'Local Developer',
-        'given_name': 'Local',
-        'family_name': 'Developer',
-        'is_local_dev': True,
-    }
+    # No OIDC header at all. Only a machine that explicitly opted in gets the
+    # local-dev user; everywhere else this is an unauthenticated request.
+    if os.environ.get('ALLOW_LOCAL_DEV_IDENTITY') == 'true':
+        return {
+            'user_id': 'local-dev-user',
+            'email': 'dev@localhost',
+            'name': 'Local Developer',
+            'given_name': 'Local',
+            'family_name': 'Developer',
+            'is_local_dev': True,
+        }
+
+    print(
+        'No x-amzn-oidc-data header — rejecting as unauthenticated. '
+        'For local development set ALLOW_LOCAL_DEV_IDENTITY=true (never in production).'
+    )
+    return None
 
 
 def get_user_display_name(user: Dict[str, Any]) -> str:
@@ -182,14 +203,14 @@ try:
 
     def get_current_user(request: Request) -> Dict[str, Any]:
         """FastAPI dependency for getting the VERIFIED current user.
-        Raises 401 when an OIDC token is present but fails verification.
+        Raises 401 when the OIDC token is missing or fails verification.
         """
         headers = {k.lower(): v for k, v in request.headers.items()}
         user = extract_user_identity(headers)
         if user is None:
             raise HTTPException(
                 status_code=401,
-                detail='Identity token could not be verified',
+                detail='Identity token missing or could not be verified',
             )
         return user
 
@@ -207,15 +228,15 @@ try:
 
     def load_user():
         """Flask before_request handler to load the VERIFIED user.
-        Returns a 401 response (aborting the request) when an OIDC token
-        is present but fails verification; returns None to continue.
+        Returns a 401 response (aborting the request) when the OIDC token
+        is missing or fails verification; returns None to continue.
         """
         headers = {k.lower(): v for k, v in request.headers.items()}
         user = extract_user_identity(headers)
         if user is None:
             return jsonify({
                 'error': 'UNAUTHORIZED',
-                'message': 'Identity token could not be verified',
+                'message': 'Identity token missing or could not be verified',
                 'statusCode': 401,
             }), 401
         g.user = user

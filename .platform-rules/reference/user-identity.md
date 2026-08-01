@@ -27,8 +27,20 @@ inject them through the front door), and per-project security groups keep backen
 unreachable except via the platform router. The snippet ADDS defense in depth: it verifies
 the JWT's ES256 signature against the ALB's regional public key
 (`https://public-keys.auth.elb.<region>.amazonaws.com/<kid>`, cached) and the `exp` claim.
-A present-but-invalid token is rejected with 401 — never the local-dev fallback (that
-fallback applies only when NO OIDC headers exist at all, i.e., local docker).
+A present-but-invalid token is rejected with 401 — never the local-dev fallback.
+
+**A MISSING header must also be a 401 in production.** The user-facing ALB is not the only
+way in: a second ingress path (API Gateway with an API-key authorizer -> VPC Link -> NLB ->
+the machine-to-machine ALB, which has NO `authenticate-oidc` action -> Traefik) reaches the
+same backend carrying no OIDC headers at all. If "no header" meant "local developer", that
+path would be served as a logged-in user. The snippets therefore return null/None/`None`
+when the header is absent, and the local-dev fallback is behind an explicit opt-in:
+
+```
+ALLOW_LOCAL_DEV_IDENTITY=true    # docker-compose / local .env ONLY
+```
+
+Never set it in a GitHub secret or anywhere that reaches a deployed task definition.
 
 ## Implementation: COPY the snippet — do not write from scratch
 
@@ -57,7 +69,7 @@ For user-specific tables, use the ready schema: `snippets/auth/user-identity-sch
 
 ## Key Facts
 
-- **Headers exist ONLY in production.** Local dev has no ALB — the snippets return a fallback `local-dev-user`. ALWAYS keep a local-dev fallback user in the middleware.
+- **Headers exist ONLY in production.** Local dev has no ALB. Set `ALLOW_LOCAL_DEV_IDENTITY=true` in `docker-compose.yml` (or the local `.env`) so the middleware returns the `local-dev-user`. Without that opt-in a header-less request is a 401 — which is exactly what production needs.
 - **`sub` is the stable identifier** — use it as the `user_id` column value / primary key.
 - **Never trust client-sent identity.** Identity comes from ALB headers server-side only; ignore any user id/email a frontend request body claims.
 - The JWT is visible in browser dev tools — keep sensitive operations server-side.
