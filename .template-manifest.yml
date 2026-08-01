@@ -34,7 +34,18 @@ auto_update:
     description: "Vanilla HTML/CSS/JS Dockerfile template (secure, non-root)"
   - path: "frontend/Dockerfile.react"
     description: "React/Vite Dockerfile template (secure, non-root)"
-    
+
+  # Docker build-context exclusions — Docker does NOT read .gitignore, so
+  # without these a local .env is baked into the image (and, for the vanilla
+  # frontend, SERVED at /.env). One per build context; the root one is inert.
+  - path: "frontend/.dockerignore"
+    description: "Keeps .env and friends out of the frontend image (build context = ./frontend)"
+  - path: "backend/.dockerignore"
+    description: "Keeps .env and friends out of the backend image (build context = ./backend)"
+  - path: ".dockerignore"
+    description: "Root build-context exclusions (safety net for ad-hoc root builds only)"
+
+
   # Nginx configuration templates (with security headers)
   - path: "frontend/nginx.conf"
     description: "Production nginx config template (security headers included)"

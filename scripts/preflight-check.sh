@@ -51,6 +51,27 @@ header() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
+# check_dockerignore <dir> — a build context without a .dockerignore bakes the
+# local .env into the image (Docker ignores .gitignore). For the vanilla
+# frontend the image is the public web root, so the key is then SERVED.
+# The build context is the segment directory, so a root .dockerignore does
+# NOT cover it — the per-directory file is the one that counts.
+check_dockerignore() {
+    local dir="$1"
+    if [[ ! -f "$dir/.dockerignore" ]]; then
+        fail "$dir/.dockerignore missing — a local .env would be copied into the image" \
+             "Create $dir/.dockerignore excluding at least: .env, .env.*, .git, node_modules (copy the template's)"
+        return
+    fi
+    # Must exclude .env itself, not just .env.* — the real secret file is .env
+    if grep -qE '^[[:space:]]*\.env[[:space:]]*$' "$dir/.dockerignore"; then
+        pass "$dir/.dockerignore excludes .env"
+    else
+        fail "$dir/.dockerignore does not exclude .env — secrets get baked into the image" \
+             "Add a line containing exactly: .env   (and .env.* on the next line)"
+    fi
+}
+
 # =============================================================================
 # Start Checks
 # =============================================================================
@@ -167,6 +188,8 @@ if [[ -f "frontend/Dockerfile" ]]; then
             fail "frontend/Dockerfile missing non-root user" "Add USER appuser (see Dockerfile.vanilla or Dockerfile.react for example)"
         fi
     fi
+
+    check_dockerignore "frontend"
 fi
 
 # Check backend structure (only if Dockerfile exists — directory alone is not an error)
@@ -272,6 +295,8 @@ $MISPLACED_MIGRATIONS" \
             fail "backend/Dockerfile missing non-root user" "Add USER appuser (see Dockerfile.node or Dockerfile.python for example)"
         fi
     fi
+
+    check_dockerignore "backend"
 
     # Check for hardcoded localhost URLs in frontend code (breaks in production)
     HARDCODED_FOUND=false

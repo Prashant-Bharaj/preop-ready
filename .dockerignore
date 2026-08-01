@@ -1,0 +1,39 @@
+# ============================================================================
+# DOCKER BUILD CONTEXT EXCLUSIONS - repo root
+# ============================================================================
+# ⚠️  THIS FILE IS AN INERT SAFETY NET — it does NOT protect the app images.
+#
+# A .dockerignore only applies to the directory that is used as the build
+# CONTEXT. docker-compose.yml builds `./frontend` and `./backend`, so the
+# files that actually matter are frontend/.dockerignore and
+# backend/.dockerignore. Keep those two in sync with this one.
+#
+# This file exists so that an ad-hoc build from the repo root
+# (`docker build -f backend/Dockerfile .`) does not sweep secrets into the
+# context either. If you delete frontend/.dockerignore or
+# backend/.dockerignore expecting this file to cover them, it will not —
+# and scripts/preflight-check.sh will fail the build for that reason.
+# ============================================================================
+
+# Secrets — never in a build context
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Repo metadata — carries the full history of everything ever committed
+.git
+
+# Dependencies — reinstalled inside the image, and huge
+node_modules
+**/node_modules
+
+# Reference material and local test data (gitignored — often REAL data)
+context/
+database/seed/
+
+# Local build/run noise
+*.log
+.template-backup/
+__pycache__/
+**/__pycache__/
