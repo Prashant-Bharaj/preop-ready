@@ -12,7 +12,10 @@
 #
 # To use: Copy this file to vectordb/Dockerfile
 
-FROM qdrant/qdrant:latest
+# Pinned, like every other image in this template: :latest silently changes
+# the database engine under a running project, and Dependabot cannot open an
+# update PR for a floating tag (so you never hear about its CVEs either).
+FROM qdrant/qdrant:v1.18.3
 
 # CRITICAL: Persist data to /data/qdrant (EFS mount point in production)
 # Without this, data is LOST on every deployment!
