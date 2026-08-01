@@ -38,7 +38,6 @@ fi
 while IFS= read -r file; do
     [ -z "$file" ] && continue
     basename=$(basename "$file")
-    dirname=$(dirname "$file")
 
     # Environment files — ALL blocked, including .env.example
     # Matches: .env, .env.local, .env.example, env.example, backend/.env, etc.
@@ -131,6 +130,10 @@ done <<< "$STAGED_FILES"
 
 while IFS= read -r file; do
     [ -z "$file" ] && continue
+    # Must be re-derived per file: this loop branches on $basename below, and
+    # without this line it kept whatever Phase 1 left behind (the LAST staged
+    # file), so the compose check fired on the wrong file — or never.
+    basename=$(basename "$file")
 
     # Skip binary files, already-blocked files, and the hook script itself
     case "$file" in
