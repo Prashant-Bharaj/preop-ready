@@ -89,3 +89,41 @@ Safe: log method + path, userId, filename + size — and redact anything sensiti
 the pre-commit hook warns on dangerous patterns.
 
 Implementations to copy: `snippets/security/` (sanitize-middleware, input-validation, parameterized-queries, error-handler).
+
+## A Platform WAF Inspects Every Request Body
+
+All traffic reaches your app through a platform WAF. It inspects request BODIES
+(query strings, headers and URLs too) and blocks known attack patterns before your
+code ever runs. This affects how you design a few things.
+
+**File uploads must be on a path containing `/upload`.**
+
+```javascript
+app.post('/upload', ...)          // exempt from the XSS body rule
+app.post('/documents/upload', ...) // also fine — the path contains /upload
+app.post('/import', ...)           // NOT exempt — XML/HTML uploads here will 403
+```
+
+This is not cosmetic. Upload bodies frequently contain markup (XML, HTML
+fragments) that looks like a cross-site-scripting payload, so the platform
+exempts the body rule for POSTs to `/upload` paths. Any other path gets no
+exemption. Name your upload endpoint accordingly.
+
+**Avoid SQL keywords in JSON request bodies.** A body like `{"limit": 20,
+"order": "select"}` can trip the SQL-injection body rule. Prefer names that are
+not SQL keywords (`pageSize` over `limit`, `sortBy` over `order`).
+
+**A 403 with nothing in your app logs is the WAF, not your code.** If a request
+fails with 403 and your handler never ran — no log line, no error — the WAF
+blocked it. Do not spend hours debugging your route.
+
+To confirm and get it resolved, tell the platform team:
+
+- the full URL and HTTP method
+- roughly when it happened (UTC)
+- what the body contained (its shape, NOT real data or credentials)
+
+They can look up the exact rule that matched and, if it is a genuine false
+positive, scope an exemption. Do not try to work around it by obfuscating the
+payload — the rules also block real attacks, and Log4Shell and
+Java-deserialization patterns in a body are blocked everywhere with no exemption.
