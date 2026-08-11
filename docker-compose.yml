@@ -34,8 +34,14 @@ services:
     build: ./backend
     ports:
       - "3000:3000"
+    # `required: false` is load-bearing: ./backend/.env is gitignored and nothing
+    # creates it, so a freshly instantiated repo has no such file. Without this,
+    # Compose hard-errors ("env file ... not found") and the very first
+    # `docker compose up` fails — at the exact moment the docs promise the user
+    # they will see their app. Needs Compose v2.24+ (Codespaces ships newer).
     env_file:
-      - ./backend/.env               # Gitignored — secrets stay private
+      - path: ./backend/.env          # Gitignored — secrets stay private
+        required: false
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=3306           # Change to 5432 for PostgreSQL
@@ -52,8 +58,10 @@ services:
   # AI will switch to PostgreSQL if needed (replace entire db block)
   db:
     image: mysql:8.0
+    # See the note on the backend service: optional so a fresh clone starts.
     env_file:
-      - ./database/.env               # Gitignored — credentials stay private
+      - path: ./database/.env         # Gitignored — credentials stay private
+        required: false
     ports:
       - "3306:3306"
     volumes:
@@ -74,7 +82,8 @@ services:
   # db:
   #   image: postgres:15
   #   env_file:
-  #     - ./database/.env             # Gitignored — credentials stay private
+  #     - path: ./database/.env       # Gitignored — credentials stay private
+  #       required: false
   #   ports:
   #     - "5432:5432"
   #   volumes:
