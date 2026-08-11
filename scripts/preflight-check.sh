@@ -127,6 +127,75 @@ echo -e "${BLUE}🚀 Vibe Platform Pre-flight Check${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # -----------------------------------------------------------------------------
+header "📤 Committed vs Local"
+# -----------------------------------------------------------------------------
+# The deploy builds from the pushed COMMIT, not from your working directory.
+# A file that exists on disk but was never committed is invisible to it:
+# docker-compose builds it fine, every -f test below passes, and the deploy then
+# fails with "No frontend or backend detected" while naming a file you can see
+# in your editor. Checking tracked-ness here is what makes the rest of this
+# script's file-existence tests mean what they appear to mean.
+
+DEPLOY_DIRS=(frontend backend database vectordb)
+
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+
+    # Dockerfiles are the deploy's component-detection gate. Present-but-untracked
+    # is the difference between a component deploying and silently not existing.
+    UNTRACKED_DOCKERFILES=""
+    for d in "${DEPLOY_DIRS[@]}"; do
+        if [[ -f "$d/Dockerfile" ]]; then
+            if ! git ls-files --error-unmatch "$d/Dockerfile" > /dev/null 2>&1; then
+                UNTRACKED_DOCKERFILES="$UNTRACKED_DOCKERFILES $d/Dockerfile"
+            fi
+        fi
+    done
+
+    if [[ -n "$UNTRACKED_DOCKERFILES" ]]; then
+        fail "Dockerfile(s) exist locally but are NOT committed:$UNTRACKED_DOCKERFILES" \
+             "The deploy only sees committed files. Run: git add$UNTRACKED_DOCKERFILES"
+    else
+        pass "Every Dockerfile present on disk is committed"
+    fi
+
+    # Everything else inside a build context: app source, package.json,
+    # index.html, schema.sql. --exclude-standard omits gitignored paths (.env,
+    # node_modules), so whatever remains is genuinely forgotten work.
+    EXISTING_DIRS=()
+    for d in "${DEPLOY_DIRS[@]}"; do
+        if [[ -d "$d" ]]; then
+            EXISTING_DIRS+=("$d")
+        fi
+    done
+
+    if [[ ${#EXISTING_DIRS[@]} -gt 0 ]]; then
+        UNTRACKED_FILES=$(git ls-files --others --exclude-standard -- "${EXISTING_DIRS[@]}" 2>/dev/null || true)
+
+        if [[ -n "$UNTRACKED_FILES" ]]; then
+            UNTRACKED_COUNT=$(printf '%s\n' "$UNTRACKED_FILES" | wc -l | tr -d ' ')
+            fail "$UNTRACKED_COUNT file(s) in build folders are not committed — they will NOT be deployed" \
+                 "Review them, then stage by name (never 'git add .')"
+            printf '%s\n' "$UNTRACKED_FILES" | head -10 | sed 's/^/     • /'
+            if [[ "$UNTRACKED_COUNT" -gt 10 ]]; then
+                echo "     … and $((UNTRACKED_COUNT - 10)) more"
+            fi
+        else
+            pass "No uncommitted files in build folders"
+        fi
+
+        # Tracked but edited: the deploy would build the older committed content.
+        MODIFIED_FILES=$(git diff --name-only HEAD -- "${EXISTING_DIRS[@]}" 2>/dev/null || true)
+        if [[ -n "$MODIFIED_FILES" ]]; then
+            MODIFIED_COUNT=$(printf '%s\n' "$MODIFIED_FILES" | wc -l | tr -d ' ')
+            warn "$MODIFIED_COUNT file(s) have uncommitted edits — the deploy builds the last committed version, not what you see locally"
+            printf '%s\n' "$MODIFIED_FILES" | head -5 | sed 's/^/     • /'
+        fi
+    fi
+else
+    info "Not a git repository — skipping committed-vs-local checks"
+fi
+
+# -----------------------------------------------------------------------------
 header "📁 Project Structure"
 # -----------------------------------------------------------------------------
 
