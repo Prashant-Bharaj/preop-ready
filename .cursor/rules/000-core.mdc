@@ -15,7 +15,7 @@ explain why you cannot and offer a safe alternative.
 
 | File | Why |
 |------|-----|
-| `.github/workflows/deploy.yml` | Platform-managed; overwritten on template sync |
+| `.github/workflows/*.yml` (`deploy`, `template-sync`, `version-bump`, `dependabot-auto-merge`) | Platform-managed; overwritten on template sync |
 | `scripts/preflight-check.sh` | Deployment validation |
 | `scripts/pre-commit-security-check.sh` | Pre-commit security hook |
 | `.gitignore` | Controls what sensitive files are blocked from git |
@@ -46,7 +46,7 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 |-------|---------|-------------|
 | Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
 | Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | — |
+| Database | PostgreSQL, MySQL | MongoDB, Redis, SQLite, DynamoDB — no document/KV/embedded stores |
 | Vector DB | pgvector, Chroma, Qdrant | — |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)
@@ -155,6 +155,11 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
 - If `vectordb/Dockerfile` exists: `VECTORDB_HOST`, `VECTORDB_PORT`, and (pgvector only)
   `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD`
 
+⛔ **Keep the platform's DB/user names — do NOT rename the database or user to your project**
+(e.g. inventing `myproject_db` / `myproject_user`). The injected `DATABASE_*` (prod) and the
+fixed local values are what the backend connects with; renaming them is the #1 cause of the
+backend failing to reach its own database.
+
 Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 
 ## /data Persistence (EFS)
@@ -227,6 +232,9 @@ don't hand-roll. The pattern:
 - Python: `RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup appuser` … `USER appuser`
 
 Use `COPY --chown=appuser:appgroup . .` so the app files are readable after the switch.
+The nginx frontend container additionally needs `curl` (ECS health check) and writable runtime
+dirs as non-root — the template Dockerfile handles it (`apk add curl`;
+`chown -R appuser:appgroup /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && touch /var/run/nginx.pid`).
 
 ## User Identity — Only From Verified ALB Headers
 
@@ -247,6 +255,14 @@ NEVER trust client input. Validate on the backend even if the frontend validates
 
 Use `snippets/security/input-validation.*` — apply sanitization middleware BEFORE routes.
 
+Cap request body size explicitly — an uncapped parser is a DoS vector:
+`app.use(express.json({ limit: '1mb' }));` (Express); FastAPI: reject oversized `Content-Length`.
+
+## Rate Limiting
+
+Add rate-limiting middleware on auth, search, and write endpoints (e.g. `express-rate-limit`,
+`slowapi` for FastAPI) to blunt brute-force and DoS.
+
 ## Parameterized SQL ONLY
 
 ```javascript
@@ -258,6 +274,9 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 
 No string concatenation, template literals, or f-strings in queries — in any language
 (pg `$1`, mysql2 `?`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+
+- **Paginate all list queries** (`LIMIT`/`OFFSET` or keyset) — never return an unbounded result set.
+- Use a **least-privilege DB user** for the app: no DDL or superuser rights in the app's credentials.
 
 ## JSON Error Responses (every API endpoint)
 

@@ -143,7 +143,7 @@ gh run list --workflow=deploy.yml --status=success --limit=1 --json conclusion -
 # 0 → do NOT offer; tell the user to deploy first
 ```
 
-**Provides:** per-project key for `https://api.vibe.intranet.cnb/{repo-name}/api/{path}`, isolated per project, rate limited 50 req/sec (burst 100) / 100,000 req/day, Bayer network (VPN) only. Same backend as the browser URL; API Gateway validates the key, then Traefik strips `/api` as usual.
+**Provides:** per-project key (format `vibe-{project}-{32-char-random}`) for `https://api.vibe.intranet.cnb/{repo-name}/api/{path}`, isolated per project, rate limited 50 req/sec (burst 100) / 100,000 req/day, Bayer network (VPN) only. Same backend as the browser URL; API Gateway validates the key, then Traefik strips `/api` as usual.
 
 ## Create / Revoke / Rotate
 

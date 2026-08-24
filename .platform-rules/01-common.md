@@ -76,6 +76,11 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
 - If `vectordb/Dockerfile` exists: `VECTORDB_HOST`, `VECTORDB_PORT`, and (pgvector only)
   `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD`
 
+⛔ **Keep the platform's DB/user names — do NOT rename the database or user to your project**
+(e.g. inventing `myproject_db` / `myproject_user`). The injected `DATABASE_*` (prod) and the
+fixed local values are what the backend connects with; renaming them is the #1 cause of the
+backend failing to reach its own database.
+
 Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 
 ## /data Persistence (EFS)

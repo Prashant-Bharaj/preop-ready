@@ -29,6 +29,9 @@ don't hand-roll. The pattern:
 - Python: `RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup appuser` … `USER appuser`
 
 Use `COPY --chown=appuser:appgroup . .` so the app files are readable after the switch.
+The nginx frontend container additionally needs `curl` (ECS health check) and writable runtime
+dirs as non-root — the template Dockerfile handles it (`apk add curl`;
+`chown -R appuser:appgroup /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && touch /var/run/nginx.pid`).
 
 ## User Identity — Only From Verified ALB Headers
 
@@ -49,6 +52,14 @@ NEVER trust client input. Validate on the backend even if the frontend validates
 
 Use `snippets/security/input-validation.*` — apply sanitization middleware BEFORE routes.
 
+Cap request body size explicitly — an uncapped parser is a DoS vector:
+`app.use(express.json({ limit: '1mb' }));` (Express); FastAPI: reject oversized `Content-Length`.
+
+## Rate Limiting
+
+Add rate-limiting middleware on auth, search, and write endpoints (e.g. `express-rate-limit`,
+`slowapi` for FastAPI) to blunt brute-force and DoS.
+
 ## Parameterized SQL ONLY
 
 ```javascript
@@ -60,6 +71,9 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 
 No string concatenation, template literals, or f-strings in queries — in any language
 (pg `$1`, mysql2 `?`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+
+- **Paginate all list queries** (`LIMIT`/`OFFSET` or keyset) — never return an unbounded result set.
+- Use a **least-privilege DB user** for the app: no DDL or superuser rights in the app's credentials.
 
 ## JSON Error Responses (every API endpoint)
 

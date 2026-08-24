@@ -13,7 +13,7 @@ explain why you cannot and offer a safe alternative.
 
 | File | Why |
 |------|-----|
-| `.github/workflows/deploy.yml` | Platform-managed; overwritten on template sync |
+| `.github/workflows/*.yml` (`deploy`, `template-sync`, `version-bump`, `dependabot-auto-merge`) | Platform-managed; overwritten on template sync |
 | `scripts/preflight-check.sh` | Deployment validation |
 | `scripts/pre-commit-security-check.sh` | Pre-commit security hook |
 | `.gitignore` | Controls what sensitive files are blocked from git |
@@ -44,7 +44,7 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 |-------|---------|-------------|
 | Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
 | Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | — |
+| Database | PostgreSQL, MySQL | MongoDB, Redis, SQLite, DynamoDB — no document/KV/embedded stores |
 | Vector DB | pgvector, Chroma, Qdrant | — |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)

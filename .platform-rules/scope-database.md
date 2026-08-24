@@ -29,6 +29,9 @@ cp database/Dockerfile.mysql database/Dockerfile      # MySQL (if user prefers i
 
 Vector search / embeddings do NOT go here — use `vectordb/` (see `.platform-rules/scope-vectordb.md`).
 
+Migrating from a document/KV store (MongoDB, DynamoDB, etc.)? There is no drop-in port — it needs
+a data-model redesign (documents → relational tables).
+
 ## Init Scripts — first deploy ONLY
 
 - `database/init/*.sql` runs ONCE, when the data directory is empty (first deployment). Editing existing files OR adding new ones afterwards has NO effect — the directory is only read on that first boot. This includes the LOCAL docker volume: if `docker-compose up` has ever initialized the database, new init files silently never run.
