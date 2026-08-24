@@ -1,0 +1,13 @@
+{
+  "assistantKey": "subagent-frontend",
+  "scenarioName": "minimal-complete",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "<write_to_file>\n<path>frontend/package.json</path>\n<content>{\n  \"name\": \"frontend\",\n  \"version\": \"1.0.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"tsc -b && vite build\",\n    \"typecheck\": \"tsc --noEmit\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^4.3.4\",\n    \"typescript\": \"^5.6.0\",\n    \"vite\": \"^6.0.0\",\n    \"@types/react\": \"^18.3.0\",\n    \"@types/react-dom\": \"^18.3.0\"\n  }\n}\n</content>\n</write_to_file>\n\n<write_to_file>\n<path>frontend/src/App.tsx</path>\n<content>import { useEffect, useState } from 'react';\n\ntype Task = { id: number; title: string; done: boolean; created_at: string };\n\nexport default function App() {\n  const [tasks, setTasks] = useState<Task[]>([]);\n\n  useEffect(() => {\n    fetch('/api/tasks').then((r) => r.json()).then(setTasks);\n  }, []);\n\n  return (\n    <main>\n      <h1>Tasks</h1>\n      <ul>\n        {tasks.map((t) => (\n          <li key={t.id}>{t.title}</li>\n        ))}\n      </ul>\n    </main>\n  );\n}\n</content>\n</write_to_file>\n\n<copy_template>\n<template>Dockerfile.react</template>\n<dest>frontend/Dockerfile</dest>\n</copy_template>\n\n<execute_command>\n<command>cd frontend && npm install --silent && npm run typecheck</command>\n</execute_command>\n\n<attempt_completion>\n<result>\n--- PHASE AGENT REPORT ---\n\n**Scope:** frontend\n\n**Status:** complete\n\n**Files written:**\n- frontend/package.json\n- frontend/src/App.tsx\n- frontend/Dockerfile (from template)\n\n**Summary:** Minimal React + TypeScript SPA fetches /api/tasks and renders the list. Vite dev server + Dockerfile from canonical template. Type-check clean.\n\n**Contracts for sibling scopes:**\n- Ports: frontend:5173 (Vite dev) — production build serves static from nginx in compose\n- Env vars: none required (proxy via integration)\n\n--- END REPORT ---\n</result>\n</attempt_completion>",
+    "usage": { "prompt_tokens": 26841, "completion_tokens": 498, "prompt_tokens_details": { "cached_tokens": 24000 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-subagent-frontend-minimal-complete-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

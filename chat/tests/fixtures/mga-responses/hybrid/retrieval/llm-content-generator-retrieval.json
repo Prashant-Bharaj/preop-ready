@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-retrieval",
+  "scenarioName": "llm-content-generator-retrieval",
+  "schemaVersion": 1,
+  "module": "retrieval",
+  "response": {
+    "completionText": "{\"contextData\":[{\"topic\":\"Prompt engineering patterns\",\"summary\":\"Effective LLM content generation uses few-shot prompting, explicit output format instructions (JSON schema or markdown template), persona/tone constraints, and a system message that anchors the model to the use case. Chain-of-thought prompting improves factual accuracy for long-form content.\",\"relevance\":\"high\"},{\"topic\":\"Content moderation\",\"summary\":\"AI-generated content tools require a moderation layer before serving output to end users. Approaches include OpenAI moderation API, regex-based filters, and secondary LLM judge calls. Logging all generated content is a common compliance requirement.\",\"relevance\":\"high\"},{\"topic\":\"Streaming UX patterns\",\"summary\":\"Users expect streaming (token-by-token) output for content generation tools. Server-Sent Events (SSE) or WebSockets are standard. Client must handle partial JSON gracefully if the output format is structured.\",\"relevance\":\"medium\"},{\"topic\":\"Rate limiting and cost control\",\"summary\":\"Token-based rate limits per user/tenant are essential to prevent cost overruns. Caching identical or near-identical prompts reduces API costs significantly. Circuit-breaker patterns protect against LLM API downtime.\",\"relevance\":\"medium\"}]}",
+    "usage": { "prompt_tokens": 2700, "completion_tokens": 340, "prompt_tokens_details": { "cached_tokens": 0 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-retrieval-llm-content-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:10:00Z"
+}

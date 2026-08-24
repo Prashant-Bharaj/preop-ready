@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "data": {
+    "dataModel": {
+      "tables": [
+        {
+          "name": "users",
+          "columns": [
+            {
+              "name": "id",
+              "type": "SERIAL PRIMARY KEY"
+            },
+            {
+              "name": "oidc_sub",
+              "type": "TEXT UNIQUE NOT NULL"
+            },
+            {
+              "name": "email",
+              "type": "VARCHAR(255) NOT NULL"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP DEFAULT NOW()"
+            }
+          ]
+        },
+        {
+          "name": "tasks",
+          "columns": [
+            {
+              "name": "id",
+              "type": "SERIAL PRIMARY KEY"
+            },
+            {
+              "name": "user_id",
+              "type": "INTEGER REFERENCES users(id) NOT NULL"
+            },
+            {
+              "name": "title",
+              "type": "VARCHAR(255) NOT NULL"
+            },
+            {
+              "name": "completed",
+              "type": "BOOLEAN DEFAULT FALSE"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP DEFAULT NOW()"
+            }
+          ]
+        }
+      ]
+    },
+    "apiContract": {
+      "version": 1,
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/whoami",
+          "response": {
+            "status": 200,
+            "body": "{ id, email }"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/tasks",
+          "request": {
+            "query": "limit (optional, default 50), offset (optional, default 0)"
+          },
+          "response": {
+            "status": 200,
+            "body": "{ tasks: [{ id, title, completed, created_at }], total }"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/tasks",
+          "request": {
+            "title": "string required"
+          },
+          "response": {
+            "status": 201,
+            "body": "{ id, title, completed, created_at }"
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/tasks/:id",
+          "request": {
+            "title": "string optional",
+            "completed": "boolean optional"
+          },
+          "response": {
+            "status": 200,
+            "body": "{ id, title, completed, created_at }"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/tasks/:id",
+          "response": {
+            "status": 204,
+            "body": null
+          }
+        }
+      ]
+    },
+    "vectorEngine": null,
+    "uiContract": {
+      "primary_view": "list of user's tasks",
+      "primary_action": "add a new task",
+      "secondary_views": [],
+      "components": [
+        {
+          "name": "TaskList",
+          "role": "displays all tasks for the current user with completion status"
+        },
+        {
+          "name": "TaskItem",
+          "role": "single task row with toggle complete and delete actions"
+        },
+        {
+          "name": "AddTaskForm",
+          "role": "input field and button to create a new task"
+        }
+      ]
+    },
+    "businessLogicContract": {
+      "triggers": [
+        {
+          "event": "user_first_login",
+          "action": "create users row from OIDC claims (sub, email)"
+        }
+      ],
+      "rules": [
+        "users can only see their own tasks",
+        "users can only update or delete their own tasks",
+        "task title must be non-empty on create and update"
+      ],
+      "side_effects": []
+    },
+    "fileStructure": {
+      "backend": {
+        "language": "node",
+        "entry": "backend/src/index.ts",
+        "required_files": [
+          "backend/src/index.ts",
+          "backend/package.json",
+          "backend/Dockerfile"
+        ],
+        "required_dirs": [
+          "backend/src",
+          "backend/src/generated"
+        ],
+        "forbidden_paths": [
+          "backend/main.py"
+        ]
+      },
+      "frontend": {
+        "framework": "react-vite",
+        "required_files": [
+          "frontend/src/main.tsx",
+          "frontend/src/App.tsx",
+          "frontend/package.json",
+          "frontend/Dockerfile",
+          "frontend/nginx.conf",
+          "frontend/nginx.local.conf",
+          "frontend/vite.config.ts"
+        ],
+        "required_dirs": [
+          "frontend/src",
+          "frontend/src/generated"
+        ]
+      },
+      "database": {
+        "engine": "postgres",
+        "required_files": [
+          "database/Dockerfile"
+        ],
+        "required_dirs": [
+          "database/init"
+        ]
+      },
+      "integration": {
+        "required_files": [
+          "docker-compose.yml",
+          ".env.example"
+        ]
+      }
+    },
+    "tasksByScope": {
+      "database": {
+        "scope": "database",
+        "summary": "Stores user accounts and their personal tasks with completion status.",
+        "task": "Tables: users, tasks. Indexes: tasks(user_id), tasks(created_at DESC). Column-level contract: data_model.",
+        "rules": [
+          "common.md",
+          "global.md",
+          "reference/ai-file-input.md",
+          "reference/background-commands.md",
+          "reference/deployment.md",
+          "reference/error-recovery.md",
+          "reference/sensitive-files.md",
+          "reference/snippets.md",
+          "reference/status-tracking.md",
+          "reference/subagents.md",
+          "reference/troubleshooting.md",
+          "reference/urls.md",
+          "security.md"
+        ],
+        "snippets": [],
+        "primarySnippet": null,
+        "dockerfile": "Dockerfile.postgres"
+      },
+      "backend": {
+        "scope": "backend",
+        "summary": "API for managing tasks scoped to the authenticated user.",
+        "task": "Write backend/src/routes.ts from scratch. Implement every endpoint from api_contract with real handler bodies per business_logic_contract. Keep route paths, HTTP methods, and request/response field names byte-identical to the contract. Data: pg Pool from env (DATABASE_HOST/PORT/NAME/USER/PASSWORD). Auth: x-amzn-oidc-data JWT sub/email for user identity. Auto-create user row on first login if not exists. Filter all task queries by user_id. Validate title is non-empty string on POST/PUT. Return 404 if task not found or not owned by user. Pagination: limit/offset with default limit=50, newest first.",
+        "rules": [
+          "common.md",
+          "global.md",
+          "reference/ai-file-input.md",
+          "reference/background-commands.md",
+          "reference/deployment.md",
+          "reference/error-recovery.md",
+          "reference/sensitive-files.md",
+          "reference/snippets.md",
+          "reference/status-tracking.md",
+          "reference/subagents.md",
+          "reference/troubleshooting.md",
+          "reference/urls.md",
+          "reference/user-identity.md",
+          "security.md"
+        ],
+        "snippets": [
+          "auth/user-identity.py",
+          "auth/user-identity.rs",
+          "auth/user-identity.ts",
+          "backend/express-server-template.ts",
+          "backend/fastapi-server-template.py",
+          "backend/postgres-connection.ts",
+          "database/migration-runner.ts",
+          "security/input-validation.py",
+          "security/input-validation.ts",
+          "security/parameterized-queries.py",
+          "security/parameterized-queries.ts",
+          "security/sanitize-middleware.py",
+          "security/sanitize-middleware.ts"
+        ],
+        "primarySnippet": "backend/express-server-template.ts",
+        "dockerfile": "Dockerfile.node"
+      },
+      "frontend": {
+        "scope": "frontend",
+        "summary": "Minimal React app for viewing and managing personal tasks.",
+        "task": "Write the React + Vite + TypeScript app from scratch. Components: one file per ui_contract.components[] with the exact exported name and <Name>Props type from generated/contracts.ts. Endpoints + body shapes: api_contract — call via the pre-staged api-client (URLs already prepend /api/). States: spinner during fetch, empty state CTA when no tasks, toast on 4xx/5xx, disabled submit during POST. Responsive (Tailwind mobile-first). Author package.json, tsconfig.json, vite.config.ts, index.html, src/main.tsx, src/App.tsx, src/index.css, src/components/*.tsx, src/lib/utils.ts.",
+        "rules": [
+          "common.md",
+          "global.md",
+          "reference/ai-file-input.md",
+          "reference/background-commands.md",
+          "reference/deployment.md",
+          "reference/error-recovery.md",
+          "reference/sensitive-files.md",
+          "reference/snippets.md",
+          "reference/status-tracking.md",
+          "reference/subagents.md",
+          "reference/troubleshooting.md",
+          "reference/urls.md",
+          "reference/user-identity.md",
+          "security.md"
+        ],
+        "snippets": [
+          "auth/token-refresh.ts",
+          "frontend/AppScaffold.tsx",
+          "frontend/components/Alert.tsx",
+          "frontend/components/Avatar.tsx",
+          "frontend/components/Badge.tsx",
+          "frontend/components/Button.tsx",
+          "frontend/components/Card.tsx",
+          "frontend/components/Dialog.tsx",
+          "frontend/components/DropdownMenu.tsx",
+          "frontend/components/Form.tsx",
+          "frontend/components/Input.tsx",
+          "frontend/components/Label.tsx",
+          "frontend/components/Select.tsx",
+          "frontend/components/Separator.tsx",
+          "frontend/components/Sheet.tsx",
+          "frontend/components/Table.tsx",
+          "frontend/components/Tabs.tsx",
+          "frontend/components/Textarea.tsx",
+          "frontend/components/Toast.tsx",
+          "frontend/lib/utils.ts",
+          "frontend/nginx-local-proxy.conf",
+          "frontend/nginx-production.conf",
+          "frontend/tailwind.config.ts",
+          "frontend/vite-react-config.ts",
+          "ui/datepicker-react.tsx"
+        ],
+        "primarySnippet": "frontend/AppScaffold.tsx",
+        "dockerfile": "Dockerfile.react"
+      },
+      "integration": {
+        "scope": "integration",
+        "summary": "Wires database, backend, and frontend for local development.",
+        "task": "Wire database, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=tasktracker, DATABASE_USER=tasktracker_user, DATABASE_PASSWORD=localdev123. nginx.local.conf proxy /api→backend:3000. depends_on chain: backend depends on database, frontend depends on backend. Healthchecks for each service. Volumes: postgres data persistence.",
+        "rules": [
+          "common.md",
+          "global.md",
+          "reference/ai-file-input.md",
+          "reference/background-commands.md",
+          "reference/deployment.md",
+          "reference/error-recovery.md",
+          "reference/sensitive-files.md",
+          "reference/snippets.md",
+          "reference/status-tracking.md",
+          "reference/subagents.md",
+          "reference/troubleshooting.md",
+          "reference/urls.md",
+          "security.md"
+        ],
+        "snippets": [
+          "integration/docker-compose-frontend-only.yml",
+          "integration/docker-compose-fullstack.yml"
+        ],
+        "primarySnippet": "integration/docker-compose-fullstack.yml",
+        "dockerfile": null
+      }
+    }
+  }
+}

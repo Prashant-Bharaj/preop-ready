@@ -1,0 +1,15 @@
+{
+  "assistantKey": "hybrid-policy-checker",
+  "scenarioName": "clean-no-flags-policy",
+  "schemaVersion": 1,
+  "module": "policy-checker",
+  "response": {
+    "completionText": "{\"flags\":[]}",
+    "usage": { "prompt_tokens": 1900, "completion_tokens": 12, "prompt_tokens_details": { "cached_tokens": 1800 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-policy-clean-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:45:00Z",
+  "note": "Represents a build with no compliance concerns — used to test that policy-checker soft-failure with empty flags array does not block the build."
+}

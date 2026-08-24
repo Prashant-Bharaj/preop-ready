@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-policy-checker",
+  "scenarioName": "finance-dashboard-policy",
+  "schemaVersion": 1,
+  "module": "policy-checker",
+  "response": {
+    "completionText": "{\"flags\":[{\"category\":\"Investment data display\",\"regulation\":\"FINRA Rule 2210\",\"note\":\"Any display of historical performance data must include required disclosures; past performance disclaimers are mandatory.\"},{\"category\":\"Payment card data\",\"regulation\":\"PCI-DSS\",\"note\":\"If the dashboard processes or displays payment card numbers, PCI-DSS SAQ/ROC compliance and card-data scoping review are required.\"},{\"category\":\"User financial account data\",\"regulation\":\"GLBA\",\"note\":\"Non-public personal financial information must be protected under a formal information security programme and privacy notice.\"}]}",
+    "usage": { "prompt_tokens": 2050, "completion_tokens": 205, "prompt_tokens_details": { "cached_tokens": 0 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-policy-finance-dashboard-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:40:00Z"
+}

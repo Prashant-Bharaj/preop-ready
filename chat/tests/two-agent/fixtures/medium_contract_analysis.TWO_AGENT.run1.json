@@ -1,0 +1,688 @@
+{
+  "prompt": {
+    "id": "medium_contract_analysis",
+    "label": "Medium — Contract and Document Analysis",
+    "userMessage": "Our procurement and legal teams review hundreds of vendor agreements every quarter, and identifying unusual clauses or inconsistent commercial terms has become increasingly difficult. Important obligations around renewals, pricing adjustments, or compliance requirements are often buried deep within lengthy documents. The current review process is heavily manual and depends on institutional knowledge from a small number of experienced employees. We are looking for a more scalable way to analyze large volumes of business documents and surface key risks or inconsistencies earlier in the process."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 5551,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"This could go a few different directions. Which is closest to what you want?\\n\\nA) Contract review assistant — upload an agreement, AI extracts key clauses (renewals, pricing, compliance) and flags unusual terms vs. your standards\\nB) Contract Q&A chatbot — reviewers ask plain-English questions across the whole agreement library and get cited answers\\nC) Continuous risk monitor — AI scans all stored agreements on a schedule and surfaces anomalies/inconsistencies in a dashboard\\nD) Review workflow tracker — track who's reviewing which contract, with checklists per clause type and sign-off\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "This could go a few different directions. Which is closest to what you want?\n\nA) Contract review assistant — upload an agreement, AI extracts key clauses (renewals, pricing, compliance) and flags unusual terms vs. your standards\nB) Contract Q&A chatbot — reviewers ask plain-English questions across the whole agreement library and get cited answers\nC) Continuous risk monitor — AI scans all stored agreements on a schedule and surfaces anomalies/inconsistencies in a dashboard\nD) Review workflow tracker — track who's reviewing which contract, with checklists per clause type and sign-off"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 5304,
+        "content": "{\n\"action\": \"clarify\",\n\"round\": 2,\n\"message\": \"Got it — a contract review assistant where users upload an agreement, AI extracts key clauses (renewals, pricing, compliance), and flags unusual terms against your standards. A few things we can include out of the box — pick any that sound useful:\\n\\nA) Email notifications to reviewers when a contract finishes processing or a high-risk clause is flagged\\nB) Admin dashboard for legal/procurement leads to see flag trends, reviewer activity, and coverage stats\\nC) Audit log of every upload, extraction, and reviewer decision (useful for compliance)\\nD) CSV export of extracted clauses and flags for offline review meetings\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Got it — a contract review assistant where users upload an agreement, AI extracts key clauses (renewals, pricing, compliance), and flags unusual terms against your standards. A few things we can include out of the box — pick any that sound useful:\n\nA) Email notifications to reviewers when a contract finishes processing or a high-risk clause is flagged\nB) Admin dashboard for legal/procurement leads to see flag trends, reviewer activity, and coverage stats\nC) Audit log of every upload, extraction, and reviewer decision (useful for compliance)\nD) CSV export of extracted clauses and flags for offline review meetings"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 16558,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"A contract review assistant where procurement and legal users upload vendor agreements, and AI extracts key clauses (renewals, pricing, compliance) and flags unusual terms against the organization's standards.\",\n    \"archetype\": \"ai-tool\",\n    \"entities\": [\"agreements\", \"clauses\", \"flags\", \"standards\", \"users\"],\n    \"user_roles\": [\"reviewers\", \"admins\"],\n    \"key_workflows\": [\n      \"A reviewer uploads a vendor agreement (PDF/doc) into the app.\",\n      \"The system runs AI extraction to identify key clauses: renewals, pricing adjustments, compliance obligations, and other configurable categories.\",\n      \"Extracted clauses are compared against the organization's standard terms and flagged when unusual or inconsistent.\",\n      \"The reviewer sees the agreement with extracted clauses, severity-ranked flags, and citations back to the source text.\",\n      \"Reviewers can accept, dismiss, or annotate each flag, and the decisions are recorded.\",\n      \"Admins (legal/procurement leads) view a dashboard with flag trends, reviewer activity, and document coverage stats.\",\n      \"Email notifications are sent to reviewers when a contract finishes processing or when a high-risk clause is flagged.\",\n      \"Every upload, extraction result, and reviewer decision is recorded in an audit log.\",\n      \"Reviewers and admins can export extracted clauses and flags as CSV for offline review meetings.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"Upload vendor agreements for AI analysis\",\n      \"Extract key clauses: renewals, pricing adjustments, compliance requirements\",\n      \"Flag unusual clauses and inconsistent commercial terms against organizational standards\",\n      \"Severity ranking of flags (e.g., high/medium/low risk)\",\n      \"Cite/link each extracted clause back to its location in the source document\",\n      \"Allow reviewers to accept, dismiss, or annotate flags\",\n      \"Maintain a library of organizational standard terms used as the comparison baseline\",\n      \"Admin dashboard showing flag trends, reviewer activity, and document coverage\",\n      \"Email notifications when processing completes or a high-risk flag is created\",\n      \"Audit log of all uploads, AI extractions, and reviewer decisions\",\n      \"CSV export of extracted clauses and flags\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\n        \"ai_text_classification_extraction\",\n        \"file_uploads\",\n        \"email_notifications\",\n        \"admin_dashboard\",\n        \"audit_logging\",\n        \"csv_export\"\n      ],\n      \"declined\": [],\n      \"user_didnt_choose\": []\n    },\n    \"flags\": [\n      \"has-users\",\n      \"has-admin\",\n      \"ai-chat\",\n      \"file-uploads\",\n      \"notifications-email\",\n      \"exports-csv\"\n    ],\n    \"notes_for_contract_agent\": \"Domain is procurement/legal contract review. Preserve the user's terminology: 'agreements' (not 'contracts' in UI labels where possible), 'clauses', 'flags', 'standards'. File uploads are memory-only/ephemeral per platform constraints — agreement text and extracted clauses must be persisted to Postgres at upload time so the original file does not need to be re-stored. Flag severity should be a first-class field on flags. AI extraction goes through MGA (text classification/extraction style); no external AI providers. Audit log is delivered via the admin scope and should cover uploads, extraction runs, and reviewer decisions on flags.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "A contract review assistant where procurement and legal users upload vendor agreements, and AI extracts key clauses (renewals, pricing, compliance) and flags unusual terms against the organization's standards.",
+            "archetype": "ai-tool",
+            "entities": [
+              "agreements",
+              "clauses",
+              "flags",
+              "standards",
+              "users"
+            ],
+            "user_roles": [
+              "reviewers",
+              "admins"
+            ],
+            "key_workflows": [
+              "A reviewer uploads a vendor agreement (PDF/doc) into the app.",
+              "The system runs AI extraction to identify key clauses: renewals, pricing adjustments, compliance obligations, and other configurable categories.",
+              "Extracted clauses are compared against the organization's standard terms and flagged when unusual or inconsistent.",
+              "The reviewer sees the agreement with extracted clauses, severity-ranked flags, and citations back to the source text.",
+              "Reviewers can accept, dismiss, or annotate each flag, and the decisions are recorded.",
+              "Admins (legal/procurement leads) view a dashboard with flag trends, reviewer activity, and document coverage stats.",
+              "Email notifications are sent to reviewers when a contract finishes processing or when a high-risk clause is flagged.",
+              "Every upload, extraction result, and reviewer decision is recorded in an audit log.",
+              "Reviewers and admins can export extracted clauses and flags as CSV for offline review meetings."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Upload vendor agreements for AI analysis",
+              "Extract key clauses: renewals, pricing adjustments, compliance requirements",
+              "Flag unusual clauses and inconsistent commercial terms against organizational standards",
+              "Severity ranking of flags (e.g., high/medium/low risk)",
+              "Cite/link each extracted clause back to its location in the source document",
+              "Allow reviewers to accept, dismiss, or annotate flags",
+              "Maintain a library of organizational standard terms used as the comparison baseline",
+              "Admin dashboard showing flag trends, reviewer activity, and document coverage",
+              "Email notifications when processing completes or a high-risk flag is created",
+              "Audit log of all uploads, AI extractions, and reviewer decisions",
+              "CSV export of extracted clauses and flags"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "ai_text_classification_extraction",
+                "file_uploads",
+                "email_notifications",
+                "admin_dashboard",
+                "audit_logging",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-chat",
+              "file-uploads",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "Domain is procurement/legal contract review. Preserve the user's terminology: 'agreements' (not 'contracts' in UI labels where possible), 'clauses', 'flags', 'standards'. File uploads are memory-only/ephemeral per platform constraints — agreement text and extracted clauses must be persisted to Postgres at upload time so the original file does not need to be re-stored. Flag severity should be a first-class field on flags. AI extraction goes through MGA (text classification/extraction style); no external AI providers. Audit log is delivered via the admin scope and should cover uploads, extraction runs, and reviewer decisions on flags."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "A contract review assistant where procurement and legal users upload vendor agreements, and AI extracts key clauses (renewals, pricing, compliance) and flags unusual terms against the organization's standards.",
+      "archetype": "ai-tool",
+      "entities": [
+        "agreements",
+        "clauses",
+        "flags",
+        "standards",
+        "users"
+      ],
+      "user_roles": [
+        "reviewers",
+        "admins"
+      ],
+      "key_workflows": [
+        "A reviewer uploads a vendor agreement (PDF/doc) into the app.",
+        "The system runs AI extraction to identify key clauses: renewals, pricing adjustments, compliance obligations, and other configurable categories.",
+        "Extracted clauses are compared against the organization's standard terms and flagged when unusual or inconsistent.",
+        "The reviewer sees the agreement with extracted clauses, severity-ranked flags, and citations back to the source text.",
+        "Reviewers can accept, dismiss, or annotate each flag, and the decisions are recorded.",
+        "Admins (legal/procurement leads) view a dashboard with flag trends, reviewer activity, and document coverage stats.",
+        "Email notifications are sent to reviewers when a contract finishes processing or when a high-risk clause is flagged.",
+        "Every upload, extraction result, and reviewer decision is recorded in an audit log.",
+        "Reviewers and admins can export extracted clauses and flags as CSV for offline review meetings."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Upload vendor agreements for AI analysis",
+        "Extract key clauses: renewals, pricing adjustments, compliance requirements",
+        "Flag unusual clauses and inconsistent commercial terms against organizational standards",
+        "Severity ranking of flags (e.g., high/medium/low risk)",
+        "Cite/link each extracted clause back to its location in the source document",
+        "Allow reviewers to accept, dismiss, or annotate flags",
+        "Maintain a library of organizational standard terms used as the comparison baseline",
+        "Admin dashboard showing flag trends, reviewer activity, and document coverage",
+        "Email notifications when processing completes or a high-risk flag is created",
+        "Audit log of all uploads, AI extractions, and reviewer decisions",
+        "CSV export of extracted clauses and flags"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "ai_text_classification_extraction",
+          "file_uploads",
+          "email_notifications",
+          "admin_dashboard",
+          "audit_logging",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-chat",
+        "file-uploads",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "Domain is procurement/legal contract review. Preserve the user's terminology: 'agreements' (not 'contracts' in UI labels where possible), 'clauses', 'flags', 'standards'. File uploads are memory-only/ephemeral per platform constraints — agreement text and extracted clauses must be persisted to Postgres at upload time so the original file does not need to be re-stored. Flag severity should be a first-class field on flags. AI extraction goes through MGA (text classification/extraction style); no external AI providers. Audit log is delivered via the admin scope and should cover uploads, extraction runs, and reviewer decisions on flags."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"I'll build a contract review assistant where reviewers upload vendor agreements and AI extracts key clauses (renewals, pricing, compliance), comparing them against your organization's standard terms. Unusual clauses are flagged with severity rankings and citations back to the source text. Reviewers can accept, dismiss, or annotate each flag. Admins get a dashboard showing flag trends, reviewer activity, and document coverage. Email notifications fire when processing completes or high-risk flags appear, every action is recorded in an audit log, and clauses/flags can be exported as CSV.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-chat\", \"file-uploads\", \"notifications-email\", \"exports-csv\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Set up storage for agreements, extracted clauses, flags, organizational standards, reviewer decisions, and an audit log.\",\n      \"task\": \"Tables: users, standards, agreements, clauses, flags, decisions, audit_log. Indexes on FKs (agreement_id, clause_id, user_id), flags.severity, audit_log.created_at DESC. Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": []\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Set up a vector index of organizational standard terms so AI can match new clauses against the closest standard.\",\n      \"task\": \"pgvector extension. Table: standard_chunks(id, standard_id, chunk_text, embedding vector(3072)). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Provide APIs for uploading agreements, running AI extraction, comparing against standards, recording reviewer decisions, and exporting results.\",\n      \"task\": \"Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; auto-create users row on first login; role from claims (default 'reviewer'). File uploads: multipart, memory-only — parse PDF/doc text immediately, persist text to agreements.full_text, discard binary. AI extraction via MGA: classify text into clause categories, embed each clause, k-NN search against standard_chunks, generate flag with severity (high/medium/low). Email via MGA on processing_complete and high-severity flag creation. CSV export streams text/csv. Admin endpoints require role='admin'. Audit log written on every upload, extraction, and decision.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Build the reviewer and admin UI: upload agreements, view extracted clauses with citations and severity-ranked flags, accept/dismiss/annotate flags, manage standards, and view the admin dashboard.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during upload/extraction, empty CTA on agreements list, toast on 4xx/5xx, 404 page, disabled submit during POST, polling for processing status. Clause citations highlight source text offsets. Severity badges color-coded (high=red, medium=amber, low=gray). Admin dashboard charts flag trends over time, reviewer activity, doc coverage. CSV export triggers download. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wire all services together for local development with one command.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=contractreview, DATABASE_USER=contractreview_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on all services. Named volumes for database and vectordb.\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'reviewer'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"standards\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"category\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"title\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"body\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"created_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"agreements\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"filename\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"full_text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"status\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'pending'\"},\n          {\"name\": \"uploaded_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"},\n          {\"name\": \"processed_at\", \"type\": \"TIMESTAMPTZ\"}\n        ]\n      },\n      {\n        \"name\": \"clauses\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"agreement_id\", \"type\": \"INTEGER NOT NULL REFERENCES agreements(id) ON DELETE CASCADE\"},\n          {\"name\": \"category\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"source_start\", \"type\": \"INTEGER NOT NULL\"},\n          {\"name\": \"source_end\", \"type\": \"INTEGER NOT NULL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"flags\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"clause_id\", \"type\": \"INTEGER NOT NULL REFERENCES clauses(id) ON DELETE CASCADE\"},\n          {\"name\": \"agreement_id\", \"type\": \"INTEGER NOT NULL REFERENCES agreements(id) ON DELETE CASCADE\"},\n          {\"name\": \"severity\", \"type\": \"VARCHAR(16) NOT NULL\"},\n          {\"name\": \"reason\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"matched_standard_id\", \"type\": \"INTEGER REFERENCES standards(id)\"},\n          {\"name\": \"status\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'open'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"decisions\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"flag_id\", \"type\": \"INTEGER NOT NULL REFERENCES flags(id) ON DELETE CASCADE\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"action\", \"type\": \"VARCHAR(32) NOT NULL\"},\n          {\"name\": \"annotation\", \"type\": \"TEXT\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"audit_log\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"event_type\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"entity_type\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"entity_id\", \"type\": \"INTEGER\"},\n          {\"name\": \"details\", \"type\": \"JSONB\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\"method\": \"GET\", \"path\": \"/whoami\", \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}},\n      {\"method\": \"GET\", \"path\": \"/agreements\", \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, filename, status, uploaded_at, processed_at, flag_counts: {high,medium,low} }], total }\"}},\n      {\"method\": \"POST\", \"path\": \"/agreements\", \"request\": \"multipart/form-data: file (PDF/doc) required\", \"response\": {\"status\": 201, \"body\": \"{ id, filename, status }\"}},\n      {\"method\": \"GET\", \"path\": \"/agreements/:id\", \"response\": {\"status\": 200, \"body\": \"{ id, filename, full_text, status, uploaded_at, processed_at, clauses: [{ id, category, text, source_start, source_end, flags: [{ id, severity, reason, status, matched_standard_id }] }] }\"}},\n      {\"method\": \"POST\", \"path\": \"/agreements/:id/extract\", \"response\": {\"status\": 202, \"body\": \"{ id, status }\"}},\n      {\"method\": \"GET\", \"path\": \"/agreements/:id/export\", \"response\": {\"status\": 200, \"body\": \"text/csv stream of clauses+flags\"}},\n      {\"method\": \"GET\", \"path\": \"/flags\", \"request\": \"?agreement_id&severity&status&limit=50&offset=0\", \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, agreement_id, clause_id, severity, reason, status, created_at }], total }\"}},\n      {\"method\": \"POST\", \"path\": \"/flags/:id/decision\", \"request\": \"{ action: 'accept'|'dismiss'|'annotate' required, annotation: string optional }\", \"response\": {\"status\": 201, \"body\": \"{ id, flag_id, action, annotation, created_at }\"}},\n      {\"method\": \"GET\", \"path\": \"/standards\", \"request\": \"?limit=50&offset=0\", \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, category, title, body, created_at }], total }\"}},\n      {\"method\": \"POST\", \"path\": \"/standards\", \"request\": \"{ category: string required, title: string required, body: string required }\", \"response\": {\"status\": 201, \"body\": \"{ id, category, title, body }\"}},\n      {\"method\": \"DELETE\", \"path\": \"/standards/:id\", \"response\": {\"status\": 204, \"body\": \"\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/dashboard\", \"response\": {\"status\": 200, \"body\": \"{ flag_trends: [{ date, high, medium, low }], reviewer_activity: [{ user_id, email, decisions_count }], coverage: { total_agreements, processed, pending } }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/audit-log\", \"request\": \"?limit=50&offset=0\", \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, user_id, event_type, entity_type, entity_id, details, created_at }], total }\"}}\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"list of uploaded agreements\",\n    \"primary_action\": \"upload a vendor agreement for AI review\",\n    \"secondary_views\": [\n      \"agreement detail with extracted clauses and severity-ranked flags\",\n      \"standards library management\",\n      \"admin dashboard with flag trends and reviewer activity\",\n      \"admin audit log\"\n    ],\n    \"components\": [\n      {\"name\": \"AgreementUploader\", \"role\": \"drag-and-drop upload for vendor agreements\"},\n      {\"name\": \"AgreementList\", \"role\": \"list of uploaded agreements with status and flag counts\"},\n      {\"name\": \"AgreementDetail\", \"role\": \"source text view with inline clause highlights and citations\"},\n      {\"name\": \"ClausePanel\", \"role\": \"extracted clauses grouped by category\"},\n      {\"name\": \"FlagCard\", \"role\": \"single flag with severity badge, matched standard, and decision actions\"},\n      {\"name\": \"SeverityBadge\", \"role\": \"color-coded high/medium/low indicator\"},\n      {\"name\": \"DecisionActions\", \"role\": \"accept, dismiss, or annotate a flag\"},\n      {\"name\": \"StandardsLibrary\", \"role\": \"admin view to add/remove organizational standard terms\"},\n      {\"name\": \"AdminDashboard\", \"role\": \"charts for flag trends, reviewer activity, document coverage\"},\n      {\"name\": \"AuditLogTable\", \"role\": \"paginated audit log of all system events\"},\n      {\"name\": \"ExportButton\", \"role\": \"download clauses and flags as CSV\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC claims (sub, email), default role='reviewer'\"},\n      {\"event\": \"agreement_uploaded\", \"action\": \"parse PDF/doc text in-memory, persist full_text to agreements row, discard binary, enqueue extraction\"},\n      {\"event\": \"extraction_run\", \"action\": \"call MGA to classify text into clause categories (renewals, pricing, compliance, other), persist clauses with source offsets, embed each clause, k-NN search standard_chunks, generate flag with severity for clauses deviating from standards\"},\n      {\"event\": \"extraction_complete\", \"action\": \"set agreements.status='processed', processed_at=NOW(), send email notification to uploader via MGA\"},\n      {\"event\": \"high_severity_flag_created\", \"action\": \"send email notification to uploader via MGA\"},\n      {\"event\": \"standard_created\", \"action\": \"chunk body, embed via MGA, store in standard_chunks\"},\n      {\"event\": \"decision_made\", \"action\": \"insert decisions row, update flags.status accordingly (accepted/dismissed/annotated)\"}\n    ],\n    \"rules\": [\n      \"reviewers can only view and decide on flags for agreements they uploaded\",\n      \"admins can view all agreements, flags, decisions, and the audit log\",\n      \"/admin/* endpoints require role='admin' (403 otherwise)\",\n      \"/standards POST and DELETE require role='admin'\",\n      \"severity must be one of: 'high', 'medium', 'low'\",\n      \"flag decision action must be one of: 'accept', 'dismiss', 'annotate'\",\n      \"agreement file uploads are memory-only — binary discarded after text extraction\"\n    ],\n    \"side_effects\": [\n      \"audit log entry on every agreement upload, extraction run, and reviewer decision\",\n      \"email notification on processing complete and high-severity flag creation\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Contract Clause Extractor\",\n      \"description\": \"Analyzes vendor agreement text, extracts key clauses (renewals, pricing adjustments, compliance obligations), and flags unusual terms compared to organizational standards with severity ranking.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"Extract all renewal and pricing clauses from this agreement.\",\n        \"Flag any compliance obligations that deviate from our standards.\"\n      ]\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "I'll build a contract review assistant where reviewers upload vendor agreements and AI extracts key clauses (renewals, pricing, compliance), comparing them against your organization's standard terms. Unusual clauses are flagged with severity rankings and citations back to the source text. Reviewers can accept, dismiss, or annotate each flag. Admins get a dashboard showing flag trends, reviewer activity, and document coverage. Email notifications fire when processing completes or high-risk flags appear, every action is recorded in an audit log, and clauses/flags can be exported as CSV.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-chat",
+        "file-uploads",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up storage for agreements, extracted clauses, flags, organizational standards, reviewer decisions, and an audit log.",
+          "task": "Tables: users, standards, agreements, clauses, flags, decisions, audit_log. Indexes on FKs (agreement_id, clause_id, user_id), flags.severity, audit_log.created_at DESC. Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": []
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Set up a vector index of organizational standard terms so AI can match new clauses against the closest standard.",
+          "task": "pgvector extension. Table: standard_chunks(id, standard_id, chunk_text, embedding vector(3072)). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Provide APIs for uploading agreements, running AI extraction, comparing against standards, recording reviewer decisions, and exporting results.",
+          "task": "Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; auto-create users row on first login; role from claims (default 'reviewer'). File uploads: multipart, memory-only — parse PDF/doc text immediately, persist text to agreements.full_text, discard binary. AI extraction via MGA: classify text into clause categories, embed each clause, k-NN search against standard_chunks, generate flag with severity (high/medium/low). Email via MGA on processing_complete and high-severity flag creation. CSV export streams text/csv. Admin endpoints require role='admin'. Audit log written on every upload, extraction, and decision.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the reviewer and admin UI: upload agreements, view extracted clauses with citations and severity-ranked flags, accept/dismiss/annotate flags, manage standards, and view the admin dashboard.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during upload/extraction, empty CTA on agreements list, toast on 4xx/5xx, 404 page, disabled submit during POST, polling for processing status. Clause citations highlight source text offsets. Severity badges color-coded (high=red, medium=amber, low=gray). Admin dashboard charts flag trends over time, reviewer activity, doc coverage. CSV export triggers download. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire all services together for local development with one command.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=contractreview, DATABASE_USER=contractreview_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on all services. Named volumes for database and vectordb.",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'reviewer'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "standards",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "category",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "body",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "created_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "agreements",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "filename",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "full_text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'pending'"
+              },
+              {
+                "name": "uploaded_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              },
+              {
+                "name": "processed_at",
+                "type": "TIMESTAMPTZ"
+              }
+            ]
+          },
+          {
+            "name": "clauses",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "agreement_id",
+                "type": "INTEGER NOT NULL REFERENCES agreements(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "category",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "source_start",
+                "type": "INTEGER NOT NULL"
+              },
+              {
+                "name": "source_end",
+                "type": "INTEGER NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "flags",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "clause_id",
+                "type": "INTEGER NOT NULL REFERENCES clauses(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "agreement_id",
+                "type": "INTEGER NOT NULL REFERENCES agreements(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "severity",
+                "type": "VARCHAR(16) NOT NULL"
+              },
+              {
+                "name": "reason",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "matched_standard_id",
+                "type": "INTEGER REFERENCES standards(id)"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'open'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "decisions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "flag_id",
+                "type": "INTEGER NOT NULL REFERENCES flags(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(32) NOT NULL"
+              },
+              {
+                "name": "annotation",
+                "type": "TEXT"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "event_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "entity_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "entity_id",
+                "type": "INTEGER"
+              },
+              {
+                "name": "details",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/agreements",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, filename, status, uploaded_at, processed_at, flag_counts: {high,medium,low} }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/agreements",
+            "request": "multipart/form-data: file (PDF/doc) required",
+            "response": {
+              "status": 201,
+              "body": "{ id, filename, status }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/agreements/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, filename, full_text, status, uploaded_at, processed_at, clauses: [{ id, category, text, source_start, source_end, flags: [{ id, severity, reason, status, matched_standard_id }] }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/agreements/:id/extract",
+            "response": {
+              "status": 202,
+              "body": "{ id, status }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/agreements/:id/export",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream of clauses+flags"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/flags",
+            "request": "?agreement_id&severity&status&limit=50&offset=0",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, agreement_id, clause_id, severity, reason, status, created_at }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/flags/:id/decision",
+            "request": "{ action: 'accept'|'dismiss'|'annotate' required, annotation: string optional }",
+            "response": {
+              "status": 201,
+              "body": "{ id, flag_id, action, annotation, created_at }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/standards",
+            "request": "?limit=50&offset=0",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, category, title, body, created_at }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/standards",
+            "request": "{ category: string required, title: string required, body: string required }",
+            "response": {
+              "status": 201,
+              "body": "{ id, category, title, body }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/standards/:id",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/dashboard",
+            "response": {
+              "status": 200,
+              "body": "{ flag_trends: [{ date, high, medium, low }], reviewer_activity: [{ user_id, email, decisions_count }], coverage: { total_agreements, processed, pending } }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-log",
+            "request": "?limit=50&offset=0",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, user_id, event_type, entity_type, entity_id, details, created_at }], total }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "list of uploaded agreements",
+        "primary_action": "upload a vendor agreement for AI review",
+        "secondary_views": [
+          "agreement detail with extracted clauses and severity-ranked flags",
+          "standards library management",
+          "admin dashboard with flag trends and reviewer activity",
+          "admin audit log"
+        ],
+        "components": [
+          {
+            "name": "AgreementUploader",
+            "role": "drag-and-drop upload for vendor agreements"
+          },
+          {
+            "name": "AgreementList",
+            "role": "list of uploaded agreements with status and flag counts"
+          },
+          {
+            "name": "AgreementDetail",
+            "role": "source text view with inline clause highlights and citations"
+          },
+          {
+            "name": "ClausePanel",
+            "role": "extracted clauses grouped by category"
+          },
+          {
+            "name": "FlagCard",
+            "role": "single flag with severity badge, matched standard, and decision actions"
+          },
+          {
+            "name": "SeverityBadge",
+            "role": "color-coded high/medium/low indicator"
+          },
+          {
+            "name": "DecisionActions",
+            "role": "accept, dismiss, or annotate a flag"
+          },
+          {
+            "name": "StandardsLibrary",
+            "role": "admin view to add/remove organizational standard terms"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "charts for flag trends, reviewer activity, document coverage"
+          },
+          {
+            "name": "AuditLogTable",
+            "role": "paginated audit log of all system events"
+          },
+          {
+            "name": "ExportButton",
+            "role": "download clauses and flags as CSV"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims (sub, email), default role='reviewer'"
+          },
+          {
+            "event": "agreement_uploaded",
+            "action": "parse PDF/doc text in-memory, persist full_text to agreements row, discard binary, enqueue extraction"
+          },
+          {
+            "event": "extraction_run",
+            "action": "call MGA to classify text into clause categories (renewals, pricing, compliance, other), persist clauses with source offsets, embed each clause, k-NN search standard_chunks, generate flag with severity for clauses deviating from standards"
+          },
+          {
+            "event": "extraction_complete",
+            "action": "set agreements.status='processed', processed_at=NOW(), send email notification to uploader via MGA"
+          },
+          {
+            "event": "high_severity_flag_created",
+            "action": "send email notification to uploader via MGA"
+          },
+          {
+            "event": "standard_created",
+            "action": "chunk body, embed via MGA, store in standard_chunks"
+          },
+          {
+            "event": "decision_made",
+            "action": "insert decisions row, update flags.status accordingly (accepted/dismissed/annotated)"
+          }
+        ],
+        "rules": [
+          "reviewers can only view and decide on flags for agreements they uploaded",
+          "admins can view all agreements, flags, decisions, and the audit log",
+          "/admin/* endpoints require role='admin' (403 otherwise)",
+          "/standards POST and DELETE require role='admin'",
+          "severity must be one of: 'high', 'medium', 'low'",
+          "flag decision action must be one of: 'accept', 'dismiss', 'annotate'",
+          "agreement file uploads are memory-only — binary discarded after text extraction"
+        ],
+        "side_effects": [
+          "audit log entry on every agreement upload, extraction run, and reviewer decision",
+          "email notification on processing complete and high-severity flag creation"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Contract Clause Extractor",
+          "description": "Analyzes vendor agreement text, extracts key clauses (renewals, pricing adjustments, compliance obligations), and flags unusual terms compared to organizational standards with severity ranking.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "Extract all renewal and pricing clauses from this agreement.",
+            "Flag any compliance obligations that deviate from our standards."
+          ]
+        }
+      ]
+    },
+    "ms": 62373
+  }
+}

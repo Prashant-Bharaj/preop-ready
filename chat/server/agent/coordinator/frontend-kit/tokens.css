@@ -1,0 +1,30 @@
+/* AUTO-STAGED UI KIT — design tokens. Locked; do not edit. */
+:root {
+  --kit-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --kit-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --kit-bg: #f5f6f8;
+  --kit-surface: #ffffff;
+  --kit-border: #e3e6eb;
+  --kit-border-strong: #c9ced6;
+  --kit-text: #1b2430;
+  --kit-text-muted: #5f6b7a;
+  --kit-accent: #0f5aa0;
+  --kit-accent-hover: #0c4a85;
+  --kit-accent-soft: #e8f1f9;
+  --kit-danger: #b42318;
+  --kit-danger-soft: #fdf1f0;
+  --kit-success: #067647;
+  --kit-success-soft: #ecfdf3;
+  --kit-warning: #b54708;
+  --kit-warning-soft: #fffaeb;
+  --kit-radius: 8px;
+  --kit-radius-sm: 6px;
+  --kit-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --kit-shadow-lg: 0 8px 24px rgba(16, 24, 40, 0.16);
+}
+body {
+  font-family: var(--kit-font);
+  background: var(--kit-bg);
+  color: var(--kit-text);
+  margin: 0;
+}

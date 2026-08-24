@@ -1,0 +1,13 @@
+{
+  "assistantKey": "router",
+  "scenarioName": "iterate-amend-multi-scope",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "{\"action\":\"iterate\",\"summary\":\"Add an admin role with promote/demote and an admin badge in the UI.\",\"contract_diffs\":{\"data_model\":{\"tables\":[{\"name\":\"users\",\"columns\":[{\"name\":\"role\",\"type\":\"TEXT NOT NULL DEFAULT 'user'\"}]}]},\"api_contract\":{\"endpoints\":[{\"method\":\"POST\",\"path\":\"/admin/promote\",\"request\":{\"user_id\":\"integer required\"},\"response\":{\"status\":200,\"body\":\"{ user_id, role }\"}}]},\"ui_contract\":{\"components\":[{\"name\":\"AdminBadge\",\"role\":\"visual indicator next to admin user's name\"}]}},\"affected_scopes\":[\"database\",\"backend\",\"frontend\"],\"tasks\":[{\"scope\":\"database\",\"summary\":\"Add role column\",\"task\":\"Add a role TEXT NOT NULL DEFAULT 'user' column to the users table. Provide a migration alongside the existing init SQL.\",\"rules\":[],\"snippets\":[]},{\"scope\":\"backend\",\"summary\":\"Admin promote endpoint\",\"task\":\"Add POST /admin/promote and POST /admin/demote handlers that flip users.role between 'admin' and 'user'. Restrict to currently-admin callers via existing auth middleware.\",\"rules\":[],\"snippets\":[]},{\"scope\":\"frontend\",\"summary\":\"Admin badge in UI\",\"task\":\"Show an AdminBadge next to the user name when role === 'admin'. Reuse the existing user-fetching hook.\",\"rules\":[],\"snippets\":[]}]}",
+    "usage": { "prompt_tokens": 22871, "completion_tokens": 318, "prompt_tokens_details": { "cached_tokens": 20800 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-router-iterate-amend-multi-scope-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

@@ -1,0 +1,5 @@
+{"sessionId":"f2c74607-a39d-4efe-9b14-3d63206b4e3a","scope":"integration","phase":"SUBAGENT","snippetPath":"integration/docker-compose-fullstack.yml","fetchedAt":1779732317260,"sizeBytes":1731,"source":"disk"}
+{"sessionId":"f2c74607-a39d-4efe-9b14-3d63206b4e3a","scope":"frontend","phase":"SUBAGENT","snippetPath":"frontend/vite-react-config.ts","fetchedAt":1779732317869,"sizeBytes":3741,"source":"disk"}
+{"sessionId":"f2c74607-a39d-4efe-9b14-3d63206b4e3a","scope":"frontend","phase":"SUBAGENT","snippetPath":"frontend/lib/utils.ts","fetchedAt":1779732317870,"sizeBytes":689,"source":"disk"}
+{"sessionId":"f2c74607-a39d-4efe-9b14-3d63206b4e3a","scope":"backend","phase":"SUBAGENT","snippetPath":"backend/postgres-connection.ts","fetchedAt":1779732317930,"sizeBytes":869,"source":"disk"}
+{"sessionId":"f2c74607-a39d-4efe-9b14-3d63206b4e3a","scope":"backend","phase":"SUBAGENT","snippetPath":"auth/user-identity.ts","fetchedAt":1779732317930,"sizeBytes":4050,"source":"disk"}

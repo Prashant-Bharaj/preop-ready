@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-synthesis",
+  "scenarioName": "demand-planning-synthesis",
+  "schemaVersion": 1,
+  "module": "synthesis",
+  "response": {
+    "completionText": "{\"promptTemplate\":\"You are a supply-chain demand forecasting assistant. Given the following historical sales data and context:\\n\\n{contextSummary}\\n\\nGenerate a demand forecast for SKU {skuId} for the next {horizonWeeks} weeks. Return a JSON array of objects with fields: week (ISO date of Monday), forecast (integer units), confidence (low|medium|high), notes (string, optional).\",\"apiSpec\":{\"method\":\"POST\",\"path\":\"/api/forecast\",\"requestBody\":{\"description\":\"Forecast generation request\",\"fields\":[{\"name\":\"skuId\",\"type\":\"string\",\"required\":true},{\"name\":\"horizonWeeks\",\"type\":\"number\",\"required\":false,\"default\":13},{\"name\":\"contextSummary\",\"type\":\"string\",\"required\":false,\"description\":\"Historical context and anomalies to consider\"}]},\"responseBody\":{\"description\":\"Demand forecast result\",\"fields\":[{\"name\":\"forecast\",\"type\":\"array\"},{\"name\":\"generatedAt\",\"type\":\"string\",\"description\":\"ISO timestamp\"},{\"name\":\"modelId\",\"type\":\"string\"}]}},\"contentSchema\":{\"description\":\"Forecast envelope\",\"fields\":[{\"name\":\"forecast\",\"type\":\"array\",\"description\":\"Array of weekly forecast objects\"},{\"name\":\"week\",\"type\":\"string\",\"description\":\"ISO date (Monday) for the forecast week\"},{\"name\":\"forecastUnits\",\"type\":\"number\",\"description\":\"Predicted demand in units\"},{\"name\":\"confidence\",\"type\":\"string\",\"description\":\"low | medium | high\"},{\"name\":\"notes\",\"type\":\"string\",\"description\":\"Optional planner notes or anomaly flags\"}]}}",
+    "usage": { "prompt_tokens": 4600, "completion_tokens": 480, "prompt_tokens_details": { "cached_tokens": 2000 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-synthesis-demand-planning-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:25:00Z"
+}

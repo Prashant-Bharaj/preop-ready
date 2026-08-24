@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-synthesis",
+  "scenarioName": "llm-content-generator-synthesis",
+  "schemaVersion": 1,
+  "module": "synthesis",
+  "response": {
+    "completionText": "{\"promptTemplate\":\"You are a {tone} content writer specialising in {domain}. The user wants: {userRequest}. Output exactly the content requested. Do not add preamble or meta-commentary. Format: {outputFormat}.\",\"apiSpec\":{\"method\":\"POST\",\"path\":\"/api/generate\",\"provider\":\"mga\",\"mgaEndpoint\":\"/chat/completions\",\"requestBody\":{\"description\":\"Content generation request\",\"fields\":[{\"name\":\"userRequest\",\"type\":\"string\",\"required\":true},{\"name\":\"tone\",\"type\":\"string\",\"required\":false,\"default\":\"professional\"},{\"name\":\"domain\",\"type\":\"string\",\"required\":false,\"default\":\"general\"},{\"name\":\"outputFormat\",\"type\":\"string\",\"required\":false,\"default\":\"markdown\"}]},\"responseBody\":{\"description\":\"Streamed generation result\",\"fields\":[{\"name\":\"content\",\"type\":\"string\"},{\"name\":\"tokensUsed\",\"type\":\"number\"},{\"name\":\"modelId\",\"type\":\"string\"}]}},\"contentSchema\":{\"description\":\"Generated content envelope\",\"fields\":[{\"name\":\"content\",\"type\":\"string\",\"description\":\"The generated text\"},{\"name\":\"tokensUsed\",\"type\":\"number\",\"description\":\"Completion tokens consumed\"},{\"name\":\"modelId\",\"type\":\"string\",\"description\":\"MGA model that produced the content\"},{\"name\":\"moderationPassed\",\"type\":\"boolean\",\"description\":\"True if content passed moderation check\"}]}}",
+    "usage": { "prompt_tokens": 4100, "completion_tokens": 520, "prompt_tokens_details": { "cached_tokens": 1800 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-synthesis-llm-content-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:20:00Z"
+}

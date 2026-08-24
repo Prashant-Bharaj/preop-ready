@@ -1,0 +1,650 @@
+{
+  "prompt": {
+    "id": "medium_contract_analysis",
+    "label": "Medium — Contract and Document Analysis",
+    "userMessage": "Our procurement and legal teams review hundreds of vendor agreements every quarter, and identifying unusual clauses or inconsistent commercial terms has become increasingly difficult. Important obligations around renewals, pricing adjustments, or compliance requirements are often buried deep within lengthy documents. The current review process is heavily manual and depends on institutional knowledge from a small number of experienced employees. We are looking for a more scalable way to analyze large volumes of business documents and surface key risks or inconsistencies earlier in the process."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 5707,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"This could go a few directions. Which is closest to what you want?\\n\\nA) Clause extraction tool — upload contracts, AI pulls out key terms (renewal dates, pricing, obligations) into a structured table reviewers can scan\\nB) Risk flagging tool — AI scans contracts and automatically flags unusual or inconsistent clauses for legal review\\nC) Contract Q&A — reviewers ask questions in plain English (\\\"which contracts auto-renew next quarter?\\\") and get cited answers\\nD) Review workflow tracker — assign contracts to reviewers, track status and checklists, store findings\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "This could go a few directions. Which is closest to what you want?\n\nA) Clause extraction tool — upload contracts, AI pulls out key terms (renewal dates, pricing, obligations) into a structured table reviewers can scan\nB) Risk flagging tool — AI scans contracts and automatically flags unusual or inconsistent clauses for legal review\nC) Contract Q&A — reviewers ask questions in plain English (\"which contracts auto-renew next quarter?\") and get cited answers\nD) Review workflow tracker — assign contracts to reviewers, track status and checklists, store findings"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 16859,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"A clause extraction tool where procurement and legal teams upload vendor agreements and AI pulls out key terms — renewal dates, pricing adjustments, compliance obligations — into a structured, reviewable format.\",\n    \"archetype\": \"ai-tool\",\n    \"entities\": [\"contracts\", \"extracted_clauses\", \"vendors\", \"users\"],\n    \"user_roles\": [\"reviewers\", \"admins\"],\n    \"key_workflows\": [\n      \"A reviewer uploads a vendor agreement (PDF/doc) to the system.\",\n      \"The AI extracts structured fields: renewal terms, pricing adjustments, compliance obligations, unusual clauses.\",\n      \"The reviewer sees extracted clauses in a structured table with citations back to the source document.\",\n      \"Reviewers can search and filter across all extracted clauses (e.g., find all auto-renewing contracts).\",\n      \"Reviewers can flag or annotate clauses that need follow-up.\",\n      \"Admins oversee usage and can export extracted data for offline analysis.\",\n      \"Reviewers receive email notifications when extractions complete or when high-risk clauses are detected.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"extract renewal dates and terms from contracts\",\n      \"extract pricing adjustment clauses\",\n      \"extract compliance requirements and obligations\",\n      \"flag unusual or inconsistent clauses across contracts\",\n      \"show citations back to the source document for each extracted clause\",\n      \"search and filter across extracted clauses from many contracts\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\"ai_text_classification_extraction\", \"file_uploads\", \"in_app_search\", \"admin_dashboard\", \"audit_logging\", \"email_notifications\", \"csv_export\"],\n      \"declined\": [],\n      \"user_didnt_choose\": []\n    },\n    \"flags\": [\"has-users\", \"has-admin\", \"ai-chat\", \"file-uploads\", \"search-ui\", \"notifications-email\", \"exports-csv\"],\n    \"notes_for_contract_agent\": \"User said 'proceed' after picking clause extraction product type — accepted a sensible default set of capabilities (extraction, uploads, search, admin oversight, audit, email alerts, CSV export) without a second clarify round. Source documents are vendor agreements (contracts) reviewed by procurement and legal. Preserve user terminology: 'clauses', 'obligations', 'reviewers'. File uploads are memory-only per platform constraint — extracted structured data persists in Postgres, but the raw uploaded file is not stored on disk long-term.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "A clause extraction tool where procurement and legal teams upload vendor agreements and AI pulls out key terms — renewal dates, pricing adjustments, compliance obligations — into a structured, reviewable format.",
+            "archetype": "ai-tool",
+            "entities": [
+              "contracts",
+              "extracted_clauses",
+              "vendors",
+              "users"
+            ],
+            "user_roles": [
+              "reviewers",
+              "admins"
+            ],
+            "key_workflows": [
+              "A reviewer uploads a vendor agreement (PDF/doc) to the system.",
+              "The AI extracts structured fields: renewal terms, pricing adjustments, compliance obligations, unusual clauses.",
+              "The reviewer sees extracted clauses in a structured table with citations back to the source document.",
+              "Reviewers can search and filter across all extracted clauses (e.g., find all auto-renewing contracts).",
+              "Reviewers can flag or annotate clauses that need follow-up.",
+              "Admins oversee usage and can export extracted data for offline analysis.",
+              "Reviewers receive email notifications when extractions complete or when high-risk clauses are detected."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "extract renewal dates and terms from contracts",
+              "extract pricing adjustment clauses",
+              "extract compliance requirements and obligations",
+              "flag unusual or inconsistent clauses across contracts",
+              "show citations back to the source document for each extracted clause",
+              "search and filter across extracted clauses from many contracts"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "ai_text_classification_extraction",
+                "file_uploads",
+                "in_app_search",
+                "admin_dashboard",
+                "audit_logging",
+                "email_notifications",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-chat",
+              "file-uploads",
+              "search-ui",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "User said 'proceed' after picking clause extraction product type — accepted a sensible default set of capabilities (extraction, uploads, search, admin oversight, audit, email alerts, CSV export) without a second clarify round. Source documents are vendor agreements (contracts) reviewed by procurement and legal. Preserve user terminology: 'clauses', 'obligations', 'reviewers'. File uploads are memory-only per platform constraint — extracted structured data persists in Postgres, but the raw uploaded file is not stored on disk long-term."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "A clause extraction tool where procurement and legal teams upload vendor agreements and AI pulls out key terms — renewal dates, pricing adjustments, compliance obligations — into a structured, reviewable format.",
+      "archetype": "ai-tool",
+      "entities": [
+        "contracts",
+        "extracted_clauses",
+        "vendors",
+        "users"
+      ],
+      "user_roles": [
+        "reviewers",
+        "admins"
+      ],
+      "key_workflows": [
+        "A reviewer uploads a vendor agreement (PDF/doc) to the system.",
+        "The AI extracts structured fields: renewal terms, pricing adjustments, compliance obligations, unusual clauses.",
+        "The reviewer sees extracted clauses in a structured table with citations back to the source document.",
+        "Reviewers can search and filter across all extracted clauses (e.g., find all auto-renewing contracts).",
+        "Reviewers can flag or annotate clauses that need follow-up.",
+        "Admins oversee usage and can export extracted data for offline analysis.",
+        "Reviewers receive email notifications when extractions complete or when high-risk clauses are detected."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "extract renewal dates and terms from contracts",
+        "extract pricing adjustment clauses",
+        "extract compliance requirements and obligations",
+        "flag unusual or inconsistent clauses across contracts",
+        "show citations back to the source document for each extracted clause",
+        "search and filter across extracted clauses from many contracts"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "ai_text_classification_extraction",
+          "file_uploads",
+          "in_app_search",
+          "admin_dashboard",
+          "audit_logging",
+          "email_notifications",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-chat",
+        "file-uploads",
+        "search-ui",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "User said 'proceed' after picking clause extraction product type — accepted a sensible default set of capabilities (extraction, uploads, search, admin oversight, audit, email alerts, CSV export) without a second clarify round. Source documents are vendor agreements (contracts) reviewed by procurement and legal. Preserve user terminology: 'clauses', 'obligations', 'reviewers'. File uploads are memory-only per platform constraint — extracted structured data persists in Postgres, but the raw uploaded file is not stored on disk long-term."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"I'll build a clause extraction tool where reviewers upload vendor agreements and AI extracts structured terms — renewal dates, pricing adjustments, compliance obligations, and unusual clauses — with citations back to the source. Reviewers can search and filter across all extracted clauses, flag items for follow-up, and receive email notifications when extractions complete or high-risk clauses are detected. Admins get an oversight dashboard and can export data as CSV. All actions are audit-logged.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-chat\", \"file-uploads\", \"search-ui\", \"notifications-email\", \"exports-csv\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Set up storage for users, vendors, uploaded contracts, the structured clauses pulled from them, reviewer annotations, and an audit trail.\",\n      \"task\": \"Tables: users, vendors, contracts, extracted_clauses, clause_annotations, audit_logs. Indexes on FKs and on extracted_clauses(clause_type, contract_id), audit_logs(created_at DESC). Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": []\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Set up a semantic search index so reviewers can find clauses by meaning across all extracted contract data.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id, contract_id, clause_id NULL, chunk_text TEXT, embedding vector(3072), metadata JSONB). HNSW index on embedding (cosine). Embedding model: text-embedding-3-large via MGA.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Build the API that accepts contract uploads, runs AI clause extraction, stores structured results, supports search/filter/annotate, sends email alerts, and exports CSV.\",\n      \"task\": \"Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; create users row on first login. File uploads: multer memory storage only — parse PDF/DOCX in-memory, send text to MGA assistant for extraction, persist structured clauses to Postgres and chunk-embeddings to pgvector; do NOT write raw files to disk. Email notifications on extraction-complete and high-risk-clause-detected. CSV export streams extracted_clauses with filters. Admin endpoints require role='admin'. Audit log every write.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Build the reviewer UI: upload contracts, see extracted clauses in a structured table with source citations, search/filter across clauses, flag and annotate, plus an admin oversight view.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during upload+extraction, empty CTA on no contracts, toast on 4xx/5xx, 404 page, disabled submit during POST, progress indicator while AI extracts. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wire all services together so the app runs locally with one command.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=clauses, DATABASE_USER=clauses_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5432. nginx.local.conf proxy /api→backend:3000. depends_on chain frontend→backend→{database,vectordb}. Healthchecks. Named volumes for database and vectordb.\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'reviewer'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"vendors\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"contracts\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"vendor_id\", \"type\": \"INTEGER REFERENCES vendors(id)\"},\n          {\"name\": \"title\", \"type\": \"VARCHAR(500) NOT NULL\"},\n          {\"name\": \"original_filename\", \"type\": \"VARCHAR(500) NOT NULL\"},\n          {\"name\": \"mime_type\", \"type\": \"VARCHAR(100)\"},\n          {\"name\": \"status\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'pending'\"},\n          {\"name\": \"extracted_text\", \"type\": \"TEXT\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"},\n          {\"name\": \"extracted_at\", \"type\": \"TIMESTAMPTZ\"}\n        ]\n      },\n      {\n        \"name\": \"extracted_clauses\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"contract_id\", \"type\": \"INTEGER NOT NULL REFERENCES contracts(id) ON DELETE CASCADE\"},\n          {\"name\": \"clause_type\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"clause_text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"structured_value\", \"type\": \"JSONB\"},\n          {\"name\": \"citation_excerpt\", \"type\": \"TEXT\"},\n          {\"name\": \"citation_location\", \"type\": \"VARCHAR(255)\"},\n          {\"name\": \"risk_level\", \"type\": \"VARCHAR(16) NOT NULL DEFAULT 'normal'\"},\n          {\"name\": \"is_unusual\", \"type\": \"BOOLEAN NOT NULL DEFAULT FALSE\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"clause_annotations\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"clause_id\", \"type\": \"INTEGER NOT NULL REFERENCES extracted_clauses(id) ON DELETE CASCADE\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"note\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"flagged\", \"type\": \"BOOLEAN NOT NULL DEFAULT FALSE\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"audit_logs\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"action\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"entity_type\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"entity_id\", \"type\": \"INTEGER\"},\n          {\"name\": \"details\", \"type\": \"JSONB\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\n        \"method\": \"GET\",\n        \"path\": \"/whoami\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/vendors\",\n        \"response\": {\"status\": 200, \"body\": \"{ vendors: [{ id, name }] }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/vendors\",\n        \"request\": {\"name\": \"string required\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, name }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/contracts\",\n        \"request\": \"multipart/form-data: file (PDF/DOCX) required, title string required, vendor_id integer optional\",\n        \"response\": {\"status\": 201, \"body\": \"{ id, title, status, vendor_id }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/contracts\",\n        \"request\": \"query: limit=50, offset=0, vendor_id?, status?\",\n        \"response\": {\"status\": 200, \"body\": \"{ contracts: [{ id, title, vendor_id, status, created_at, extracted_at }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/contracts/:id\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, title, vendor_id, status, original_filename, extracted_text, created_at, extracted_at }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/contracts/:id/clauses\",\n        \"response\": {\"status\": 200, \"body\": \"{ clauses: [{ id, clause_type, clause_text, structured_value, citation_excerpt, citation_location, risk_level, is_unusual }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/clauses\",\n        \"request\": \"query: limit=50, offset=0, clause_type?, risk_level?, is_unusual?, vendor_id?, q?\",\n        \"response\": {\"status\": 200, \"body\": \"{ clauses: [{ id, contract_id, contract_title, vendor_id, clause_type, clause_text, structured_value, citation_excerpt, citation_location, risk_level, is_unusual }], total }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/clauses/:id/annotations\",\n        \"request\": {\"note\": \"string required\", \"flagged\": \"boolean optional\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, clause_id, note, flagged, created_at }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/clauses/:id/annotations\",\n        \"response\": {\"status\": 200, \"body\": \"{ annotations: [{ id, user_id, note, flagged, created_at }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/clauses/export.csv\",\n        \"request\": \"query: clause_type?, risk_level?, vendor_id?\",\n        \"response\": {\"status\": 200, \"body\": \"text/csv stream of extracted clauses with citations\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/stats\",\n        \"response\": {\"status\": 200, \"body\": \"{ total_contracts, total_clauses, total_users, flagged_clauses, high_risk_clauses, extractions_last_7d }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/audit-logs\",\n        \"request\": \"query: limit=50, offset=0\",\n        \"response\": {\"status\": 200, \"body\": \"{ logs: [{ id, user_id, action, entity_type, entity_id, details, created_at }], total }\"}\n      }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"list of uploaded contracts with extraction status\",\n    \"primary_action\": \"upload a vendor agreement for clause extraction\",\n    \"secondary_views\": [\n      \"contract detail with structured clauses table and source citations\",\n      \"global clause search and filter across all contracts\",\n      \"flagged and annotated clauses view\",\n      \"admin dashboard with usage stats and audit log\",\n      \"CSV export\"\n    ],\n    \"components\": [\n      {\"name\": \"ContractUploader\", \"role\": \"drag-and-drop upload form for PDF/DOCX vendor agreements\"},\n      {\"name\": \"ContractList\", \"role\": \"table of uploaded contracts with vendor, status, and extracted_at\"},\n      {\"name\": \"ContractDetail\", \"role\": \"shows contract metadata and the structured clause table\"},\n      {\"name\": \"ClauseTable\", \"role\": \"structured table of extracted clauses grouped by type with risk indicators\"},\n      {\"name\": \"ClauseCitation\", \"role\": \"shows the source excerpt and location for a clause\"},\n      {\"name\": \"ClauseSearch\", \"role\": \"search and filter UI across all extracted clauses\"},\n      {\"name\": \"ClauseFilters\", \"role\": \"filter chips for clause_type, risk_level, unusual, vendor\"},\n      {\"name\": \"AnnotationPanel\", \"role\": \"add notes and flag a clause for follow-up\"},\n      {\"name\": \"FlaggedClausesView\", \"role\": \"list of clauses flagged by reviewers\"},\n      {\"name\": \"ExtractionStatusBadge\", \"role\": \"shows pending / extracting / complete / failed state\"},\n      {\"name\": \"AdminDashboard\", \"role\": \"usage stats, high-risk counts, and audit log for admins\"},\n      {\"name\": \"ExportCsvButton\", \"role\": \"triggers CSV download with current filters applied\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC sub/email, default role='reviewer'\"},\n      {\"event\": \"contract_uploaded\", \"action\": \"parse PDF/DOCX text in-memory, set status='extracting', invoke MGA extraction assistant, persist extracted_clauses with citations, chunk+embed text into pgvector doc_chunks, set status='complete' and extracted_at=NOW()\"},\n      {\"event\": \"extraction_completed\", \"action\": \"send email notification to uploading reviewer with summary of extracted clauses\"},\n      {\"event\": \"high_risk_clause_detected\", \"action\": \"mark clause risk_level='high', send email alert to uploading reviewer\"},\n      {\"event\": \"unusual_clause_detected\", \"action\": \"set extracted_clauses.is_unusual=true based on cross-contract comparison\"},\n      {\"event\": \"extraction_failed\", \"action\": \"set contracts.status='failed', email reviewer\"}\n    ],\n    \"rules\": [\n      \"all endpoints require authenticated user via x-amzn-oidc-data JWT\",\n      \"reviewers can upload contracts and view/annotate any clause across the org\",\n      \"reviewers can only edit/delete their own annotations\",\n      \"/admin/* endpoints require users.role='admin'\",\n      \"/clauses/export.csv accessible to reviewers and admins\",\n      \"raw uploaded file bytes are NEVER persisted to disk — only extracted text and structured clauses stored\",\n      \"all POST/PUT/DELETE write actions write an audit_logs row\"\n    ],\n    \"side_effects\": [\n      \"audit log on every write\",\n      \"email notification on extraction complete and on high-risk clause detection\",\n      \"pgvector embeddings written alongside extracted_clauses for semantic search\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Clause Extraction Assistant\",\n      \"description\": \"Extracts structured clauses (renewal terms, pricing adjustments, compliance obligations, unusual provisions) from vendor agreements and returns them with source citations and risk assessment.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"Extract all renewal and termination terms from this contract.\",\n        \"What pricing adjustment clauses are in this agreement?\",\n        \"Flag any unusual or high-risk obligations in this vendor contract.\"\n      ]\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "I'll build a clause extraction tool where reviewers upload vendor agreements and AI extracts structured terms — renewal dates, pricing adjustments, compliance obligations, and unusual clauses — with citations back to the source. Reviewers can search and filter across all extracted clauses, flag items for follow-up, and receive email notifications when extractions complete or high-risk clauses are detected. Admins get an oversight dashboard and can export data as CSV. All actions are audit-logged.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-chat",
+        "file-uploads",
+        "search-ui",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up storage for users, vendors, uploaded contracts, the structured clauses pulled from them, reviewer annotations, and an audit trail.",
+          "task": "Tables: users, vendors, contracts, extracted_clauses, clause_annotations, audit_logs. Indexes on FKs and on extracted_clauses(clause_type, contract_id), audit_logs(created_at DESC). Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": []
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Set up a semantic search index so reviewers can find clauses by meaning across all extracted contract data.",
+          "task": "pgvector extension. Table: doc_chunks(id, contract_id, clause_id NULL, chunk_text TEXT, embedding vector(3072), metadata JSONB). HNSW index on embedding (cosine). Embedding model: text-embedding-3-large via MGA.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Build the API that accepts contract uploads, runs AI clause extraction, stores structured results, supports search/filter/annotate, sends email alerts, and exports CSV.",
+          "task": "Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; create users row on first login. File uploads: multer memory storage only — parse PDF/DOCX in-memory, send text to MGA assistant for extraction, persist structured clauses to Postgres and chunk-embeddings to pgvector; do NOT write raw files to disk. Email notifications on extraction-complete and high-risk-clause-detected. CSV export streams extracted_clauses with filters. Admin endpoints require role='admin'. Audit log every write.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the reviewer UI: upload contracts, see extracted clauses in a structured table with source citations, search/filter across clauses, flag and annotate, plus an admin oversight view.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during upload+extraction, empty CTA on no contracts, toast on 4xx/5xx, 404 page, disabled submit during POST, progress indicator while AI extracts. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire all services together so the app runs locally with one command.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=clauses, DATABASE_USER=clauses_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5432. nginx.local.conf proxy /api→backend:3000. depends_on chain frontend→backend→{database,vectordb}. Healthchecks. Named volumes for database and vectordb.",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'reviewer'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "vendors",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "contracts",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "vendor_id",
+                "type": "INTEGER REFERENCES vendors(id)"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(500) NOT NULL"
+              },
+              {
+                "name": "original_filename",
+                "type": "VARCHAR(500) NOT NULL"
+              },
+              {
+                "name": "mime_type",
+                "type": "VARCHAR(100)"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'pending'"
+              },
+              {
+                "name": "extracted_text",
+                "type": "TEXT"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              },
+              {
+                "name": "extracted_at",
+                "type": "TIMESTAMPTZ"
+              }
+            ]
+          },
+          {
+            "name": "extracted_clauses",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "contract_id",
+                "type": "INTEGER NOT NULL REFERENCES contracts(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "clause_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "clause_text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "structured_value",
+                "type": "JSONB"
+              },
+              {
+                "name": "citation_excerpt",
+                "type": "TEXT"
+              },
+              {
+                "name": "citation_location",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "risk_level",
+                "type": "VARCHAR(16) NOT NULL DEFAULT 'normal'"
+              },
+              {
+                "name": "is_unusual",
+                "type": "BOOLEAN NOT NULL DEFAULT FALSE"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "clause_annotations",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "clause_id",
+                "type": "INTEGER NOT NULL REFERENCES extracted_clauses(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "note",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "flagged",
+                "type": "BOOLEAN NOT NULL DEFAULT FALSE"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "entity_type",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "entity_id",
+                "type": "INTEGER"
+              },
+              {
+                "name": "details",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/vendors",
+            "response": {
+              "status": 200,
+              "body": "{ vendors: [{ id, name }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/vendors",
+            "request": {
+              "name": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/contracts",
+            "request": "multipart/form-data: file (PDF/DOCX) required, title string required, vendor_id integer optional",
+            "response": {
+              "status": 201,
+              "body": "{ id, title, status, vendor_id }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/contracts",
+            "request": "query: limit=50, offset=0, vendor_id?, status?",
+            "response": {
+              "status": 200,
+              "body": "{ contracts: [{ id, title, vendor_id, status, created_at, extracted_at }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/contracts/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, title, vendor_id, status, original_filename, extracted_text, created_at, extracted_at }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/contracts/:id/clauses",
+            "response": {
+              "status": 200,
+              "body": "{ clauses: [{ id, clause_type, clause_text, structured_value, citation_excerpt, citation_location, risk_level, is_unusual }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/clauses",
+            "request": "query: limit=50, offset=0, clause_type?, risk_level?, is_unusual?, vendor_id?, q?",
+            "response": {
+              "status": 200,
+              "body": "{ clauses: [{ id, contract_id, contract_title, vendor_id, clause_type, clause_text, structured_value, citation_excerpt, citation_location, risk_level, is_unusual }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/clauses/:id/annotations",
+            "request": {
+              "note": "string required",
+              "flagged": "boolean optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, clause_id, note, flagged, created_at }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/clauses/:id/annotations",
+            "response": {
+              "status": 200,
+              "body": "{ annotations: [{ id, user_id, note, flagged, created_at }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/clauses/export.csv",
+            "request": "query: clause_type?, risk_level?, vendor_id?",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream of extracted clauses with citations"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/stats",
+            "response": {
+              "status": 200,
+              "body": "{ total_contracts, total_clauses, total_users, flagged_clauses, high_risk_clauses, extractions_last_7d }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-logs",
+            "request": "query: limit=50, offset=0",
+            "response": {
+              "status": 200,
+              "body": "{ logs: [{ id, user_id, action, entity_type, entity_id, details, created_at }], total }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "list of uploaded contracts with extraction status",
+        "primary_action": "upload a vendor agreement for clause extraction",
+        "secondary_views": [
+          "contract detail with structured clauses table and source citations",
+          "global clause search and filter across all contracts",
+          "flagged and annotated clauses view",
+          "admin dashboard with usage stats and audit log",
+          "CSV export"
+        ],
+        "components": [
+          {
+            "name": "ContractUploader",
+            "role": "drag-and-drop upload form for PDF/DOCX vendor agreements"
+          },
+          {
+            "name": "ContractList",
+            "role": "table of uploaded contracts with vendor, status, and extracted_at"
+          },
+          {
+            "name": "ContractDetail",
+            "role": "shows contract metadata and the structured clause table"
+          },
+          {
+            "name": "ClauseTable",
+            "role": "structured table of extracted clauses grouped by type with risk indicators"
+          },
+          {
+            "name": "ClauseCitation",
+            "role": "shows the source excerpt and location for a clause"
+          },
+          {
+            "name": "ClauseSearch",
+            "role": "search and filter UI across all extracted clauses"
+          },
+          {
+            "name": "ClauseFilters",
+            "role": "filter chips for clause_type, risk_level, unusual, vendor"
+          },
+          {
+            "name": "AnnotationPanel",
+            "role": "add notes and flag a clause for follow-up"
+          },
+          {
+            "name": "FlaggedClausesView",
+            "role": "list of clauses flagged by reviewers"
+          },
+          {
+            "name": "ExtractionStatusBadge",
+            "role": "shows pending / extracting / complete / failed state"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "usage stats, high-risk counts, and audit log for admins"
+          },
+          {
+            "name": "ExportCsvButton",
+            "role": "triggers CSV download with current filters applied"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC sub/email, default role='reviewer'"
+          },
+          {
+            "event": "contract_uploaded",
+            "action": "parse PDF/DOCX text in-memory, set status='extracting', invoke MGA extraction assistant, persist extracted_clauses with citations, chunk+embed text into pgvector doc_chunks, set status='complete' and extracted_at=NOW()"
+          },
+          {
+            "event": "extraction_completed",
+            "action": "send email notification to uploading reviewer with summary of extracted clauses"
+          },
+          {
+            "event": "high_risk_clause_detected",
+            "action": "mark clause risk_level='high', send email alert to uploading reviewer"
+          },
+          {
+            "event": "unusual_clause_detected",
+            "action": "set extracted_clauses.is_unusual=true based on cross-contract comparison"
+          },
+          {
+            "event": "extraction_failed",
+            "action": "set contracts.status='failed', email reviewer"
+          }
+        ],
+        "rules": [
+          "all endpoints require authenticated user via x-amzn-oidc-data JWT",
+          "reviewers can upload contracts and view/annotate any clause across the org",
+          "reviewers can only edit/delete their own annotations",
+          "/admin/* endpoints require users.role='admin'",
+          "/clauses/export.csv accessible to reviewers and admins",
+          "raw uploaded file bytes are NEVER persisted to disk — only extracted text and structured clauses stored",
+          "all POST/PUT/DELETE write actions write an audit_logs row"
+        ],
+        "side_effects": [
+          "audit log on every write",
+          "email notification on extraction complete and on high-risk clause detection",
+          "pgvector embeddings written alongside extracted_clauses for semantic search"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Clause Extraction Assistant",
+          "description": "Extracts structured clauses (renewal terms, pricing adjustments, compliance obligations, unusual provisions) from vendor agreements and returns them with source citations and risk assessment.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "Extract all renewal and termination terms from this contract.",
+            "What pricing adjustment clauses are in this agreement?",
+            "Flag any unusual or high-risk obligations in this vendor contract."
+          ]
+        }
+      ]
+    },
+    "ms": 68312
+  }
+}

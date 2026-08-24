@@ -1,0 +1,690 @@
+{
+  "prompt": {
+    "id": "easy_sales_reporting",
+    "label": "Easy — Sales Reporting Confusion (NON-AI, CRUD/dashboard)",
+    "userMessage": "Our regional sales managers are all bringing different numbers into the weekly executive meeting, and we spend more time debating which spreadsheet is correct than discussing the business itself. Finance, Sales, and Operations all seem to define 'active customer' differently, which is creating tension between teams. Leadership wants one trusted view of pipeline performance and renewals without forcing people to manually reconcile reports every Friday. We need a way to make reporting more consistent and easier to trust across departments."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 8205,
+        "content": "{\"action\":\"clarify\",\"round\":1,\"message\":\"This sounds like a reporting/alignment problem, and it could go a few directions. Which is closest to what you want?\\n\\nA) Unified KPI dashboard — one live view of pipeline + renewals pulled from your data warehouse (Snowflake), with shared definitions everyone sees (no AI)\\n B) Definitions & metrics catalog — a governed library where Finance/Sales/Ops agree on terms like 'active customer', and reports link back to those definitions (no AI)\\n C) Weekly report builder — managers submit their numbers into a structured form, system reconciles and produces one exec-ready report each Friday (no AI)\\n D) AI-assisted reporting assistant — ask questions in plain English ('what's pipeline this week?') and get cited answers from your warehouse data (AI in the loop)\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "This sounds like a reporting/alignment problem, and it could go a few directions. Which is closest to what you want?\n\nA) Unified KPI dashboard — one live view of pipeline + renewals pulled from your data warehouse (Snowflake), with shared definitions everyone sees (no AI)\n B) Definitions & metrics catalog — a governed library where Finance/Sales/Ops agree on terms like 'active customer', and reports link back to those definitions (no AI)\n C) Weekly report builder — managers submit their numbers into a structured form, system reconciles and produces one exec-ready report each Friday (no AI)\n D) AI-assisted reporting assistant — ask questions in plain English ('what's pipeline this week?') and get cited answers from your warehouse data (AI in the loop)"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 6689,
+        "content": "{\"action\":\"clarify\",\"round\":2,\"message\":\"Great — a unified KPI dashboard pulling pipeline and renewals from Snowflake, with shared definitions across Finance/Sales/Ops. A few things we can include out of the box — pick any:\\n\\nA) Admin area where Finance/Sales/Ops leads manage the shared metric definitions (e.g., what counts as 'active customer')\\n B) CSV export of any dashboard view for the exec meeting deck\\n C) Email digest sent every Friday morning with the week's KPIs\\n D) Audit log of definition changes — who changed what, when (useful when teams debate numbers)\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Great — a unified KPI dashboard pulling pipeline and renewals from Snowflake, with shared definitions across Finance/Sales/Ops. A few things we can include out of the box — pick any:\n\nA) Admin area where Finance/Sales/Ops leads manage the shared metric definitions (e.g., what counts as 'active customer')\n B) CSV export of any dashboard view for the exec meeting deck\n C) Email digest sent every Friday morning with the week's KPIs\n D) Audit log of definition changes — who changed what, when (useful when teams debate numbers)"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 13648,
+        "content": "{\"action\":\"ready\",\"brief\":{\"ready\":true,\"intent\":\"Build a unified KPI dashboard that pulls pipeline and renewals data from Snowflake and shows one trusted view across Finance, Sales, and Operations using shared metric definitions.\",\"archetype\":\"dashboard\",\"entities\":[\"metrics\",\"metric_definitions\",\"pipeline_records\",\"renewals\",\"departments\"],\"user_roles\":[\"employees\",\"admins\"],\"key_workflows\":[\"Executives and managers view a live dashboard of pipeline performance and renewal KPIs sourced from Snowflake.\",\"Finance, Sales, and Operations leads (admins) manage shared metric definitions like 'active customer' in an admin area so all teams see the same numbers.\",\"Users export any dashboard view to CSV for the weekly executive meeting deck.\",\"Subscribers receive an automated Friday-morning email digest summarizing the week's KPIs.\",\"Admins review an audit log showing who changed which metric definition and when, to resolve cross-team debates about numbers.\",\"Users filter dashboard views by region, department, or time period to drill into specifics.\"],\"stack_signals\":{\"backend_language\":\"node\",\"explicit_user_choice\":false},\"explicit_features\":[\"Pull pipeline and renewals data from Snowflake\",\"Shared, governed metric definitions (e.g., 'active customer') visible to all users\",\"Admin-managed metric definition library used as the single source of truth\",\"Weekly Friday email digest of KPIs\",\"CSV export of dashboard views\",\"Audit log of all metric definition changes (who, what, when)\",\"Cross-departmental visibility for Finance, Sales, and Operations\"],\"capabilities_offered\":{\"accepted\":[\"snowflake_queries\",\"admin_dashboard\",\"csv_export\",\"email_notifications\",\"audit_logging\"],\"declined\":[],\"user_didnt_choose\":[]},\"flags\":[\"has-users\",\"has-admin\",\"snowflake\",\"exports-csv\",\"notifications-email\"],\"notes_for_contract_agent\":\"User's core pain point is metric-definition drift across Finance/Sales/Ops — the metric_definitions entity is central, not just a side table. The dashboard must visibly tie each KPI back to its shared definition so users trust the numbers. Friday email digest is a recurring scheduled job (weekly), not event-triggered. No AI in scope — user explicitly chose the non-AI option.\"}}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "Build a unified KPI dashboard that pulls pipeline and renewals data from Snowflake and shows one trusted view across Finance, Sales, and Operations using shared metric definitions.",
+            "archetype": "dashboard",
+            "entities": [
+              "metrics",
+              "metric_definitions",
+              "pipeline_records",
+              "renewals",
+              "departments"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Executives and managers view a live dashboard of pipeline performance and renewal KPIs sourced from Snowflake.",
+              "Finance, Sales, and Operations leads (admins) manage shared metric definitions like 'active customer' in an admin area so all teams see the same numbers.",
+              "Users export any dashboard view to CSV for the weekly executive meeting deck.",
+              "Subscribers receive an automated Friday-morning email digest summarizing the week's KPIs.",
+              "Admins review an audit log showing who changed which metric definition and when, to resolve cross-team debates about numbers.",
+              "Users filter dashboard views by region, department, or time period to drill into specifics."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Pull pipeline and renewals data from Snowflake",
+              "Shared, governed metric definitions (e.g., 'active customer') visible to all users",
+              "Admin-managed metric definition library used as the single source of truth",
+              "Weekly Friday email digest of KPIs",
+              "CSV export of dashboard views",
+              "Audit log of all metric definition changes (who, what, when)",
+              "Cross-departmental visibility for Finance, Sales, and Operations"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "snowflake_queries",
+                "admin_dashboard",
+                "csv_export",
+                "email_notifications",
+                "audit_logging"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "snowflake",
+              "exports-csv",
+              "notifications-email"
+            ],
+            "notes_for_contract_agent": "User's core pain point is metric-definition drift across Finance/Sales/Ops — the metric_definitions entity is central, not just a side table. The dashboard must visibly tie each KPI back to its shared definition so users trust the numbers. Friday email digest is a recurring scheduled job (weekly), not event-triggered. No AI in scope — user explicitly chose the non-AI option."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "Build a unified KPI dashboard that pulls pipeline and renewals data from Snowflake and shows one trusted view across Finance, Sales, and Operations using shared metric definitions.",
+      "archetype": "dashboard",
+      "entities": [
+        "metrics",
+        "metric_definitions",
+        "pipeline_records",
+        "renewals",
+        "departments"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Executives and managers view a live dashboard of pipeline performance and renewal KPIs sourced from Snowflake.",
+        "Finance, Sales, and Operations leads (admins) manage shared metric definitions like 'active customer' in an admin area so all teams see the same numbers.",
+        "Users export any dashboard view to CSV for the weekly executive meeting deck.",
+        "Subscribers receive an automated Friday-morning email digest summarizing the week's KPIs.",
+        "Admins review an audit log showing who changed which metric definition and when, to resolve cross-team debates about numbers.",
+        "Users filter dashboard views by region, department, or time period to drill into specifics."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Pull pipeline and renewals data from Snowflake",
+        "Shared, governed metric definitions (e.g., 'active customer') visible to all users",
+        "Admin-managed metric definition library used as the single source of truth",
+        "Weekly Friday email digest of KPIs",
+        "CSV export of dashboard views",
+        "Audit log of all metric definition changes (who, what, when)",
+        "Cross-departmental visibility for Finance, Sales, and Operations"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "snowflake_queries",
+          "admin_dashboard",
+          "csv_export",
+          "email_notifications",
+          "audit_logging"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "snowflake",
+        "exports-csv",
+        "notifications-email"
+      ],
+      "notes_for_contract_agent": "User's core pain point is metric-definition drift across Finance/Sales/Ops — the metric_definitions entity is central, not just a side table. The dashboard must visibly tie each KPI back to its shared definition so users trust the numbers. Friday email digest is a recurring scheduled job (weekly), not event-triggered. No AI in scope — user explicitly chose the non-AI option."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"dashboard\",\n  \"message\": \"A unified KPI dashboard that pulls pipeline and renewals data from Snowflake into one trusted view for Finance, Sales, and Operations. Admins curate shared metric definitions (like 'active customer') in a governed library so every team sees the same numbers, and each KPI on the dashboard links back to its definition. Users can filter by region, department, and time period, export any view to CSV, and subscribe to a Friday-morning email digest. An audit log records every metric-definition change for cross-team accountability.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"snowflake\", \"exports-csv\", \"notifications-email\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Set up the database that stores users, shared metric definitions, departments, cached Snowflake KPI data, digest subscriptions, and an audit log of metric changes.\",\n      \"task\": \"Tables: data_model. Indexes: on FK columns, metric_definitions.key, audit_log.metric_definition_id, pipeline_records.snapshot_date, renewals.snapshot_date. Seed departments: Finance, Sales, Operations. Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Build the API that serves KPI data from Snowflake, manages governed metric definitions, exports CSV, records audit history, and sends the weekly Friday email digest.\",\n      \"task\": \"Data: pg Pool from env. Snowflake: snowflake-sdk client from env (SNOWFLAKE_ACCOUNT/USER/PASSWORD/WAREHOUSE/DATABASE/SCHEMA); cache query results in pipeline_records/renewals tables; refresh on demand and on schedule. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. CSV export: stream text/csv with Content-Disposition. Scheduler: node-cron weekly Fri 08:00 to send digest emails to subscribers via SMTP env (SMTP_HOST/PORT/USER/PASS/FROM). Audit: write audit_log row on every metric_definitions insert/update/delete. Auth: x-amzn-oidc-data JWT sub/email; auto-provision users row on first login; role from users.role.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Build the dashboard UI with KPI tiles tied to their shared definitions, filters for region/department/time, CSV export buttons, an admin metric-definition library with audit history, and digest subscription controls.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Every KPI tile shows its metric name and links to a definition drawer pulled from /metric-definitions/:key so users trust the number. Admin-only routes (/admin/metrics, /admin/audit) hidden unless whoami.role==='admin'. Filter bar: region, department, time period; pushes to query string and refetches. Export buttons stream CSV download. States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wire the database, backend, and frontend together so the app runs end-to-end locally and in deployment.\",\n      \"task\": \"Wire database, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=kpi_hub, DATABASE_USER=kpi_hub_user, DATABASE_PASSWORD=localdev123, SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_DATABASE, SNOWFLAKE_SCHEMA, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM. nginx.local.conf proxy /api→backend:3000. depends_on chain. Healthchecks. Volumes per service.\",\n      \"dockerfile\": \"\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"digest_subscribed\", \"type\": \"BOOLEAN NOT NULL DEFAULT false\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"departments\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(64) UNIQUE NOT NULL\"}\n        ]\n      },\n      {\n        \"name\": \"metric_definitions\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"key\", \"type\": \"VARCHAR(64) UNIQUE NOT NULL\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(128) NOT NULL\"},\n          {\"name\": \"description\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"formula\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"unit\", \"type\": \"VARCHAR(32)\"},\n          {\"name\": \"owner_department_id\", \"type\": \"INTEGER REFERENCES departments(id)\"},\n          {\"name\": \"updated_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"},\n          {\"name\": \"updated_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"pipeline_records\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"snapshot_date\", \"type\": \"DATE NOT NULL\"},\n          {\"name\": \"region\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"department_id\", \"type\": \"INTEGER REFERENCES departments(id)\"},\n          {\"name\": \"stage\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"amount\", \"type\": \"NUMERIC(18,2) NOT NULL DEFAULT 0\"},\n          {\"name\": \"deal_count\", \"type\": \"INTEGER NOT NULL DEFAULT 0\"},\n          {\"name\": \"synced_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"renewals\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"snapshot_date\", \"type\": \"DATE NOT NULL\"},\n          {\"name\": \"region\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"department_id\", \"type\": \"INTEGER REFERENCES departments(id)\"},\n          {\"name\": \"customer_segment\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"renewed_amount\", \"type\": \"NUMERIC(18,2) NOT NULL DEFAULT 0\"},\n          {\"name\": \"churned_amount\", \"type\": \"NUMERIC(18,2) NOT NULL DEFAULT 0\"},\n          {\"name\": \"renewal_rate\", \"type\": \"NUMERIC(6,4)\"},\n          {\"name\": \"synced_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"metrics\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"metric_definition_id\", \"type\": \"INTEGER NOT NULL REFERENCES metric_definitions(id)\"},\n          {\"name\": \"snapshot_date\", \"type\": \"DATE NOT NULL\"},\n          {\"name\": \"region\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"department_id\", \"type\": \"INTEGER REFERENCES departments(id)\"},\n          {\"name\": \"value\", \"type\": \"NUMERIC(18,4) NOT NULL\"},\n          {\"name\": \"computed_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"audit_log\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"metric_definition_id\", \"type\": \"INTEGER REFERENCES metric_definitions(id)\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"action\", \"type\": \"VARCHAR(16) NOT NULL\"},\n          {\"name\": \"before_data\", \"type\": \"JSONB\"},\n          {\"name\": \"after_data\", \"type\": \"JSONB\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\n        \"method\": \"GET\",\n        \"path\": \"/whoami\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, email, role, digest_subscribed }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/departments\",\n        \"response\": {\"status\": 200, \"body\": \"[{ id, name }]\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/dashboard/kpis\",\n        \"request\": {\"query\": \"region?, department?, from?, to?\"},\n        \"response\": {\"status\": 200, \"body\": \"[{ metric_key, metric_name, definition_id, value, unit, trend }]\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/dashboard/pipeline\",\n        \"request\": {\"query\": \"region?, department?, from?, to?, limit=50, offset=0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ rows: [{ snapshot_date, region, department, stage, amount, deal_count }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/dashboard/renewals\",\n        \"request\": {\"query\": \"region?, department?, from?, to?, limit=50, offset=0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ rows: [{ snapshot_date, region, department, customer_segment, renewed_amount, churned_amount, renewal_rate }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/dashboard/export\",\n        \"request\": {\"query\": \"view (kpis|pipeline|renewals) required, region?, department?, from?, to?\"},\n        \"response\": {\"status\": 200, \"body\": \"text/csv stream\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/dashboard/refresh\",\n        \"response\": {\"status\": 202, \"body\": \"{ status: 'queued' }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/metric-definitions\",\n        \"response\": {\"status\": 200, \"body\": \"[{ id, key, name, description, formula, unit, owner_department, updated_at }]\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/metric-definitions/:key\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, key, name, description, formula, unit, owner_department, updated_by_email, updated_at }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/metric-definitions\",\n        \"request\": {\"body\": \"{ key required, name required, description required, formula required, unit?, owner_department_id? }\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, key }\"}\n      },\n      {\n        \"method\": \"PUT\",\n        \"path\": \"/admin/metric-definitions/:id\",\n        \"request\": {\"body\": \"{ name?, description?, formula?, unit?, owner_department_id? }\"},\n        \"response\": {\"status\": 200, \"body\": \"{ id }\"}\n      },\n      {\n        \"method\": \"DELETE\",\n        \"path\": \"/admin/metric-definitions/:id\",\n        \"response\": {\"status\": 204, \"body\": \"\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/audit\",\n        \"request\": {\"query\": \"metric_definition_id?, limit=50, offset=0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ rows: [{ id, metric_definition_id, metric_key, user_email, action, before_data, after_data, created_at }], total }\"}\n      },\n      {\n        \"method\": \"PUT\",\n        \"path\": \"/me/digest-subscription\",\n        \"request\": {\"body\": \"{ subscribed: boolean required }\"},\n        \"response\": {\"status\": 200, \"body\": \"{ digest_subscribed }\"}\n      }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"unified KPI dashboard across pipeline and renewals\",\n    \"primary_action\": \"view a KPI with its shared definition and drill in by filters\",\n    \"secondary_views\": [\n      \"pipeline detail table\",\n      \"renewals detail table\",\n      \"metric definition library (admin)\",\n      \"metric definition detail with audit history (admin)\",\n      \"audit log (admin)\",\n      \"account / digest subscription\"\n    ],\n    \"components\": [\n      {\"name\": \"DashboardPage\", \"role\": \"top-level KPI dashboard with tiles and filter bar\"},\n      {\"name\": \"FilterBar\", \"role\": \"region, department, and time-period filters\"},\n      {\"name\": \"KpiTile\", \"role\": \"single KPI value with trend and link to its shared definition\"},\n      {\"name\": \"MetricDefinitionDrawer\", \"role\": \"shows the governed definition, formula, and owner for the KPI being viewed\"},\n      {\"name\": \"PipelineTable\", \"role\": \"filtered pipeline rows from Snowflake\"},\n      {\"name\": \"RenewalsTable\", \"role\": \"filtered renewals rows from Snowflake\"},\n      {\"name\": \"ExportCsvButton\", \"role\": \"downloads current view as CSV\"},\n      {\"name\": \"RefreshSnowflakeButton\", \"role\": \"admin-triggered re-sync of cached Snowflake data\"},\n      {\"name\": \"AdminMetricLibraryPage\", \"role\": \"admin list and editor for shared metric definitions\"},\n      {\"name\": \"MetricDefinitionForm\", \"role\": \"create or edit a governed metric definition\"},\n      {\"name\": \"AuditLogPage\", \"role\": \"admin view of who changed which metric definition and when\"},\n      {\"name\": \"DigestSubscriptionToggle\", \"role\": \"opt in or out of the Friday KPI email digest\"},\n      {\"name\": \"AdminNav\", \"role\": \"navigation entries visible only to admins\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC claims (sub, email); default role='employee'\"},\n      {\"event\": \"dashboard_data_requested_and_cache_stale\", \"action\": \"query Snowflake for pipeline + renewals, upsert into pipeline_records and renewals tables, recompute metrics rows\"},\n      {\"event\": \"POST /dashboard/refresh\", \"action\": \"admin-triggered full re-sync from Snowflake into cached tables\"},\n      {\"event\": \"metric_definition_created_updated_or_deleted\", \"action\": \"write audit_log row with before_data, after_data, acting user_id, and action\"},\n      {\"event\": \"cron_friday_0800_local\", \"action\": \"compute weekly KPI summary and email all users where digest_subscribed=true via SMTP\"}\n    ],\n    \"rules\": [\n      \"all authenticated users can read /dashboard/* and /metric-definitions/*\",\n      \"every KPI returned by /dashboard/kpis must include its metric_definition_id so the UI can link to the shared definition\",\n      \"/admin/* endpoints require users.role='admin' (403 otherwise)\",\n      \"metric_definitions.key is immutable after creation\",\n      \"deleting a metric_definition is blocked if metrics rows reference it (409)\",\n      \"audit_log is append-only; no update or delete endpoints exposed\",\n      \"Snowflake credentials are read from env only and never returned in API responses\",\n      \"CSV export respects the same filters as the view being exported\"\n    ],\n    \"side_effects\": [\n      \"audit log on every metric_definitions write\",\n      \"Snowflake query cache refresh on stale reads and on explicit admin refresh\",\n      \"weekly Friday 08:00 email digest to subscribed users\"\n    ]\n  }\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "dashboard",
+      "message": "A unified KPI dashboard that pulls pipeline and renewals data from Snowflake into one trusted view for Finance, Sales, and Operations. Admins curate shared metric definitions (like 'active customer') in a governed library so every team sees the same numbers, and each KPI on the dashboard links back to its definition. Users can filter by region, department, and time period, export any view to CSV, and subscribe to a Friday-morning email digest. An audit log records every metric-definition change for cross-team accountability.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "snowflake",
+        "exports-csv",
+        "notifications-email"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up the database that stores users, shared metric definitions, departments, cached Snowflake KPI data, digest subscriptions, and an audit log of metric changes.",
+          "task": "Tables: data_model. Indexes: on FK columns, metric_definitions.key, audit_log.metric_definition_id, pipeline_records.snapshot_date, renewals.snapshot_date. Seed departments: Finance, Sales, Operations. Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "backend",
+          "summary": "Build the API that serves KPI data from Snowflake, manages governed metric definitions, exports CSV, records audit history, and sends the weekly Friday email digest.",
+          "task": "Data: pg Pool from env. Snowflake: snowflake-sdk client from env (SNOWFLAKE_ACCOUNT/USER/PASSWORD/WAREHOUSE/DATABASE/SCHEMA); cache query results in pipeline_records/renewals tables; refresh on demand and on schedule. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. CSV export: stream text/csv with Content-Disposition. Scheduler: node-cron weekly Fri 08:00 to send digest emails to subscribers via SMTP env (SMTP_HOST/PORT/USER/PASS/FROM). Audit: write audit_log row on every metric_definitions insert/update/delete. Auth: x-amzn-oidc-data JWT sub/email; auto-provision users row on first login; role from users.role.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the dashboard UI with KPI tiles tied to their shared definitions, filters for region/department/time, CSV export buttons, an admin metric-definition library with audit history, and digest subscription controls.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Every KPI tile shows its metric name and links to a definition drawer pulled from /metric-definitions/:key so users trust the number. Admin-only routes (/admin/metrics, /admin/audit) hidden unless whoami.role==='admin'. Filter bar: region, department, time period; pushes to query string and refetches. Export buttons stream CSV download. States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire the database, backend, and frontend together so the app runs end-to-end locally and in deployment.",
+          "task": "Wire database, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=kpi_hub, DATABASE_USER=kpi_hub_user, DATABASE_PASSWORD=localdev123, SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_DATABASE, SNOWFLAKE_SCHEMA, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM. nginx.local.conf proxy /api→backend:3000. depends_on chain. Healthchecks. Volumes per service.",
+          "dockerfile": "",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "digest_subscribed",
+                "type": "BOOLEAN NOT NULL DEFAULT false"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "departments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(64) UNIQUE NOT NULL"
+              }
+            ]
+          },
+          {
+            "name": "metric_definitions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "key",
+                "type": "VARCHAR(64) UNIQUE NOT NULL"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(128) NOT NULL"
+              },
+              {
+                "name": "description",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "formula",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "unit",
+                "type": "VARCHAR(32)"
+              },
+              {
+                "name": "owner_department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "updated_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              },
+              {
+                "name": "updated_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "pipeline_records",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "snapshot_date",
+                "type": "DATE NOT NULL"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "stage",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "amount",
+                "type": "NUMERIC(18,2) NOT NULL DEFAULT 0"
+              },
+              {
+                "name": "deal_count",
+                "type": "INTEGER NOT NULL DEFAULT 0"
+              },
+              {
+                "name": "synced_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "renewals",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "snapshot_date",
+                "type": "DATE NOT NULL"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "customer_segment",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "renewed_amount",
+                "type": "NUMERIC(18,2) NOT NULL DEFAULT 0"
+              },
+              {
+                "name": "churned_amount",
+                "type": "NUMERIC(18,2) NOT NULL DEFAULT 0"
+              },
+              {
+                "name": "renewal_rate",
+                "type": "NUMERIC(6,4)"
+              },
+              {
+                "name": "synced_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "metrics",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "metric_definition_id",
+                "type": "INTEGER NOT NULL REFERENCES metric_definitions(id)"
+              },
+              {
+                "name": "snapshot_date",
+                "type": "DATE NOT NULL"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "value",
+                "type": "NUMERIC(18,4) NOT NULL"
+              },
+              {
+                "name": "computed_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "metric_definition_id",
+                "type": "INTEGER REFERENCES metric_definitions(id)"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(16) NOT NULL"
+              },
+              {
+                "name": "before_data",
+                "type": "JSONB"
+              },
+              {
+                "name": "after_data",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role, digest_subscribed }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/departments",
+            "response": {
+              "status": 200,
+              "body": "[{ id, name }]"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard/kpis",
+            "request": {
+              "query": "region?, department?, from?, to?"
+            },
+            "response": {
+              "status": 200,
+              "body": "[{ metric_key, metric_name, definition_id, value, unit, trend }]"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard/pipeline",
+            "request": {
+              "query": "region?, department?, from?, to?, limit=50, offset=0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ rows: [{ snapshot_date, region, department, stage, amount, deal_count }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard/renewals",
+            "request": {
+              "query": "region?, department?, from?, to?, limit=50, offset=0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ rows: [{ snapshot_date, region, department, customer_segment, renewed_amount, churned_amount, renewal_rate }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard/export",
+            "request": {
+              "query": "view (kpis|pipeline|renewals) required, region?, department?, from?, to?"
+            },
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/dashboard/refresh",
+            "response": {
+              "status": 202,
+              "body": "{ status: 'queued' }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/metric-definitions",
+            "response": {
+              "status": 200,
+              "body": "[{ id, key, name, description, formula, unit, owner_department, updated_at }]"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/metric-definitions/:key",
+            "response": {
+              "status": 200,
+              "body": "{ id, key, name, description, formula, unit, owner_department, updated_by_email, updated_at }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/metric-definitions",
+            "request": {
+              "body": "{ key required, name required, description required, formula required, unit?, owner_department_id? }"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, key }"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/admin/metric-definitions/:id",
+            "request": {
+              "body": "{ name?, description?, formula?, unit?, owner_department_id? }"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/admin/metric-definitions/:id",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit",
+            "request": {
+              "query": "metric_definition_id?, limit=50, offset=0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ rows: [{ id, metric_definition_id, metric_key, user_email, action, before_data, after_data, created_at }], total }"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/me/digest-subscription",
+            "request": {
+              "body": "{ subscribed: boolean required }"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ digest_subscribed }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "unified KPI dashboard across pipeline and renewals",
+        "primary_action": "view a KPI with its shared definition and drill in by filters",
+        "secondary_views": [
+          "pipeline detail table",
+          "renewals detail table",
+          "metric definition library (admin)",
+          "metric definition detail with audit history (admin)",
+          "audit log (admin)",
+          "account / digest subscription"
+        ],
+        "components": [
+          {
+            "name": "DashboardPage",
+            "role": "top-level KPI dashboard with tiles and filter bar"
+          },
+          {
+            "name": "FilterBar",
+            "role": "region, department, and time-period filters"
+          },
+          {
+            "name": "KpiTile",
+            "role": "single KPI value with trend and link to its shared definition"
+          },
+          {
+            "name": "MetricDefinitionDrawer",
+            "role": "shows the governed definition, formula, and owner for the KPI being viewed"
+          },
+          {
+            "name": "PipelineTable",
+            "role": "filtered pipeline rows from Snowflake"
+          },
+          {
+            "name": "RenewalsTable",
+            "role": "filtered renewals rows from Snowflake"
+          },
+          {
+            "name": "ExportCsvButton",
+            "role": "downloads current view as CSV"
+          },
+          {
+            "name": "RefreshSnowflakeButton",
+            "role": "admin-triggered re-sync of cached Snowflake data"
+          },
+          {
+            "name": "AdminMetricLibraryPage",
+            "role": "admin list and editor for shared metric definitions"
+          },
+          {
+            "name": "MetricDefinitionForm",
+            "role": "create or edit a governed metric definition"
+          },
+          {
+            "name": "AuditLogPage",
+            "role": "admin view of who changed which metric definition and when"
+          },
+          {
+            "name": "DigestSubscriptionToggle",
+            "role": "opt in or out of the Friday KPI email digest"
+          },
+          {
+            "name": "AdminNav",
+            "role": "navigation entries visible only to admins"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims (sub, email); default role='employee'"
+          },
+          {
+            "event": "dashboard_data_requested_and_cache_stale",
+            "action": "query Snowflake for pipeline + renewals, upsert into pipeline_records and renewals tables, recompute metrics rows"
+          },
+          {
+            "event": "POST /dashboard/refresh",
+            "action": "admin-triggered full re-sync from Snowflake into cached tables"
+          },
+          {
+            "event": "metric_definition_created_updated_or_deleted",
+            "action": "write audit_log row with before_data, after_data, acting user_id, and action"
+          },
+          {
+            "event": "cron_friday_0800_local",
+            "action": "compute weekly KPI summary and email all users where digest_subscribed=true via SMTP"
+          }
+        ],
+        "rules": [
+          "all authenticated users can read /dashboard/* and /metric-definitions/*",
+          "every KPI returned by /dashboard/kpis must include its metric_definition_id so the UI can link to the shared definition",
+          "/admin/* endpoints require users.role='admin' (403 otherwise)",
+          "metric_definitions.key is immutable after creation",
+          "deleting a metric_definition is blocked if metrics rows reference it (409)",
+          "audit_log is append-only; no update or delete endpoints exposed",
+          "Snowflake credentials are read from env only and never returned in API responses",
+          "CSV export respects the same filters as the view being exported"
+        ],
+        "side_effects": [
+          "audit log on every metric_definitions write",
+          "Snowflake query cache refresh on stale reads and on explicit admin refresh",
+          "weekly Friday 08:00 email digest to subscribed users"
+        ]
+      }
+    },
+    "ms": 65674
+  }
+}

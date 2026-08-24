@@ -1,0 +1,15 @@
+{
+  "subagentDatabaseAssistantId": "b0ffa4a0-2aac-4d55-87a7-98e254fea87c",
+  "subagentBackendAssistantId": "18f45ad2-0cb2-4713-9d2a-91467190ad31",
+  "subagentFrontendAssistantId": "33a20844-0eb2-4d07-b126-ef54dd94715a",
+  "subagentVectordbAssistantId": "a04773cc-59c0-4a32-9912-89fce064139a",
+  "subagentIntegrationAssistantId": "6c2b10c8-0b98-4a4d-99a3-dbac761f64d7",
+  "investigatorAssistantId": "611d2b73-f026-4d87-9b44-eb8461b31190",
+  "reconcilerJudgeAssistantId": "7a9ac0e5-579e-4e61-8c51-e5350a83d9b0",
+  "promptWriterAssistantId": "9865bbb2-93bb-49b8-86c7-7d978b2f9d87",
+  "routerAssistantId": "99e40517-7506-4e07-ae45-3a3356076ea1",
+  "summarizerAssistantId": "f071c2d0-efa7-4050-ab71-d52492c9f602",
+  "understandingAssistantId": "f1d03ff5-c8d4-4395-a027-00e660d6192e",
+  "contractAssistantId": "5a9fa17c-7f6b-4cd3-ac2f-5c569bd3e39e",
+  "conciergeAssistantId": "b9da7a22-1ccd-4e80-a86f-3bedc93f3894"
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "hybrid-module-selection.schema.json",
+  "title": "HybridModulePlan",
+  "description": "Validates the modulePlan array emitted by the Contract Agent in FRESH mode. Consumed by hybrid-router.js before dispatching to execution-router.js.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["module", "trigger", "input", "output"],
+    "additionalProperties": false,
+    "properties": {
+      "module": {
+        "type": "string",
+        "enum": ["synthesis", "retrieval", "policy-checker"],
+        "description": "The specialist module to invoke."
+      },
+      "trigger": {
+        "type": "string",
+        "enum": ["build-time"],
+        "description": "When the module runs. Only build-time is supported in P0/P1."
+      },
+      "input": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Human-readable description of what the module receives as input."
+      },
+      "output": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Human-readable description of what the module contributes to the contract."
+      }
+    }
+  },
+  "minItems": 1
+}

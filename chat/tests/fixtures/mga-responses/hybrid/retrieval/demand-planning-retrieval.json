@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-retrieval",
+  "scenarioName": "demand-planning-retrieval",
+  "schemaVersion": 1,
+  "module": "retrieval",
+  "response": {
+    "completionText": "{\"contextData\":[{\"topic\":\"Demand forecasting methods\",\"summary\":\"Supply-chain demand planning commonly uses statistical forecasting (ARIMA, exponential smoothing), machine-learning models (gradient boosting, LSTM), or hybrid approaches. Accuracy is measured by MAPE and WAPE. The choice depends on data availability and forecast horizon.\",\"relevance\":\"high\"},{\"topic\":\"Data inputs\",\"summary\":\"Core inputs are historical sales by SKU/location, promotional calendar, seasonality indices, and external signals (weather, economic indices). Missing or sparse history is a common challenge; cold-start handling is important.\",\"relevance\":\"high\"},{\"topic\":\"Planning horizons\",\"summary\":\"Tactical planning covers 1-13 weeks (replenishment), operational covers 1-6 months (procurement), and strategic covers 6-24 months (capacity). Each horizon has different update frequencies and accuracy requirements.\",\"relevance\":\"medium\"},{\"topic\":\"Exception management\",\"summary\":\"Planners need exception alerts when actuals deviate from forecast beyond a threshold. Automated exception surfacing reduces manual review burden by 60-70% in mature implementations.\",\"relevance\":\"medium\"}]}",
+    "usage": { "prompt_tokens": 2900, "completion_tokens": 320, "prompt_tokens_details": { "cached_tokens": 0 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-retrieval-demand-planning-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:05:00Z"
+}

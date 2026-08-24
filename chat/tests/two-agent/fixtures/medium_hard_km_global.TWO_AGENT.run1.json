@@ -1,0 +1,686 @@
+{
+  "prompt": {
+    "id": "medium_hard_km_global",
+    "label": "Medium/Hard — Knowledge Management Across Business Units",
+    "userMessage": "As the organization has expanded globally, valuable operational knowledge has become fragmented across regional teams, SharePoint repositories, internal wikis, and archived project documents. Employees frequently recreate work because they cannot easily identify whether similar initiatives, lessons learned, or client deliverables already exist elsewhere in the company. Leadership believes there is significant untapped institutional knowledge, but accessing it today requires knowing exactly where to look or who to ask. We need a more effective way to connect employees with relevant business knowledge across the enterprise."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 6410,
+        "content": "{\"action\":\"clarify\",\"round\":1,\"message\":\"This is a broad knowledge problem and could go a few directions. Which is closest to what you want?\\n\\nA) AI knowledge assistant — employees ask questions in plain English and get cited answers pulled from SharePoint + wikis + archived docs\\nB) Enterprise search portal — a search bar with filters (region, team, project, doc type) that surfaces matching documents and projects\\nC) Project/initiative registry — a browsable catalog where teams register initiatives and deliverables so others can discover prior work\\nD) Expert finder — search for people and teams by topic/skill so employees know who to ask\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "This is a broad knowledge problem and could go a few directions. Which is closest to what you want?\n\nA) AI knowledge assistant — employees ask questions in plain English and get cited answers pulled from SharePoint + wikis + archived docs\nB) Enterprise search portal — a search bar with filters (region, team, project, doc type) that surfaces matching documents and projects\nC) Project/initiative registry — a browsable catalog where teams register initiatives and deliverables so others can discover prior work\nD) Expert finder — search for people and teams by topic/skill so employees know who to ask"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 10045,
+        "content": "{\"action\":\"clarify\",\"round\":2,\"message\":\"Got it — an AI knowledge assistant that answers employee questions with citations from your internal sources. A few things we can wire in automatically — pick any that sound useful:\\n\\nA) SharePoint integration — pull documents directly from SharePoint sites and Teams libraries as a knowledge source\\nB) Audit log + admin dashboard — see what's being asked, coverage gaps, and most-cited documents\\nC) File uploads — let employees drop in ad-hoc PDFs/docs to expand the knowledge base\\nD) Email digest — weekly summary to leadership of top questions and knowledge gaps\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Got it — an AI knowledge assistant that answers employee questions with citations from your internal sources. A few things we can wire in automatically — pick any that sound useful:\n\nA) SharePoint integration — pull documents directly from SharePoint sites and Teams libraries as a knowledge source\nB) Audit log + admin dashboard — see what's being asked, coverage gaps, and most-cited documents\nC) File uploads — let employees drop in ad-hoc PDFs/docs to expand the knowledge base\nD) Email digest — weekly summary to leadership of top questions and knowledge gaps"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 15132,
+        "content": "{\"action\":\"ready\",\"brief\":{\"ready\":true,\"intent\":\"Build an AI knowledge assistant where employees ask questions in plain English and get cited answers drawn from the organization's internal documents across SharePoint, wikis, and archived project files.\",\"archetype\":\"ai-tool\",\"entities\":[\"documents\",\"questions\",\"answers\",\"citations\",\"users\"],\"user_roles\":[\"employees\",\"admins\"],\"key_workflows\":[\"Employees ask natural-language questions about company knowledge and receive AI-generated answers with citations to source documents.\",\"Employees follow citation links to view the underlying source document or excerpt.\",\"Admins connect SharePoint sites and Teams libraries as knowledge sources and trigger document ingestion/indexing.\",\"Admins review an audit log of questions asked, answers given, and which documents were cited.\",\"Admins view a dashboard showing top questions, knowledge gaps (low-confidence or unanswered queries), and most-cited documents.\",\"Employees upload ad-hoc PDFs or docs to expand the knowledge base when relevant material is missing.\",\"Admins receive a weekly email digest summarizing top questions and identified knowledge gaps for leadership.\"],\"stack_signals\":{\"backend_language\":\"node\",\"explicit_user_choice\":false},\"explicit_features\":[\"Ingest and index knowledge from SharePoint repositories, internal wikis, and archived project documents\",\"Surface prior similar initiatives, lessons learned, and client deliverables so employees don't recreate work\",\"Return cited answers showing which source documents support each response\",\"Track knowledge gaps where the assistant has low confidence or no relevant sources\",\"Weekly email digest to leadership summarizing top questions and gaps\",\"Capture regional/team metadata on documents so answers reflect cross-region knowledge\"],\"capabilities_offered\":{\"accepted\":[\"sharepoint_integration\",\"audit_logging\",\"admin_dashboard\",\"file_uploads\",\"email_notifications\",\"ai_rag_over_documents\"],\"declined\":[],\"user_didnt_choose\":[]},\"flags\":[\"has-users\",\"has-admin\",\"ai-rag\",\"sharepoint\",\"file-uploads\",\"notifications-email\"],\"notes_for_contract_agent\":\"Core product is a RAG-based AI knowledge assistant (option A from disambiguation). User accepted all offered capabilities. File uploads are memory-only per platform constraint — uploaded docs need to be ingested into pgvector at upload time since disk is ephemeral. Weekly leadership digest should summarize top questions and knowledge gaps (low-confidence/unanswered queries). Preserve user's framing of 'institutional knowledge' and 'lessons learned' in UI copy where natural. Document metadata should support regional/team tagging to reflect the global, multi-region nature of the source content.\"}}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "Build an AI knowledge assistant where employees ask questions in plain English and get cited answers drawn from the organization's internal documents across SharePoint, wikis, and archived project files.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "questions",
+              "answers",
+              "citations",
+              "users"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Employees ask natural-language questions about company knowledge and receive AI-generated answers with citations to source documents.",
+              "Employees follow citation links to view the underlying source document or excerpt.",
+              "Admins connect SharePoint sites and Teams libraries as knowledge sources and trigger document ingestion/indexing.",
+              "Admins review an audit log of questions asked, answers given, and which documents were cited.",
+              "Admins view a dashboard showing top questions, knowledge gaps (low-confidence or unanswered queries), and most-cited documents.",
+              "Employees upload ad-hoc PDFs or docs to expand the knowledge base when relevant material is missing.",
+              "Admins receive a weekly email digest summarizing top questions and identified knowledge gaps for leadership."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Ingest and index knowledge from SharePoint repositories, internal wikis, and archived project documents",
+              "Surface prior similar initiatives, lessons learned, and client deliverables so employees don't recreate work",
+              "Return cited answers showing which source documents support each response",
+              "Track knowledge gaps where the assistant has low confidence or no relevant sources",
+              "Weekly email digest to leadership summarizing top questions and gaps",
+              "Capture regional/team metadata on documents so answers reflect cross-region knowledge"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "sharepoint_integration",
+                "audit_logging",
+                "admin_dashboard",
+                "file_uploads",
+                "email_notifications",
+                "ai_rag_over_documents"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "sharepoint",
+              "file-uploads",
+              "notifications-email"
+            ],
+            "notes_for_contract_agent": "Core product is a RAG-based AI knowledge assistant (option A from disambiguation). User accepted all offered capabilities. File uploads are memory-only per platform constraint — uploaded docs need to be ingested into pgvector at upload time since disk is ephemeral. Weekly leadership digest should summarize top questions and knowledge gaps (low-confidence/unanswered queries). Preserve user's framing of 'institutional knowledge' and 'lessons learned' in UI copy where natural. Document metadata should support regional/team tagging to reflect the global, multi-region nature of the source content."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "Build an AI knowledge assistant where employees ask questions in plain English and get cited answers drawn from the organization's internal documents across SharePoint, wikis, and archived project files.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "questions",
+        "answers",
+        "citations",
+        "users"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Employees ask natural-language questions about company knowledge and receive AI-generated answers with citations to source documents.",
+        "Employees follow citation links to view the underlying source document or excerpt.",
+        "Admins connect SharePoint sites and Teams libraries as knowledge sources and trigger document ingestion/indexing.",
+        "Admins review an audit log of questions asked, answers given, and which documents were cited.",
+        "Admins view a dashboard showing top questions, knowledge gaps (low-confidence or unanswered queries), and most-cited documents.",
+        "Employees upload ad-hoc PDFs or docs to expand the knowledge base when relevant material is missing.",
+        "Admins receive a weekly email digest summarizing top questions and identified knowledge gaps for leadership."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Ingest and index knowledge from SharePoint repositories, internal wikis, and archived project documents",
+        "Surface prior similar initiatives, lessons learned, and client deliverables so employees don't recreate work",
+        "Return cited answers showing which source documents support each response",
+        "Track knowledge gaps where the assistant has low confidence or no relevant sources",
+        "Weekly email digest to leadership summarizing top questions and gaps",
+        "Capture regional/team metadata on documents so answers reflect cross-region knowledge"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "sharepoint_integration",
+          "audit_logging",
+          "admin_dashboard",
+          "file_uploads",
+          "email_notifications",
+          "ai_rag_over_documents"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "file-uploads",
+        "notifications-email"
+      ],
+      "notes_for_contract_agent": "Core product is a RAG-based AI knowledge assistant (option A from disambiguation). User accepted all offered capabilities. File uploads are memory-only per platform constraint — uploaded docs need to be ingested into pgvector at upload time since disk is ephemeral. Weekly leadership digest should summarize top questions and knowledge gaps (low-confidence/unanswered queries). Preserve user's framing of 'institutional knowledge' and 'lessons learned' in UI copy where natural. Document metadata should support regional/team tagging to reflect the global, multi-region nature of the source content."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an AI knowledge assistant where employees ask plain-English questions and get cited answers drawn from indexed internal documents. Admins connect SharePoint sources, trigger ingestion, review an audit log of Q&A, and see a dashboard of top questions, knowledge gaps, and most-cited docs. Employees can upload ad-hoc PDFs to fill gaps. A weekly email digest summarizes top questions and knowledge gaps for leadership. Documents carry region/team metadata so answers reflect cross-region institutional knowledge and lessons learned.\",\n  \"flags\": [\n    \"has-users\",\n    \"has-admin\",\n    \"ai-rag\",\n    \"sharepoint\",\n    \"file-uploads\",\n    \"notifications-email\"\n  ],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Set up the storage for users, knowledge sources, documents, questions, answers, citations, and an audit log of activity.\",\n      \"task\": \"Tables: users, sources, documents, questions, answers, citations, audit_log, digest_runs. Indexes: FK columns, documents(source_id), questions(created_at DESC), citations(answer_id), audit_log(created_at DESC). Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": null\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Set up the semantic search index so the assistant can retrieve relevant document chunks for any question.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER NOT NULL, content TEXT NOT NULL, region TEXT, team TEXT, embedding vector(3072) NOT NULL, created_at TIMESTAMPTZ DEFAULT now()). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Build the API that answers questions with citations, ingests SharePoint and uploaded docs, exposes admin dashboard data, and sends a weekly leadership digest email.\",\n      \"task\": \"Data: pg Pool from env (postgres + pgvector). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; first-login upserts users row. RAG: on POST /questions, embed query via MGA text-embedding-3-large, top-k cosine search doc_chunks, call MGA chat assistant 'default' with retrieved context, persist answer + citations, log to audit_log; flag low-confidence answers as knowledge gaps. Uploads: multer memory storage, parse+chunk+embed inline (disk ephemeral). SharePoint: admin registers source, ingestion job fetches+chunks+embeds. Weekly digest: cron job aggregates top questions + low-confidence gaps, sends email to admins. List endpoints paginated (?limit=50&offset=0), newest-first. Validate all POST bodies; uniform {error} on 4xx/5xx.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Build the UI where employees ask questions and read cited answers, upload documents, and where admins manage sources and view the knowledge dashboard.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Employee flow: AskBar → AnswerView with inline CitationList linking to SourceViewer. UploadPanel for ad-hoc PDFs. Admin flow: SourcesManager (connect SharePoint, trigger ingest), AuditLogTable, KnowledgeDashboard (top questions, knowledge gaps, most-cited docs). UI copy uses 'institutional knowledge' and 'lessons learned' framing where natural. States: spinner during retrieval, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wire all services together so the app runs end-to-end locally.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge, DATABASE_USER=knowledge_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, VECTORDB_NAME=knowledge_vec, VECTORDB_USER=knowledge_vec_user, VECTORDB_PASSWORD=localdev123, MGA_API_KEY, MGA_ASSISTANT_KEY=default. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks per service. Named volumes for postgres + pgvector.\",\n      \"dockerfile\": null,\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"sources\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"kind\", \"type\": \"VARCHAR(32) NOT NULL\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"config\", \"type\": \"JSONB NOT NULL DEFAULT '{}'::jsonb\"},\n          {\"name\": \"last_indexed_at\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"created_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"documents\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"source_id\", \"type\": \"INTEGER REFERENCES sources(id)\"},\n          {\"name\": \"title\", \"type\": \"VARCHAR(512) NOT NULL\"},\n          {\"name\": \"uri\", \"type\": \"TEXT\"},\n          {\"name\": \"region\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"team\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"uploaded_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"questions\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"answers\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"question_id\", \"type\": \"INTEGER NOT NULL REFERENCES questions(id)\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"confidence\", \"type\": \"REAL\"},\n          {\"name\": \"is_knowledge_gap\", \"type\": \"BOOLEAN NOT NULL DEFAULT false\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"citations\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"answer_id\", \"type\": \"INTEGER NOT NULL REFERENCES answers(id)\"},\n          {\"name\": \"document_id\", \"type\": \"INTEGER NOT NULL REFERENCES documents(id)\"},\n          {\"name\": \"excerpt\", \"type\": \"TEXT\"},\n          {\"name\": \"score\", \"type\": \"REAL\"}\n        ]\n      },\n      {\n        \"name\": \"audit_log\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"action\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"entity_type\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"entity_id\", \"type\": \"INTEGER\"},\n          {\"name\": \"metadata\", \"type\": \"JSONB NOT NULL DEFAULT '{}'::jsonb\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"digest_runs\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"period_start\", \"type\": \"TIMESTAMPTZ NOT NULL\"},\n          {\"name\": \"period_end\", \"type\": \"TIMESTAMPTZ NOT NULL\"},\n          {\"name\": \"summary\", \"type\": \"JSONB NOT NULL\"},\n          {\"name\": \"sent_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\n        \"method\": \"GET\",\n        \"path\": \"/whoami\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/questions\",\n        \"request\": {\"text\": \"string required\"},\n        \"response\": {\"status\": 201, \"body\": \"{ question_id, answer: { id, text, confidence, is_knowledge_gap }, citations: [{ document_id, title, uri, excerpt, score }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/questions\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, text, created_at, answer_preview }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/questions/:id\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, text, answer, citations }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/documents/:id\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, title, uri, region, team, source }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/documents/upload\",\n        \"request\": {\"file\": \"multipart required\", \"region\": \"string optional\", \"team\": \"string optional\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, title, chunk_count }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/sources\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, kind, name, last_indexed_at }] }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources\",\n        \"request\": {\"kind\": \"string required (sharepoint|teams|wiki)\", \"name\": \"string required\", \"config\": \"object required\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, kind, name }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources/:id/ingest\",\n        \"response\": {\"status\": 202, \"body\": \"{ source_id, job_status }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/audit\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, user_email, action, entity_type, entity_id, metadata, created_at }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/dashboard\",\n        \"response\": {\"status\": 200, \"body\": \"{ top_questions: [...], knowledge_gaps: [...], most_cited_documents: [...] }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/digest/run\",\n        \"response\": {\"status\": 200, \"body\": \"{ digest_run_id, sent_to: [emails] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/digest\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, period_start, period_end, summary, sent_at }] }\"}\n      }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"ask box where employees type a question and read the cited answer\",\n    \"primary_action\": \"ask a question of the institutional knowledge base\",\n    \"secondary_views\": [\n      \"answer detail with citations and source excerpts\",\n      \"document/source viewer\",\n      \"ad-hoc document upload panel\",\n      \"admin sources manager\",\n      \"admin audit log\",\n      \"admin knowledge dashboard\"\n    ],\n    \"components\": [\n      {\"name\": \"AskBar\", \"role\": \"primary natural-language question input\"},\n      {\"name\": \"AnswerView\", \"role\": \"renders the AI-generated answer with confidence indicator\"},\n      {\"name\": \"CitationList\", \"role\": \"lists cited source documents under an answer\"},\n      {\"name\": \"SourceViewer\", \"role\": \"shows the underlying document or excerpt for a citation\"},\n      {\"name\": \"QuestionHistory\", \"role\": \"employee's recent questions and answers\"},\n      {\"name\": \"UploadPanel\", \"role\": \"employee uploads ad-hoc PDF/doc to expand the knowledge base\"},\n      {\"name\": \"SourcesManager\", \"role\": \"admin connects SharePoint/Teams/wiki sources and triggers ingestion\"},\n      {\"name\": \"AuditLogTable\", \"role\": \"admin reviews questions asked, answers given, citations used\"},\n      {\"name\": \"KnowledgeDashboard\", \"role\": \"admin sees top questions, knowledge gaps, most-cited documents\"},\n      {\"name\": \"DigestPanel\", \"role\": \"admin views past weekly leadership digests and triggers a run\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC claims (sub, email); default role=employee\"},\n      {\"event\": \"question_asked\", \"action\": \"embed query, retrieve top-k chunks from pgvector, call MGA chat assistant, persist question+answer+citations, log to audit_log\"},\n      {\"event\": \"answer_low_confidence\", \"action\": \"mark answer is_knowledge_gap=true for dashboard surfacing\"},\n      {\"event\": \"document_uploaded\", \"action\": \"parse from memory buffer, chunk text, embed via MGA text-embedding-3-large, insert into doc_chunks with region/team metadata\"},\n      {\"event\": \"source_ingest_triggered\", \"action\": \"fetch documents from SharePoint/Teams/wiki source, chunk, embed, insert into doc_chunks; update sources.last_indexed_at\"},\n      {\"event\": \"weekly_cron\", \"action\": \"aggregate top questions and knowledge gaps for the past 7 days, write digest_runs row, email summary to all admin users\"}\n    ],\n    \"rules\": [\n      \"employees can ask questions, upload documents, and view their own question history\",\n      \"employees can view any cited document (knowledge base is org-wide)\",\n      \"/admin/* endpoints require role='admin' — 403 otherwise\",\n      \"only admins can connect sources, trigger ingestion, view audit log, view dashboard, view/run digests\",\n      \"every uploaded document must be embedded into pgvector at upload time (disk is ephemeral)\",\n      \"every question/answer/citation event is recorded in audit_log\",\n      \"all list endpoints paginated (?limit=50&offset=0), newest-first\"\n    ],\n    \"side_effects\": [\n      \"audit log on every question asked, document uploaded, source created, source ingested, and digest run\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Institutional Knowledge Assistant\",\n      \"description\": \"Answers employee questions about internal company knowledge using indexed SharePoint, wiki, and project documents, returning cited sources and surfacing lessons learned from prior initiatives.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"What lessons did we learn from past launches in this region?\",\n        \"Have we built something similar for a client before?\",\n        \"Which policies cover remote work across regions?\"\n      ]\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an AI knowledge assistant where employees ask plain-English questions and get cited answers drawn from indexed internal documents. Admins connect SharePoint sources, trigger ingestion, review an audit log of Q&A, and see a dashboard of top questions, knowledge gaps, and most-cited docs. Employees can upload ad-hoc PDFs to fill gaps. A weekly email digest summarizes top questions and knowledge gaps for leadership. Documents carry region/team metadata so answers reflect cross-region institutional knowledge and lessons learned.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "file-uploads",
+        "notifications-email"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up the storage for users, knowledge sources, documents, questions, answers, citations, and an audit log of activity.",
+          "task": "Tables: users, sources, documents, questions, answers, citations, audit_log, digest_runs. Indexes: FK columns, documents(source_id), questions(created_at DESC), citations(answer_id), audit_log(created_at DESC). Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": null
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Set up the semantic search index so the assistant can retrieve relevant document chunks for any question.",
+          "task": "pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER NOT NULL, content TEXT NOT NULL, region TEXT, team TEXT, embedding vector(3072) NOT NULL, created_at TIMESTAMPTZ DEFAULT now()). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Build the API that answers questions with citations, ingests SharePoint and uploaded docs, exposes admin dashboard data, and sends a weekly leadership digest email.",
+          "task": "Data: pg Pool from env (postgres + pgvector). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; first-login upserts users row. RAG: on POST /questions, embed query via MGA text-embedding-3-large, top-k cosine search doc_chunks, call MGA chat assistant 'default' with retrieved context, persist answer + citations, log to audit_log; flag low-confidence answers as knowledge gaps. Uploads: multer memory storage, parse+chunk+embed inline (disk ephemeral). SharePoint: admin registers source, ingestion job fetches+chunks+embeds. Weekly digest: cron job aggregates top questions + low-confidence gaps, sends email to admins. List endpoints paginated (?limit=50&offset=0), newest-first. Validate all POST bodies; uniform {error} on 4xx/5xx.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the UI where employees ask questions and read cited answers, upload documents, and where admins manage sources and view the knowledge dashboard.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Employee flow: AskBar → AnswerView with inline CitationList linking to SourceViewer. UploadPanel for ad-hoc PDFs. Admin flow: SourcesManager (connect SharePoint, trigger ingest), AuditLogTable, KnowledgeDashboard (top questions, knowledge gaps, most-cited docs). UI copy uses 'institutional knowledge' and 'lessons learned' framing where natural. States: spinner during retrieval, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire all services together so the app runs end-to-end locally.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge, DATABASE_USER=knowledge_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, VECTORDB_NAME=knowledge_vec, VECTORDB_USER=knowledge_vec_user, VECTORDB_PASSWORD=localdev123, MGA_API_KEY, MGA_ASSISTANT_KEY=default. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks per service. Named volumes for postgres + pgvector.",
+          "dockerfile": null,
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "sources",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "kind",
+                "type": "VARCHAR(32) NOT NULL"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "config",
+                "type": "JSONB NOT NULL DEFAULT '{}'::jsonb"
+              },
+              {
+                "name": "last_indexed_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "source_id",
+                "type": "INTEGER REFERENCES sources(id)"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(512) NOT NULL"
+              },
+              {
+                "name": "uri",
+                "type": "TEXT"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "team",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "uploaded_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "questions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "answers",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "question_id",
+                "type": "INTEGER NOT NULL REFERENCES questions(id)"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "confidence",
+                "type": "REAL"
+              },
+              {
+                "name": "is_knowledge_gap",
+                "type": "BOOLEAN NOT NULL DEFAULT false"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "citations",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "answer_id",
+                "type": "INTEGER NOT NULL REFERENCES answers(id)"
+              },
+              {
+                "name": "document_id",
+                "type": "INTEGER NOT NULL REFERENCES documents(id)"
+              },
+              {
+                "name": "excerpt",
+                "type": "TEXT"
+              },
+              {
+                "name": "score",
+                "type": "REAL"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "entity_type",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "entity_id",
+                "type": "INTEGER"
+              },
+              {
+                "name": "metadata",
+                "type": "JSONB NOT NULL DEFAULT '{}'::jsonb"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "digest_runs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "period_start",
+                "type": "TIMESTAMPTZ NOT NULL"
+              },
+              {
+                "name": "period_end",
+                "type": "TIMESTAMPTZ NOT NULL"
+              },
+              {
+                "name": "summary",
+                "type": "JSONB NOT NULL"
+              },
+              {
+                "name": "sent_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/questions",
+            "request": {
+              "text": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ question_id, answer: { id, text, confidence, is_knowledge_gap }, citations: [{ document_id, title, uri, excerpt, score }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, text, created_at, answer_preview }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, text, answer, citations }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, title, uri, region, team, source }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/documents/upload",
+            "request": {
+              "file": "multipart required",
+              "region": "string optional",
+              "team": "string optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, title, chunk_count }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/sources",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, kind, name, last_indexed_at }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources",
+            "request": {
+              "kind": "string required (sharepoint|teams|wiki)",
+              "name": "string required",
+              "config": "object required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, kind, name }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources/:id/ingest",
+            "response": {
+              "status": 202,
+              "body": "{ source_id, job_status }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, user_email, action, entity_type, entity_id, metadata, created_at }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/dashboard",
+            "response": {
+              "status": 200,
+              "body": "{ top_questions: [...], knowledge_gaps: [...], most_cited_documents: [...] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/digest/run",
+            "response": {
+              "status": 200,
+              "body": "{ digest_run_id, sent_to: [emails] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/digest",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, period_start, period_end, summary, sent_at }] }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "ask box where employees type a question and read the cited answer",
+        "primary_action": "ask a question of the institutional knowledge base",
+        "secondary_views": [
+          "answer detail with citations and source excerpts",
+          "document/source viewer",
+          "ad-hoc document upload panel",
+          "admin sources manager",
+          "admin audit log",
+          "admin knowledge dashboard"
+        ],
+        "components": [
+          {
+            "name": "AskBar",
+            "role": "primary natural-language question input"
+          },
+          {
+            "name": "AnswerView",
+            "role": "renders the AI-generated answer with confidence indicator"
+          },
+          {
+            "name": "CitationList",
+            "role": "lists cited source documents under an answer"
+          },
+          {
+            "name": "SourceViewer",
+            "role": "shows the underlying document or excerpt for a citation"
+          },
+          {
+            "name": "QuestionHistory",
+            "role": "employee's recent questions and answers"
+          },
+          {
+            "name": "UploadPanel",
+            "role": "employee uploads ad-hoc PDF/doc to expand the knowledge base"
+          },
+          {
+            "name": "SourcesManager",
+            "role": "admin connects SharePoint/Teams/wiki sources and triggers ingestion"
+          },
+          {
+            "name": "AuditLogTable",
+            "role": "admin reviews questions asked, answers given, citations used"
+          },
+          {
+            "name": "KnowledgeDashboard",
+            "role": "admin sees top questions, knowledge gaps, most-cited documents"
+          },
+          {
+            "name": "DigestPanel",
+            "role": "admin views past weekly leadership digests and triggers a run"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims (sub, email); default role=employee"
+          },
+          {
+            "event": "question_asked",
+            "action": "embed query, retrieve top-k chunks from pgvector, call MGA chat assistant, persist question+answer+citations, log to audit_log"
+          },
+          {
+            "event": "answer_low_confidence",
+            "action": "mark answer is_knowledge_gap=true for dashboard surfacing"
+          },
+          {
+            "event": "document_uploaded",
+            "action": "parse from memory buffer, chunk text, embed via MGA text-embedding-3-large, insert into doc_chunks with region/team metadata"
+          },
+          {
+            "event": "source_ingest_triggered",
+            "action": "fetch documents from SharePoint/Teams/wiki source, chunk, embed, insert into doc_chunks; update sources.last_indexed_at"
+          },
+          {
+            "event": "weekly_cron",
+            "action": "aggregate top questions and knowledge gaps for the past 7 days, write digest_runs row, email summary to all admin users"
+          }
+        ],
+        "rules": [
+          "employees can ask questions, upload documents, and view their own question history",
+          "employees can view any cited document (knowledge base is org-wide)",
+          "/admin/* endpoints require role='admin' — 403 otherwise",
+          "only admins can connect sources, trigger ingestion, view audit log, view dashboard, view/run digests",
+          "every uploaded document must be embedded into pgvector at upload time (disk is ephemeral)",
+          "every question/answer/citation event is recorded in audit_log",
+          "all list endpoints paginated (?limit=50&offset=0), newest-first"
+        ],
+        "side_effects": [
+          "audit log on every question asked, document uploaded, source created, source ingested, and digest run"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Institutional Knowledge Assistant",
+          "description": "Answers employee questions about internal company knowledge using indexed SharePoint, wiki, and project documents, returning cited sources and surfacing lessons learned from prior initiatives.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "What lessons did we learn from past launches in this region?",
+            "Have we built something similar for a client before?",
+            "Which policies cover remote work across regions?"
+          ]
+        }
+      ]
+    },
+    "ms": 64852
+  }
+}

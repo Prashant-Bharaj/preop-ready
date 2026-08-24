@@ -1,0 +1,23 @@
+{
+  "description": "Synthetic iterate-mode inputs for contract-agent. Each scenario references a prior fresh-mode fixture in chat/tests/two-agent/fixtures/ as the prior_contract, then synthesizes a failure_description that the runtime would produce after a smoke-test failure on that contract. probe-iterate.js feeds these to the live contract-agent and saves the iterate-mode output for inspection.",
+  "scenarios": [
+    {
+      "id": "backend_missing_endpoint",
+      "description": "Frontend calls an endpoint the backend never declared. Single-scope (backend) fix.",
+      "prior_contract_path": "chat/tests/two-agent/fixtures/easy_policy_discovery.TWO_AGENT.run2.json",
+      "failure_description": "Smoke test failed on the policy-search flow. The frontend SearchBar component issues GET /api/policies/search?q=<term> but the backend returns 404. Inspecting api_contract: no /policies/search endpoint declared. Backend code only implements /policies (GET, POST) and /policies/:id (GET, PUT, DELETE). The search endpoint is missing entirely. Only the backend scope needs to change."
+    },
+    {
+      "id": "backend_param_mismatch",
+      "description": "Backend and frontend disagree on a query param name. Could be either scope; planner picks one.",
+      "prior_contract_path": "chat/tests/two-agent/fixtures/medium_contract_analysis.TWO_AGENT.run1.json",
+      "failure_description": "Smoke failed on contract upload flow. Frontend POSTs to /api/documents with body { contractText: '...' } but the backend declares the field as { content: '...' } in api_contract. 400 on every upload. The fix is a single field-name reconciliation — either the frontend or the backend changes to match the other. Pick one scope and emit a diff."
+    },
+    {
+      "id": "data_model_missing_column",
+      "description": "Business logic references a column that data_model never declared. Two-scope fix (database + backend).",
+      "prior_contract_path": "chat/tests/two-agent/fixtures/hard_risk_compliance_oversight.TWO_AGENT.run1.json",
+      "failure_description": "Smoke failed. The audit-log feature in business_logic_contract.side_effects writes audit_log.actor_id but data_model.tables[audit_log] has columns [id, action, target_id, timestamp] — actor_id is missing. The trigger in business_logic_contract.triggers also references this column. Both the database schema and the backend logic need updating."
+    }
+  ]
+}

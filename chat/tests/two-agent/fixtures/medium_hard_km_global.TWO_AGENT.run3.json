@@ -1,0 +1,639 @@
+{
+  "prompt": {
+    "id": "medium_hard_km_global",
+    "label": "Medium/Hard — Knowledge Management Across Business Units",
+    "userMessage": "As the organization has expanded globally, valuable operational knowledge has become fragmented across regional teams, SharePoint repositories, internal wikis, and archived project documents. Employees frequently recreate work because they cannot easily identify whether similar initiatives, lessons learned, or client deliverables already exist elsewhere in the company. Leadership believes there is significant untapped institutional knowledge, but accessing it today requires knowing exactly where to look or who to ask. We need a more effective way to connect employees with relevant business knowledge across the enterprise."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 5694,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"Lots of directions this could go — which is closest to what you want?\\n\\nA) Knowledge Q&A assistant — employees ask questions in plain English, AI answers with citations from your SharePoint and wikis\\nB) Smart enterprise search — a search bar across all your sources with filters, ranking, and previews (no AI chat)\\nC) Project/initiative registry — a browsable catalog of past projects, deliverables, and lessons learned that people submit and tag\\nD) Expert finder — directory that maps topics to the people who worked on them, so employees know who to ask\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Lots of directions this could go — which is closest to what you want?\n\nA) Knowledge Q&A assistant — employees ask questions in plain English, AI answers with citations from your SharePoint and wikis\nB) Smart enterprise search — a search bar across all your sources with filters, ranking, and previews (no AI chat)\nC) Project/initiative registry — a browsable catalog of past projects, deliverables, and lessons learned that people submit and tag\nD) Expert finder — directory that maps topics to the people who worked on them, so employees know who to ask"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 5477,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 2,\n  \"message\": \"Got it — a knowledge Q&A assistant that answers employee questions with citations from your SharePoint and wikis. A few things we can include out of the box — pick any that sound useful:\\n\\nA) SharePoint integration to pull in documents automatically\\nB) Audit log + admin dashboard showing top questions, coverage gaps, and usage trends\\nC) Email digest to leadership summarizing popular topics and unanswered questions\\nD) CSV export of question history for analysis\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Got it — a knowledge Q&A assistant that answers employee questions with citations from your SharePoint and wikis. A few things we can include out of the box — pick any that sound useful:\n\nA) SharePoint integration to pull in documents automatically\nB) Audit log + admin dashboard showing top questions, coverage gaps, and usage trends\nC) Email digest to leadership summarizing popular topics and unanswered questions\nD) CSV export of question history for analysis"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 14328,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"A knowledge Q&A assistant where employees ask questions in plain English and get AI-generated answers with citations from enterprise documents across SharePoint, wikis, and archived project materials.\",\n    \"archetype\": \"ai-tool\",\n    \"entities\": [\"documents\", \"questions\", \"answers\", \"citations\", \"users\"],\n    \"user_roles\": [\"employees\", \"admins\"],\n    \"key_workflows\": [\n      \"Employees ask questions in natural language and receive AI-generated answers with citations to source documents.\",\n      \"The system ingests and indexes documents from SharePoint repositories, internal wikis, and archived project documents.\",\n      \"Employees can click citations to view the source document passage.\",\n      \"Admins monitor top questions, usage trends, and coverage gaps via a dashboard.\",\n      \"Admins review audit logs of who asked what and which sources were cited.\",\n      \"Leadership receives an email digest summarizing popular topics and unanswered questions.\",\n      \"Admins export question history to CSV for further analysis.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"ingest knowledge from SharePoint, internal wikis, and archived project documents\",\n      \"surface lessons learned and prior deliverables to prevent duplicate work\",\n      \"show citations linking answers back to source documents\",\n      \"track coverage gaps where questions have no good source answer\",\n      \"email digest to leadership summarizing popular topics and unanswered questions\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\"sharepoint_integration\", \"audit_logging\", \"admin_dashboard\", \"email_notifications\", \"csv_export\"],\n      \"declined\": [],\n      \"user_didnt_choose\": [\"ai_rag_over_documents\", \"ai_chat\"]\n    },\n    \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"ai-chat\", \"sharepoint\", \"notifications-email\", \"exports-csv\"],\n    \"notes_for_contract_agent\": \"Core product is RAG-based Q&A over enterprise documents (SharePoint + wikis + archived project docs). ai_rag_over_documents is implicit/required even though not explicitly offered as a capability — user picked the AI Q&A product type in Job 1. Internal wikis and archived project documents are sources beyond SharePoint; contract agent should plan ingestion paths for these (likely manual upload or admin-managed source registration) since only SharePoint has a first-class integration. Email digest is periodic (suggest weekly/monthly) to leadership role, summarizing popular topics + unanswered questions — distinct from per-event notifications. Admin dashboard should surface coverage gaps (questions with low-confidence or no good citations) as a first-class view. Preserve user terminology: 'institutional knowledge', 'lessons learned', 'initiatives', 'client deliverables'.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "A knowledge Q&A assistant where employees ask questions in plain English and get AI-generated answers with citations from enterprise documents across SharePoint, wikis, and archived project materials.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "questions",
+              "answers",
+              "citations",
+              "users"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Employees ask questions in natural language and receive AI-generated answers with citations to source documents.",
+              "The system ingests and indexes documents from SharePoint repositories, internal wikis, and archived project documents.",
+              "Employees can click citations to view the source document passage.",
+              "Admins monitor top questions, usage trends, and coverage gaps via a dashboard.",
+              "Admins review audit logs of who asked what and which sources were cited.",
+              "Leadership receives an email digest summarizing popular topics and unanswered questions.",
+              "Admins export question history to CSV for further analysis."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "ingest knowledge from SharePoint, internal wikis, and archived project documents",
+              "surface lessons learned and prior deliverables to prevent duplicate work",
+              "show citations linking answers back to source documents",
+              "track coverage gaps where questions have no good source answer",
+              "email digest to leadership summarizing popular topics and unanswered questions"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "sharepoint_integration",
+                "audit_logging",
+                "admin_dashboard",
+                "email_notifications",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": [
+                "ai_rag_over_documents",
+                "ai_chat"
+              ]
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "ai-chat",
+              "sharepoint",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "Core product is RAG-based Q&A over enterprise documents (SharePoint + wikis + archived project docs). ai_rag_over_documents is implicit/required even though not explicitly offered as a capability — user picked the AI Q&A product type in Job 1. Internal wikis and archived project documents are sources beyond SharePoint; contract agent should plan ingestion paths for these (likely manual upload or admin-managed source registration) since only SharePoint has a first-class integration. Email digest is periodic (suggest weekly/monthly) to leadership role, summarizing popular topics + unanswered questions — distinct from per-event notifications. Admin dashboard should surface coverage gaps (questions with low-confidence or no good citations) as a first-class view. Preserve user terminology: 'institutional knowledge', 'lessons learned', 'initiatives', 'client deliverables'."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "A knowledge Q&A assistant where employees ask questions in plain English and get AI-generated answers with citations from enterprise documents across SharePoint, wikis, and archived project materials.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "questions",
+        "answers",
+        "citations",
+        "users"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Employees ask questions in natural language and receive AI-generated answers with citations to source documents.",
+        "The system ingests and indexes documents from SharePoint repositories, internal wikis, and archived project documents.",
+        "Employees can click citations to view the source document passage.",
+        "Admins monitor top questions, usage trends, and coverage gaps via a dashboard.",
+        "Admins review audit logs of who asked what and which sources were cited.",
+        "Leadership receives an email digest summarizing popular topics and unanswered questions.",
+        "Admins export question history to CSV for further analysis."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "ingest knowledge from SharePoint, internal wikis, and archived project documents",
+        "surface lessons learned and prior deliverables to prevent duplicate work",
+        "show citations linking answers back to source documents",
+        "track coverage gaps where questions have no good source answer",
+        "email digest to leadership summarizing popular topics and unanswered questions"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "sharepoint_integration",
+          "audit_logging",
+          "admin_dashboard",
+          "email_notifications",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": [
+          "ai_rag_over_documents",
+          "ai_chat"
+        ]
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "ai-chat",
+        "sharepoint",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "Core product is RAG-based Q&A over enterprise documents (SharePoint + wikis + archived project docs). ai_rag_over_documents is implicit/required even though not explicitly offered as a capability — user picked the AI Q&A product type in Job 1. Internal wikis and archived project documents are sources beyond SharePoint; contract agent should plan ingestion paths for these (likely manual upload or admin-managed source registration) since only SharePoint has a first-class integration. Email digest is periodic (suggest weekly/monthly) to leadership role, summarizing popular topics + unanswered questions — distinct from per-event notifications. Admin dashboard should surface coverage gaps (questions with low-confidence or no good citations) as a first-class view. Preserve user terminology: 'institutional knowledge', 'lessons learned', 'initiatives', 'client deliverables'."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an AI-powered institutional knowledge Q&A assistant. Employees ask questions in plain English and get AI-generated answers with citations linking back to source passages from SharePoint, internal wikis, and archived project documents. Admins manage document sources, monitor a dashboard of top questions and coverage gaps (questions without good source answers), review audit logs of who asked what, and export question history to CSV. Leadership receives a periodic email digest summarizing popular topics and unanswered questions. Surfaces lessons learned and prior client deliverables to prevent duplicate work.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"ai-chat\", \"sharepoint\", \"notifications-email\", \"exports-csv\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Stores users, document sources, ingested documents, questions asked, AI-generated answers, citations, and audit logs.\",\n      \"task\": \"Tables: users, sources, documents, questions, answers, citations, audit_logs. Indexes: FK columns, questions.created_at DESC, audit_logs.created_at DESC, answers.confidence (for coverage-gap queries). Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": null\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Stores embedded chunks of ingested documents for semantic retrieval during Q&A.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER, content TEXT, embedding vector(3072), metadata JSONB, created_at TIMESTAMPTZ DEFAULT NOW()). Index: HNSW on embedding (vector_cosine_ops). Embedding model: text-embedding-3-large via MGA /embeddings.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Handles Q&A requests with RAG retrieval+citations, document source registration and ingestion, admin dashboard data, audit logs, CSV export, and the leadership email digest job.\",\n      \"task\": \"Data: pg Pool from env (DATABASE_* and VECTORDB_* hosts). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. RAG flow: embed question via MGA text-embedding-3-large, top-K cosine search on doc_chunks, call MGA claude-opus-4.7 assistant with retrieved passages, return answer + citations[]; flag low-confidence as coverage gap. Ingestion: SharePoint connector + manual upload for wikis/archived project docs; chunk → embed → upsert. Weekly digest cron summarizes top questions + unanswered (low-confidence) topics, emails leadership. Auth: x-amzn-oidc-data JWT sub/email; first login creates users row; role defaults 'employee', admins set manually.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Chat-style Q&A interface for employees with clickable citations, plus an admin dashboard for sources, coverage gaps, audit logs, and CSV export.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Citation chips open a source passage modal. Admin dashboard surfaces coverage gaps as first-class view. States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST, streaming/loading indicator while answer generates. Responsive. Preserve terminology: 'institutional knowledge', 'lessons learned', 'initiatives', 'client deliverables'.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wires database, vectordb, backend, and frontend together for local development.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge_qa, DATABASE_USER=knowledge_qa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, VECTORDB_NAME=knowledge_qa_vec, VECTORDB_USER=knowledge_qa_vec_user, VECTORDB_PASSWORD=localdev123, MGA_API_KEY, SHAREPOINT_*, SMTP_* for digest. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on every service. Named volumes per DB.\",\n      \"dockerfile\": null,\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"sources\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"kind\", \"type\": \"VARCHAR(32) NOT NULL\"},\n          {\"name\": \"config\", \"type\": \"JSONB NOT NULL DEFAULT '{}'::jsonb\"},\n          {\"name\": \"last_ingested_at\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"documents\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"source_id\", \"type\": \"INTEGER REFERENCES sources(id) ON DELETE CASCADE\"},\n          {\"name\": \"title\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"url\", \"type\": \"TEXT\"},\n          {\"name\": \"content\", \"type\": \"TEXT\"},\n          {\"name\": \"metadata\", \"type\": \"JSONB NOT NULL DEFAULT '{}'::jsonb\"},\n          {\"name\": \"ingested_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"questions\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"answers\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"question_id\", \"type\": \"INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"confidence\", \"type\": \"REAL\"},\n          {\"name\": \"is_coverage_gap\", \"type\": \"BOOLEAN NOT NULL DEFAULT FALSE\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"citations\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"answer_id\", \"type\": \"INTEGER NOT NULL REFERENCES answers(id) ON DELETE CASCADE\"},\n          {\"name\": \"document_id\", \"type\": \"INTEGER REFERENCES documents(id)\"},\n          {\"name\": \"passage\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"score\", \"type\": \"REAL\"}\n        ]\n      },\n      {\n        \"name\": \"audit_logs\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"action\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"detail\", \"type\": \"JSONB NOT NULL DEFAULT '{}'::jsonb\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\"method\": \"GET\", \"path\": \"/whoami\", \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}},\n      {\"method\": \"POST\", \"path\": \"/questions\", \"request\": {\"text\": \"string required\"}, \"response\": {\"status\": 201, \"body\": \"{ question: {id, text, created_at}, answer: {id, text, confidence, is_coverage_gap}, citations: [{id, document_id, document_title, document_url, passage, score}] }\"}},\n      {\"method\": \"GET\", \"path\": \"/questions\", \"response\": {\"status\": 200, \"body\": \"{ items: [{id, text, created_at, answer_preview}], total }\"}},\n      {\"method\": \"GET\", \"path\": \"/questions/:id\", \"response\": {\"status\": 200, \"body\": \"{ question, answer, citations[] }\"}},\n      {\"method\": \"GET\", \"path\": \"/documents/:id\", \"response\": {\"status\": 200, \"body\": \"{ id, title, url, content, metadata, source: {id, name, kind} }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/sources\", \"response\": {\"status\": 200, \"body\": \"{ items: [{id, name, kind, last_ingested_at, doc_count}] }\"}},\n      {\"method\": \"POST\", \"path\": \"/admin/sources\", \"request\": {\"name\": \"string required\", \"kind\": \"string required (sharepoint|wiki|archive|upload)\", \"config\": \"object\"}, \"response\": {\"status\": 201, \"body\": \"{ id, name, kind }\"}},\n      {\"method\": \"POST\", \"path\": \"/admin/sources/:id/ingest\", \"response\": {\"status\": 202, \"body\": \"{ status, queued_at }\"}},\n      {\"method\": \"POST\", \"path\": \"/admin/documents/upload\", \"request\": {\"source_id\": \"int required\", \"title\": \"string\", \"content\": \"string required\"}, \"response\": {\"status\": 201, \"body\": \"{ id, title }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/dashboard\", \"response\": {\"status\": 200, \"body\": \"{ top_questions: [...], usage_trend: [...], coverage_gaps: [{question_id, text, confidence, asked_count}] }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/audit-logs\", \"response\": {\"status\": 200, \"body\": \"{ items: [{id, user_email, action, detail, created_at}], total }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/questions/export.csv\", \"response\": {\"status\": 200, \"body\": \"text/csv stream\"}}\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"Ask a question about institutional knowledge\",\n    \"primary_action\": \"submit a natural-language question and read the AI answer with citations\",\n    \"secondary_views\": [\"Question history\", \"Source passage viewer\", \"Admin dashboard with coverage gaps\", \"Admin source library\", \"Admin audit log\", \"Admin CSV export\"],\n    \"components\": [\n      {\"name\": \"AskBar\", \"role\": \"primary natural-language question input\"},\n      {\"name\": \"AnswerCard\", \"role\": \"AI-generated answer with confidence indicator\"},\n      {\"name\": \"CitationChip\", \"role\": \"clickable citation linking to source passage\"},\n      {\"name\": \"SourcePassageModal\", \"role\": \"view the cited passage in context of its source document\"},\n      {\"name\": \"QuestionHistoryList\", \"role\": \"employee's past questions and answers\"},\n      {\"name\": \"AdminDashboard\", \"role\": \"top questions, usage trends, and coverage gaps\"},\n      {\"name\": \"CoverageGapsPanel\", \"role\": \"first-class view of questions with low-confidence or missing answers\"},\n      {\"name\": \"SourceLibrary\", \"role\": \"admin manages SharePoint, wiki, and archived project document sources\"},\n      {\"name\": \"DocumentUploadForm\", \"role\": \"manual upload for wikis and archived project deliverables\"},\n      {\"name\": \"AuditLogTable\", \"role\": \"who asked what and which sources were cited\"},\n      {\"name\": \"ExportCsvButton\", \"role\": \"download question history as CSV\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC sub/email; default role='employee'\"},\n      {\"event\": \"question_submitted\", \"action\": \"embed question, retrieve top-K chunks from vectordb, call MGA claude-opus-4.7 assistant with passages, persist question+answer+citations, flag is_coverage_gap=true when confidence below threshold or no citations\"},\n      {\"event\": \"source_ingest_triggered\", \"action\": \"pull documents from SharePoint connector or accept uploaded wiki/archive docs, chunk text, embed via MGA text-embedding-3-large, upsert into doc_chunks, update sources.last_ingested_at\"},\n      {\"event\": \"weekly_digest_cron\", \"action\": \"aggregate top questions + coverage gaps for prior period, email summary to leadership recipients\"}\n    ],\n    \"rules\": [\n      \"employees can only see their own questions and answers\",\n      \"/admin/* endpoints require role='admin'\",\n      \"only admins can create sources, trigger ingestion, upload documents, view dashboard/audit logs, or export CSV\",\n      \"every question must record user_id for audit traceability\",\n      \"answers with confidence below threshold or zero citations are marked is_coverage_gap=true and surfaced in admin dashboard\"\n    ],\n    \"side_effects\": [\n      \"audit log on every write (question asked, source created, ingest triggered, document uploaded, CSV exported)\",\n      \"audit log on citation generation capturing which documents were cited per answer\",\n      \"weekly email digest to leadership\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Institutional Knowledge Assistant\",\n      \"description\": \"Answers employee questions about institutional knowledge, lessons learned, initiatives, and client deliverables using indexed SharePoint, wiki, and archived project documents. Always cites source passages.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"What lessons learned do we have from past initiatives in this domain?\",\n        \"Has a client deliverable like this been produced before?\",\n        \"Summarize what we know about our onboarding process.\"\n      ],\n      \"instructions\": \"Answer using only the retrieved passages. Always include citations. If retrieved context is insufficient, say so clearly so the question can be flagged as a coverage gap.\"\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an AI-powered institutional knowledge Q&A assistant. Employees ask questions in plain English and get AI-generated answers with citations linking back to source passages from SharePoint, internal wikis, and archived project documents. Admins manage document sources, monitor a dashboard of top questions and coverage gaps (questions without good source answers), review audit logs of who asked what, and export question history to CSV. Leadership receives a periodic email digest summarizing popular topics and unanswered questions. Surfaces lessons learned and prior client deliverables to prevent duplicate work.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "ai-chat",
+        "sharepoint",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Stores users, document sources, ingested documents, questions asked, AI-generated answers, citations, and audit logs.",
+          "task": "Tables: users, sources, documents, questions, answers, citations, audit_logs. Indexes: FK columns, questions.created_at DESC, audit_logs.created_at DESC, answers.confidence (for coverage-gap queries). Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": null
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Stores embedded chunks of ingested documents for semantic retrieval during Q&A.",
+          "task": "pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER, content TEXT, embedding vector(3072), metadata JSONB, created_at TIMESTAMPTZ DEFAULT NOW()). Index: HNSW on embedding (vector_cosine_ops). Embedding model: text-embedding-3-large via MGA /embeddings.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Handles Q&A requests with RAG retrieval+citations, document source registration and ingestion, admin dashboard data, audit logs, CSV export, and the leadership email digest job.",
+          "task": "Data: pg Pool from env (DATABASE_* and VECTORDB_* hosts). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. RAG flow: embed question via MGA text-embedding-3-large, top-K cosine search on doc_chunks, call MGA claude-opus-4.7 assistant with retrieved passages, return answer + citations[]; flag low-confidence as coverage gap. Ingestion: SharePoint connector + manual upload for wikis/archived project docs; chunk → embed → upsert. Weekly digest cron summarizes top questions + unanswered (low-confidence) topics, emails leadership. Auth: x-amzn-oidc-data JWT sub/email; first login creates users row; role defaults 'employee', admins set manually.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Chat-style Q&A interface for employees with clickable citations, plus an admin dashboard for sources, coverage gaps, audit logs, and CSV export.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Citation chips open a source passage modal. Admin dashboard surfaces coverage gaps as first-class view. States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST, streaming/loading indicator while answer generates. Responsive. Preserve terminology: 'institutional knowledge', 'lessons learned', 'initiatives', 'client deliverables'.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wires database, vectordb, backend, and frontend together for local development.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge_qa, DATABASE_USER=knowledge_qa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, VECTORDB_NAME=knowledge_qa_vec, VECTORDB_USER=knowledge_qa_vec_user, VECTORDB_PASSWORD=localdev123, MGA_API_KEY, SHAREPOINT_*, SMTP_* for digest. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on every service. Named volumes per DB.",
+          "dockerfile": null,
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "sources",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "kind",
+                "type": "VARCHAR(32) NOT NULL"
+              },
+              {
+                "name": "config",
+                "type": "JSONB NOT NULL DEFAULT '{}'::jsonb"
+              },
+              {
+                "name": "last_ingested_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "source_id",
+                "type": "INTEGER REFERENCES sources(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "title",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "url",
+                "type": "TEXT"
+              },
+              {
+                "name": "content",
+                "type": "TEXT"
+              },
+              {
+                "name": "metadata",
+                "type": "JSONB NOT NULL DEFAULT '{}'::jsonb"
+              },
+              {
+                "name": "ingested_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "questions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "answers",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "question_id",
+                "type": "INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "confidence",
+                "type": "REAL"
+              },
+              {
+                "name": "is_coverage_gap",
+                "type": "BOOLEAN NOT NULL DEFAULT FALSE"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "citations",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "answer_id",
+                "type": "INTEGER NOT NULL REFERENCES answers(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "document_id",
+                "type": "INTEGER REFERENCES documents(id)"
+              },
+              {
+                "name": "passage",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "score",
+                "type": "REAL"
+              }
+            ]
+          },
+          {
+            "name": "audit_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "detail",
+                "type": "JSONB NOT NULL DEFAULT '{}'::jsonb"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/questions",
+            "request": {
+              "text": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ question: {id, text, created_at}, answer: {id, text, confidence, is_coverage_gap}, citations: [{id, document_id, document_title, document_url, passage, score}] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{id, text, created_at, answer_preview}], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions/:id",
+            "response": {
+              "status": 200,
+              "body": "{ question, answer, citations[] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, title, url, content, metadata, source: {id, name, kind} }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/sources",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{id, name, kind, last_ingested_at, doc_count}] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources",
+            "request": {
+              "name": "string required",
+              "kind": "string required (sharepoint|wiki|archive|upload)",
+              "config": "object"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name, kind }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources/:id/ingest",
+            "response": {
+              "status": 202,
+              "body": "{ status, queued_at }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/documents/upload",
+            "request": {
+              "source_id": "int required",
+              "title": "string",
+              "content": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, title }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/dashboard",
+            "response": {
+              "status": 200,
+              "body": "{ top_questions: [...], usage_trend: [...], coverage_gaps: [{question_id, text, confidence, asked_count}] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-logs",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{id, user_email, action, detail, created_at}], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/questions/export.csv",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "Ask a question about institutional knowledge",
+        "primary_action": "submit a natural-language question and read the AI answer with citations",
+        "secondary_views": [
+          "Question history",
+          "Source passage viewer",
+          "Admin dashboard with coverage gaps",
+          "Admin source library",
+          "Admin audit log",
+          "Admin CSV export"
+        ],
+        "components": [
+          {
+            "name": "AskBar",
+            "role": "primary natural-language question input"
+          },
+          {
+            "name": "AnswerCard",
+            "role": "AI-generated answer with confidence indicator"
+          },
+          {
+            "name": "CitationChip",
+            "role": "clickable citation linking to source passage"
+          },
+          {
+            "name": "SourcePassageModal",
+            "role": "view the cited passage in context of its source document"
+          },
+          {
+            "name": "QuestionHistoryList",
+            "role": "employee's past questions and answers"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "top questions, usage trends, and coverage gaps"
+          },
+          {
+            "name": "CoverageGapsPanel",
+            "role": "first-class view of questions with low-confidence or missing answers"
+          },
+          {
+            "name": "SourceLibrary",
+            "role": "admin manages SharePoint, wiki, and archived project document sources"
+          },
+          {
+            "name": "DocumentUploadForm",
+            "role": "manual upload for wikis and archived project deliverables"
+          },
+          {
+            "name": "AuditLogTable",
+            "role": "who asked what and which sources were cited"
+          },
+          {
+            "name": "ExportCsvButton",
+            "role": "download question history as CSV"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC sub/email; default role='employee'"
+          },
+          {
+            "event": "question_submitted",
+            "action": "embed question, retrieve top-K chunks from vectordb, call MGA claude-opus-4.7 assistant with passages, persist question+answer+citations, flag is_coverage_gap=true when confidence below threshold or no citations"
+          },
+          {
+            "event": "source_ingest_triggered",
+            "action": "pull documents from SharePoint connector or accept uploaded wiki/archive docs, chunk text, embed via MGA text-embedding-3-large, upsert into doc_chunks, update sources.last_ingested_at"
+          },
+          {
+            "event": "weekly_digest_cron",
+            "action": "aggregate top questions + coverage gaps for prior period, email summary to leadership recipients"
+          }
+        ],
+        "rules": [
+          "employees can only see their own questions and answers",
+          "/admin/* endpoints require role='admin'",
+          "only admins can create sources, trigger ingestion, upload documents, view dashboard/audit logs, or export CSV",
+          "every question must record user_id for audit traceability",
+          "answers with confidence below threshold or zero citations are marked is_coverage_gap=true and surfaced in admin dashboard"
+        ],
+        "side_effects": [
+          "audit log on every write (question asked, source created, ingest triggered, document uploaded, CSV exported)",
+          "audit log on citation generation capturing which documents were cited per answer",
+          "weekly email digest to leadership"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Institutional Knowledge Assistant",
+          "description": "Answers employee questions about institutional knowledge, lessons learned, initiatives, and client deliverables using indexed SharePoint, wiki, and archived project documents. Always cites source passages.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "What lessons learned do we have from past initiatives in this domain?",
+            "Has a client deliverable like this been produced before?",
+            "Summarize what we know about our onboarding process."
+          ],
+          "instructions": "Answer using only the retrieved passages. Always include citations. If retrieved context is insufficient, say so clearly so the question can be flagged as a coverage gap."
+        }
+      ]
+    },
+    "ms": 60663
+  }
+}

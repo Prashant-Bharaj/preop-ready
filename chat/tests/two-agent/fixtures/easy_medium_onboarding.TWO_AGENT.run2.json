@@ -1,0 +1,159 @@
+{
+  "prompt": {
+    "id": "easy_medium_onboarding",
+    "label": "Easy/Medium — Slow Employee Onboarding (NON-AI, workflow)",
+    "userMessage": "As we continue hiring across multiple countries, onboarding new employees has become increasingly inconsistent and time-consuming. HR, IT, Legal, and department managers all operate with separate processes, so simple things like equipment access or compliance training often fall through the cracks. New hires sometimes wait more than a week before they can fully contribute, which is hurting productivity and first impressions. We want to create a smoother onboarding experience that feels coordinated and scalable as the company grows."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 8832,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"Got it — onboarding is currently fragmented across HR, IT, Legal, and managers, and new hires are losing a week+ of productivity. There are a few different products that could solve this. Which is closest to what you want?\\n\\nA) Onboarding workflow tracker — a checklist/task system per new hire, assigned across HR/IT/Legal/manager, with status visibility and deadlines (no AI, humans drive the work)\\n\\nB) Self-serve new hire portal — new hires log in and see their personalized onboarding journey (forms, training, equipment requests, docs to sign), while back-office teams get task queues\\n\\nC) AI onboarding assistant — new hires ask questions in plain English (\\\"how do I request a laptop?\\\", \\\"what's the parental leave policy?\\\") and get cited answers from your internal policies, plus a basic task list\\n\\nD) Full coordination hub — combines B (new hire portal + back-office queues) with manager dashboards, cross-team handoffs, and email reminders when tasks stall\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Got it — onboarding is currently fragmented across HR, IT, Legal, and managers, and new hires are losing a week+ of productivity. There are a few different products that could solve this. Which is closest to what you want?\n\nA) Onboarding workflow tracker — a checklist/task system per new hire, assigned across HR/IT/Legal/manager, with status visibility and deadlines (no AI, humans drive the work)\n\nB) Self-serve new hire portal — new hires log in and see their personalized onboarding journey (forms, training, equipment requests, docs to sign), while back-office teams get task queues\n\nC) AI onboarding assistant — new hires ask questions in plain English (\"how do I request a laptop?\", \"what's the parental leave policy?\") and get cited answers from your internal policies, plus a basic task list\n\nD) Full coordination hub — combines B (new hire portal + back-office queues) with manager dashboards, cross-team handoffs, and email reminders when tasks stall"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 5550,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 2,\n  \"message\": \"Perfect — an onboarding workflow tracker with assigned tasks across HR/IT/Legal/managers, status visibility, and deadlines. A few things we can wire in automatically — pick any that sound useful:\\n\\nA) Email notifications when tasks are assigned, due soon, or overdue\\n\\nB) Admin dashboard with onboarding stats (avg time-to-productive, bottlenecks by team, overdue tasks)\\n\\nC) Audit log of who completed what and when (useful for compliance/Legal)\\n\\nD) CSV export of onboarding records and task completion data\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Perfect — an onboarding workflow tracker with assigned tasks across HR/IT/Legal/managers, status visibility, and deadlines. A few things we can wire in automatically — pick any that sound useful:\n\nA) Email notifications when tasks are assigned, due soon, or overdue\n\nB) Admin dashboard with onboarding stats (avg time-to-productive, bottlenecks by team, overdue tasks)\n\nC) Audit log of who completed what and when (useful for compliance/Legal)\n\nD) CSV export of onboarding records and task completion data"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 14155,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, with status visibility and deadlines.\",\n    \"archetype\": \"collab-tool\",\n    \"entities\": [\"new_hires\", \"onboarding_tasks\", \"task_templates\", \"users\", \"departments\"],\n    \"user_roles\": [\"hr\", \"it\", \"legal\", \"managers\", \"admins\"],\n    \"key_workflows\": [\n      \"HR creates a new hire record with start date, department, country, and role.\",\n      \"System generates an onboarding task list from templates, assigning tasks to HR, IT, Legal, and the hiring manager.\",\n      \"Each assignee sees their queue of tasks across all new hires with deadlines.\",\n      \"Assignees mark tasks complete; status updates roll up to the new hire's overall onboarding progress.\",\n      \"Email notifications fire when tasks are assigned, approaching due date, or overdue.\",\n      \"Admins view a dashboard showing onboarding stats, bottlenecks by team, and overdue tasks.\",\n      \"All task activity is captured in an audit log; admins can export onboarding records and task data as CSV.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"Multi-country new hires (capture country on hire record)\",\n      \"Tasks assigned across four distinct functions: HR, IT, Legal, and department manager\",\n      \"Per-task deadlines tied to start date (e.g., equipment access before day one, compliance training within first week)\",\n      \"Overall onboarding progress visible per new hire\",\n      \"Bottleneck visibility — which team/task type is causing delays\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\"email_notifications\", \"admin_dashboard\", \"audit_logging\", \"csv_export\"],\n      \"declined\": [],\n      \"user_didnt_choose\": []\n    },\n    \"flags\": [\"has-users\", \"has-admin\", \"notifications-email\", \"exports-csv\"],\n    \"notes_for_contract_agent\": \"User emphasized cross-country hiring and that current pain is fragmentation across HR/IT/Legal/managers — task assignment model should clearly route tasks to the right function. 'Time-to-productive' and team bottlenecks are explicit success metrics worth surfacing on the admin dashboard. Audit log is partly motivated by Legal/compliance training tracking.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, with status visibility and deadlines.",
+            "archetype": "collab-tool",
+            "entities": [
+              "new_hires",
+              "onboarding_tasks",
+              "task_templates",
+              "users",
+              "departments"
+            ],
+            "user_roles": [
+              "hr",
+              "it",
+              "legal",
+              "managers",
+              "admins"
+            ],
+            "key_workflows": [
+              "HR creates a new hire record with start date, department, country, and role.",
+              "System generates an onboarding task list from templates, assigning tasks to HR, IT, Legal, and the hiring manager.",
+              "Each assignee sees their queue of tasks across all new hires with deadlines.",
+              "Assignees mark tasks complete; status updates roll up to the new hire's overall onboarding progress.",
+              "Email notifications fire when tasks are assigned, approaching due date, or overdue.",
+              "Admins view a dashboard showing onboarding stats, bottlenecks by team, and overdue tasks.",
+              "All task activity is captured in an audit log; admins can export onboarding records and task data as CSV."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Multi-country new hires (capture country on hire record)",
+              "Tasks assigned across four distinct functions: HR, IT, Legal, and department manager",
+              "Per-task deadlines tied to start date (e.g., equipment access before day one, compliance training within first week)",
+              "Overall onboarding progress visible per new hire",
+              "Bottleneck visibility — which team/task type is causing delays"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "email_notifications",
+                "admin_dashboard",
+                "audit_logging",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "User emphasized cross-country hiring and that current pain is fragmentation across HR/IT/Legal/managers — task assignment model should clearly route tasks to the right function. 'Time-to-productive' and team bottlenecks are explicit success metrics worth surfacing on the admin dashboard. Audit log is partly motivated by Legal/compliance training tracking."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, with status visibility and deadlines.",
+      "archetype": "collab-tool",
+      "entities": [
+        "new_hires",
+        "onboarding_tasks",
+        "task_templates",
+        "users",
+        "departments"
+      ],
+      "user_roles": [
+        "hr",
+        "it",
+        "legal",
+        "managers",
+        "admins"
+      ],
+      "key_workflows": [
+        "HR creates a new hire record with start date, department, country, and role.",
+        "System generates an onboarding task list from templates, assigning tasks to HR, IT, Legal, and the hiring manager.",
+        "Each assignee sees their queue of tasks across all new hires with deadlines.",
+        "Assignees mark tasks complete; status updates roll up to the new hire's overall onboarding progress.",
+        "Email notifications fire when tasks are assigned, approaching due date, or overdue.",
+        "Admins view a dashboard showing onboarding stats, bottlenecks by team, and overdue tasks.",
+        "All task activity is captured in an audit log; admins can export onboarding records and task data as CSV."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Multi-country new hires (capture country on hire record)",
+        "Tasks assigned across four distinct functions: HR, IT, Legal, and department manager",
+        "Per-task deadlines tied to start date (e.g., equipment access before day one, compliance training within first week)",
+        "Overall onboarding progress visible per new hire",
+        "Bottleneck visibility — which team/task type is causing delays"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "email_notifications",
+          "admin_dashboard",
+          "audit_logging",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "User emphasized cross-country hiring and that current pain is fragmentation across HR/IT/Legal/managers — task assignment model should clearly route tasks to the right function. 'Time-to-productive' and team bottlenecks are explicit success metrics worth surfacing on the admin dashboard. Audit log is partly motivated by Legal/compliance training tracking."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "ms": 52149,
+    "error": "HTTP 502: <html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n</body>\r\n</html>\r\n"
+  }
+}

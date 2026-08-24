@@ -1,0 +1,13 @@
+{
+  "assistantKey": "subagent-backend",
+  "scenarioName": "type-gate-failed-then-fix",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "<read_file>\n<path>backend/src/index.ts</path>\n</read_file>\n\n<replace_in_file>\n<path>backend/src/index.ts</path>\n<diff><<<<<<< SEARCH\napp.get('/tasks', async (_req, res) => {\n  const result = await pool.query('SELECT id, title, done FROM tasks');\n  res.json(result.rows);\n});\n=======\napp.get('/tasks', async (_req, res) => {\n  const result = await pool.query<{ id: number; title: string; done: boolean; created_at: Date }>('SELECT id, title, done, created_at FROM tasks');\n  res.json(result.rows);\n});\n>>>>>>> REPLACE</diff>\n</replace_in_file>\n\n<execute_command>\n<command>cd backend && npm run typecheck</command>\n</execute_command>\n\n<attempt_completion>\n<result>\n--- PHASE AGENT REPORT ---\n\n**Scope:** backend\n\n**Status:** complete\n\n**Files written:**\n- backend/src/index.ts (replace_in_file)\n\n**Summary:** Type-gate reported an implicit-any on result.rows because the generic parameter on pool.query was missing. Added the row generic so result.rows is `Array<{id, title, done, created_at}>` and the typecheck passes clean. No contract change.\n\n**Contracts for sibling scopes:**\n- API endpoints: `GET /tasks` — list tasks\n\n--- END REPORT ---\n</result>\n</attempt_completion>",
+    "usage": { "prompt_tokens": 29105, "completion_tokens": 384, "prompt_tokens_details": { "cached_tokens": 26200 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-subagent-backend-type-gate-failed-then-fix-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

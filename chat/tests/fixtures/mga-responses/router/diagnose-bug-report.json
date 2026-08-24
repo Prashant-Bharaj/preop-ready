@@ -1,0 +1,13 @@
+{
+  "assistantKey": "router",
+  "scenarioName": "diagnose-bug-report",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "{\"action\":\"diagnose\",\"symptom\":\"the form doesn't submit, I click the button and nothing happens\",\"suspected_scope\":\"frontend\"}",
+    "usage": { "prompt_tokens": 20890, "completion_tokens": 54, "prompt_tokens_details": { "cached_tokens": 19500 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-router-diagnose-bug-report-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}
