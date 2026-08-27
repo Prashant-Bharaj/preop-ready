@@ -1,6 +1,6 @@
 ---
 name: vectordb
-description: Add a vector database for embeddings, semantic search, or RAG: pgvector, ChromaDB, or Qdrant
+description: Add a vector database for embeddings, semantic search, or RAG: pgvector
 ---
 
 Read `.platform-rules/scope-vectordb.md` and follow it exactly. It is the canonical platform rule

@@ -31,7 +31,7 @@ Read it before greeting: `cat docs/PROJECT_STATUS.md 2>/dev/null`
 **Stack section** — status per component with icons: ⬜ Not started · 🔄 In progress · ✅ Complete · ❌ Has issues
 
 ```markdown
-| **Frontend** | ✅ Complete | Vanilla HTML/CSS, voting form |
+| **Frontend** | ✅ Complete | React, voting form |
 | **Backend** | 🔄 In progress | Node.js, /api/votes endpoint |
 ```
 

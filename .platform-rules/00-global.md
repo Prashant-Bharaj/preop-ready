@@ -31,10 +31,10 @@ Template Dockerfiles stay untouched as reference. Copy the right one to `Dockerf
 
 | Component | Copy from | To |
 |-----------|-----------|----|
-| Frontend | `frontend/Dockerfile.react` or `Dockerfile.vanilla` | `frontend/Dockerfile` |
+| Frontend | `frontend/Dockerfile.react` | `frontend/Dockerfile` |
 | Backend | `backend/Dockerfile.node`, `.python`, or `.rust` | `backend/Dockerfile` |
-| Database | `database/Dockerfile.postgres` or `.mysql` | `database/Dockerfile` |
-| Vector DB | `vectordb/Dockerfile.pgvector`, `.chroma`, or `.qdrant` | `vectordb/Dockerfile` |
+| Database | `database/Dockerfile.postgres` | `database/Dockerfile` |
+| Vector DB | `vectordb/Dockerfile.pgvector` | `vectordb/Dockerfile` |
 
 A `Dockerfile` in a component directory is what triggers its deployment.
 
@@ -42,10 +42,10 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 
 | Layer | Allowed | NOT allowed |
 |-------|---------|-------------|
-| Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
-| Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | MongoDB, Redis, SQLite, DynamoDB — no document/KV/embedded stores |
-| Vector DB | pgvector, Chroma, Qdrant | — |
+| Frontend | React + Vite | vanilla HTML/CSS/JS, Next.js, Angular, any SSR — nginx serves the built static output only |
+| Backend | Node + Express (TypeScript) · Python + FastAPI · Rust + Actix-web | Anything else |
+| Database | PostgreSQL | MySQL, MongoDB, Redis, SQLite, DynamoDB — no other relational/document/KV/embedded stores |
+| Vector DB | pgvector | Chroma, Qdrant |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)
 

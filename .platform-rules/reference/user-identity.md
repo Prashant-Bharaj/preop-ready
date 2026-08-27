@@ -49,7 +49,7 @@ Copy the middleware for the backend's language into the project and wire it in:
 | Stack | Snippet |
 |-------|---------|
 | Node.js/Express | `snippets/auth/user-identity.js` |
-| Python (FastAPI/Flask) | `snippets/auth/user-identity.py` |
+| Python (FastAPI) | `snippets/auth/user-identity.py` |
 | Rust (Actix-web) | `snippets/auth/user-identity.rs` |
 
 After the middleware, handlers read `req.user` (JS) / injected `user` dict (Python) with `userId`, `email`, `name`, `givenName`, `familyName`.

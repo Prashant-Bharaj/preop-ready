@@ -70,7 +70,7 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 ```
 
 No string concatenation, template literals, or f-strings in queries — in any language
-(pg `$1`, mysql2 `?`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+(pg `$1`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
 
 - **Paginate all list queries** (`LIMIT`/`OFFSET` or keyset) — never return an unbounded result set.
 - Use a **least-privilege DB user** for the app: no DDL or superuser rights in the app's credentials.

@@ -22,7 +22,7 @@ platform session), consent, and token refresh — apps just name an operation.
    the `#sid=` fragment, auto-redirect to the bouncer when the session is missing and
    to the consent screen on `403 consent_required`.
 3. **Backend**: COPY `snippets/auth/graph-proxy-backend.js` (Express) or `.py`
-   (FastAPI/Flask) — SigV4-signs requests to the proxy with the ECS task role and
+   (FastAPI) — SigV4-signs requests to the proxy with the ECS task role and
    forwards `consent_required` + `consent_url` verbatim to the client.
 4. **Unattended / scheduled jobs** (no user present): COPY
    `snippets/auth/graph-proxy-offline.{js,py}` — enrolls each user's session id in

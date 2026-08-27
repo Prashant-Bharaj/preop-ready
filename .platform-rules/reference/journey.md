@@ -93,7 +93,7 @@ Otherwise ask: "Starting fresh (1) or migrated existing code (2)?"
 | Health endpoints | `/health` in nginx.conf AND backend code |
 | Compose | `docker-compose.yml` exists |
 
-Common fixes: copy template Dockerfiles (`Dockerfile.vanilla`/`Dockerfile.react`/`Dockerfile.node`/`Dockerfile.python`), add `/health` route returning `{"status":"ok"}`, move backend to port 3000, strip `events{}`/`http{}` from nginx.conf. Report what you found, offer to fix everything, then offer a local test. If they haven't migrated yet, point to `docs/MIGRATION.md`.
+Common fixes: copy template Dockerfiles (`Dockerfile.react`/`Dockerfile.node`/`Dockerfile.python`), add `/health` route returning `{"status":"ok"}`, move backend to port 3000, strip `events{}`/`http{}` from nginx.conf. Report what you found, offer to fix everything, then offer a local test. If they haven't migrated yet, point to `docs/MIGRATION.md`.
 
 ## 5. Understanding Their Idea
 
@@ -105,8 +105,7 @@ Complex idea → break it into build-one-at-a-time steps (basics first, AI featu
 
 | They want... | You use... |
 |--------------|------------|
-| Simple website, info pages | Vanilla HTML/CSS |
-| Interactive app, forms, dashboards | React |
+| A website — pages, forms, or dashboards | React |
 | Save data, user accounts, APIs | Node.js backend |
 | AI/ML features, data science | Python backend |
 | High-performance APIs (ONLY if they explicitly ask for Rust) | Rust backend |

@@ -21,7 +21,6 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 |-----------|-----------|---------|
 | Express | `app.get('/users', ...)` | `app.get('/api/users', ...)` |
 | FastAPI | `@app.get("/users")` | `@app.get("/api/users")` |
-| Flask | `@app.route('/users')` | `@app.route('/api/users')` |
 | Actix | `web::resource("/users")` | `web::resource("/api/users")` |
 
 ## /health Required in EVERY Container (deployment fails without it)
@@ -35,11 +34,11 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 ```
 frontend/    nginx static (port 8080) — Dockerfile, nginx.conf (prod, no proxy),
              nginx.local.conf (local dev, proxies /api → backend:3000)
-backend/     Express / FastAPI / Flask / Actix (port 3000) — Dockerfile
+backend/     Express (TS) / FastAPI / Actix (port 3000) — Dockerfile
              migrations/ ← ALL schema changes after first boot live HERE
-database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema, first boot
+database/    Postgres (optional) — Dockerfile, init/ (schema, first boot
              ONLY), seed/ (gitignored) — ⛔ NO other .sql anywhere under database/
-vectordb/    pgvector / Chroma / Qdrant (optional, independent) — Dockerfile, init/
+vectordb/    pgvector (optional, independent) — Dockerfile, init/
 docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend's default.conf
 ```
 
@@ -86,8 +85,7 @@ Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 ## /data Persistence (EFS)
 
 All persistent data lives under `/data` — anything else is lost on redeploy. Template
-Dockerfiles are pre-configured (`PGDATA=/data/postgres`, MySQL `--datadir=/data/mysql`,
-Chroma `/data/chroma`, Qdrant `/data/qdrant`). App file uploads → `/data/uploads`.
+Dockerfiles are pre-configured (`PGDATA=/data/postgres`). App file uploads → `/data/uploads`.
 `database/init/` and `vectordb/init/` run on FIRST deployment only — schema changes after
 that need backend migrations.
 

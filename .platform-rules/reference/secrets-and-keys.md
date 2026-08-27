@@ -109,7 +109,7 @@ If `vectordb/Dockerfile` exists:
 | Variable | Description |
 |----------|-------------|
 | `VECTORDB_HOST` | Internal hostname (e.g., `myapp-vectordb.vibe.local`) |
-| `VECTORDB_PORT` | 5432 pgvector, 6333 Qdrant, 8000 Chroma |
+| `VECTORDB_PORT` | 5432 (pgvector) |
 | `VECTORDB_NAME` / `VECTORDB_USER` / `VECTORDB_PASSWORD` | pgvector only |
 
 DB config should prefer `DATABASE_URL`, then individual vars, then local defaults (`host: 'db'`, port 5432, etc.).

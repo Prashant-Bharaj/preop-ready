@@ -1,5 +1,5 @@
 ---
-description: Add a vector database for embeddings, semantic search, or RAG: pgvector, ChromaDB, or Qdrant
+description: Add a vector database for embeddings, semantic search, or RAG: pgvector
 globs: vectordb/**
 alwaysApply: false
 ---

@@ -16,18 +16,13 @@ Core rules (`/data` persistence, protected files) are in `.platform-rules/01-com
 | Scenario | Use |
 |----------|-----|
 | Only vectors, no relational DB | `vectordb/` alone (no `database/`) |
-| SQL + separate vector service | `database/Dockerfile.postgres` + `vectordb/Dockerfile.chroma` |
-| Two independent Postgres instances | `database/Dockerfile.postgres` + `vectordb/Dockerfile.pgvector` |
+| SQL + separate vector service | `database/Dockerfile.postgres` + `vectordb/Dockerfile.pgvector` |
 
-| Template | When to pick |
-|----------|--------------|
-| `Dockerfile.chroma` | Simple, Python-native ecosystem |
-| `Dockerfile.qdrant` | High performance, larger collections |
-| `Dockerfile.pgvector` | SQL-based vectors; `CREATE EXTENSION vector` auto-enabled; supports `vectordb/init/init.sql` |
+`Dockerfile.pgvector`: SQL-based vectors; `CREATE EXTENSION vector` auto-enabled; supports `vectordb/init/init.sql`.
 
 Setup:
 ```bash
-cp vectordb/Dockerfile.<chroma|qdrant|pgvector> vectordb/Dockerfile
+cp vectordb/Dockerfile.pgvector vectordb/Dockerfile
 ```
 Then add a `vectordb` service to `docker-compose.yml` for local dev (see `.platform-rules/scope-integration.md`).
 
@@ -36,10 +31,8 @@ Then add a `vectordb` service to `docker-compose.yml` for local dev (see `.platf
 | Variable | Value |
 |----------|-------|
 | `VECTORDB_HOST` | Internal hostname of the vector DB service |
-| `VECTORDB_PORT` | 8000 (Chroma) · 6333 (Qdrant) · 5432 (pgvector) |
-| `VECTORDB_NAME` / `VECTORDB_USER` / `VECTORDB_PASSWORD` | pgvector only |
-
-Chroma and Qdrant need no credentials locally — just build and connect.
+| `VECTORDB_PORT` | 5432 (pgvector) |
+| `VECTORDB_NAME` / `VECTORDB_USER` / `VECTORDB_PASSWORD` | Auto-injected credentials |
 
 ## Persistence
 
@@ -48,8 +41,6 @@ EFS is mounted at `/data`; the templates are pre-configured to use it:
 | Template | Data directory |
 |----------|----------------|
 | pgvector | `/data/postgres` |
-| ChromaDB | `/data/chroma` |
-| Qdrant | `/data/qdrant` |
 
 Init scripts (pgvector's `vectordb/init/init.sql`) run on FIRST deploy only — same rules as `.platform-rules/scope-database.md` (schema only, `IF NOT EXISTS`, later changes via backend migrations).
 

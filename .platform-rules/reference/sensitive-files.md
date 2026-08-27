@@ -77,7 +77,7 @@ They stage ALL files, including sensitive data git might not yet be ignoring.
 
 ```bash
 # ✅ CORRECT — explicit files
-git add frontend/src/App.jsx backend/src/index.js
+git add frontend/src/App.tsx backend/src/index.ts
 
 # ❌ NEVER
 git add .

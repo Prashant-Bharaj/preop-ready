@@ -32,10 +32,10 @@ Template Dockerfiles stay untouched as reference. Copy the right one to `Dockerf
 
 | Component | Copy from | To |
 |-----------|-----------|----|
-| Frontend | `frontend/Dockerfile.react` or `Dockerfile.vanilla` | `frontend/Dockerfile` |
+| Frontend | `frontend/Dockerfile.react` | `frontend/Dockerfile` |
 | Backend | `backend/Dockerfile.node`, `.python`, or `.rust` | `backend/Dockerfile` |
-| Database | `database/Dockerfile.postgres` or `.mysql` | `database/Dockerfile` |
-| Vector DB | `vectordb/Dockerfile.pgvector`, `.chroma`, or `.qdrant` | `vectordb/Dockerfile` |
+| Database | `database/Dockerfile.postgres` | `database/Dockerfile` |
+| Vector DB | `vectordb/Dockerfile.pgvector` | `vectordb/Dockerfile` |
 
 A `Dockerfile` in a component directory is what triggers its deployment.
 
@@ -43,10 +43,10 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 
 | Layer | Allowed | NOT allowed |
 |-------|---------|-------------|
-| Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
-| Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | MongoDB, Redis, SQLite, DynamoDB — no document/KV/embedded stores |
-| Vector DB | pgvector, Chroma, Qdrant | — |
+| Frontend | React + Vite | vanilla HTML/CSS/JS, Next.js, Angular, any SSR — nginx serves the built static output only |
+| Backend | Node + Express (TypeScript) · Python + FastAPI · Rust + Actix-web | Anything else |
+| Database | PostgreSQL | MySQL, MongoDB, Redis, SQLite, DynamoDB — no other relational/document/KV/embedded stores |
+| Vector DB | pgvector | Chroma, Qdrant |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)
 
@@ -99,7 +99,6 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 |-----------|-----------|---------|
 | Express | `app.get('/users', ...)` | `app.get('/api/users', ...)` |
 | FastAPI | `@app.get("/users")` | `@app.get("/api/users")` |
-| Flask | `@app.route('/users')` | `@app.route('/api/users')` |
 | Actix | `web::resource("/users")` | `web::resource("/api/users")` |
 
 ## /health Required in EVERY Container (deployment fails without it)
@@ -113,11 +112,11 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 ```
 frontend/    nginx static (port 8080) — Dockerfile, nginx.conf (prod, no proxy),
              nginx.local.conf (local dev, proxies /api → backend:3000)
-backend/     Express / FastAPI / Flask / Actix (port 3000) — Dockerfile
+backend/     Express (TS) / FastAPI / Actix (port 3000) — Dockerfile
              migrations/ ← ALL schema changes after first boot live HERE
-database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema, first boot
+database/    Postgres (optional) — Dockerfile, init/ (schema, first boot
              ONLY), seed/ (gitignored) — ⛔ NO other .sql anywhere under database/
-vectordb/    pgvector / Chroma / Qdrant (optional, independent) — Dockerfile, init/
+vectordb/    pgvector (optional, independent) — Dockerfile, init/
 docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend's default.conf
 ```
 
@@ -164,8 +163,7 @@ Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 ## /data Persistence (EFS)
 
 All persistent data lives under `/data` — anything else is lost on redeploy. Template
-Dockerfiles are pre-configured (`PGDATA=/data/postgres`, MySQL `--datadir=/data/mysql`,
-Chroma `/data/chroma`, Qdrant `/data/qdrant`). App file uploads → `/data/uploads`.
+Dockerfiles are pre-configured (`PGDATA=/data/postgres`). App file uploads → `/data/uploads`.
 `database/init/` and `vectordb/init/` run on FIRST deployment only — schema changes after
 that need backend migrations.
 
@@ -272,7 +270,7 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 ```
 
 No string concatenation, template literals, or f-strings in queries — in any language
-(pg `$1`, mysql2 `?`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+(pg `$1`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
 
 - **Paginate all list queries** (`LIMIT`/`OFFSET` or keyset) — never return an unbounded result set.
 - Use a **least-privilege DB user** for the app: no DDL or superuser rights in the app's credentials.

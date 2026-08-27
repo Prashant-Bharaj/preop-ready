@@ -21,15 +21,15 @@ A checked item's evidence is the verbatim command plus its real output.
 
 ## 2. Database type consistency (if database used)
 
-All four must agree on postgres vs mysql:
+All parts must line up as PostgreSQL:
 
-- [ ] `database/Dockerfile` copied from the matching template (`Dockerfile.postgres` or `Dockerfile.mysql`)
-- [ ] `database/init/init.sql` syntax matches (e.g., `SERIAL`/`JSONB` = postgres; `AUTO_INCREMENT`/`ENGINE=` = mysql)
+- [ ] `database/Dockerfile` copied from `Dockerfile.postgres`
+- [ ] `database/init/init.sql` uses Postgres syntax (e.g., `SERIAL`/`JSONB`)
 - [ ] Every table the backend queries ACTUALLY EXISTS in the running DB: `docker compose exec db psql -U postgres -c '\dt'` — schema added to `database/init/` after the volume initialized never ran; move it to `backend/migrations/`
 - [ ] `find database migrations -name "*.sql" | grep -vE "^database/(init|seed)/"` returns nothing — migration files anywhere except `backend/migrations/` can never execute (the backend image only contains `backend/`)
-- [ ] If `backend/migrations/*.sql` exist: the runner is wired (`grep -r runMigrations backend --include="*.js" --exclude-dir=node_modules --exclude-dir=migrations` hits) and the startup log of the CURRENT boot shows the expected `Running migration:` lines
-- [ ] docker-compose env vars match (`POSTGRES_*` vs `MYSQL_*`) and port matches (5432 vs 3306)
-- [ ] Backend uses the matching client library (`pg` vs `mysql2`; `asyncpg` vs `aiomysql`)
+- [ ] If `backend/migrations/*.sql` exist: the runner is wired (`grep -r runMigrations backend --include="*.ts" --exclude-dir=node_modules --exclude-dir=migrations` hits) and the startup log of the CURRENT boot shows the expected `Running migration:` lines
+- [ ] docker-compose env vars are `POSTGRES_*` and port is 5432
+- [ ] Backend uses a Postgres client library (`pg` for Node; `asyncpg` or `psycopg2` for Python)
 
 ## 3. docker-compose.yml integrity
 

@@ -1,5 +1,5 @@
 ---
-description: Add or change the relational database: PostgreSQL/MySQL setup, init scripts, EFS persistence, schema migrations
+description: Add or change the relational database: PostgreSQL setup, init scripts, EFS persistence, schema migrations
 globs: database/**
 alwaysApply: false
 ---

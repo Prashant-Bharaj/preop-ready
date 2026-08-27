@@ -24,8 +24,7 @@ Core rules (`/data` persistence rule, protected files, auto-injected secrets) ar
 ## Setup
 
 ```bash
-cp database/Dockerfile.postgres database/Dockerfile   # PostgreSQL (recommended default)
-cp database/Dockerfile.mysql database/Dockerfile      # MySQL (if user prefers it)
+cp database/Dockerfile.postgres database/Dockerfile   # PostgreSQL
 ```
 
 Vector search / embeddings do NOT go here — use `vectordb/` (see `.platform-rules/scope-vectordb.md`).
@@ -53,16 +52,6 @@ RUN mkdir -p /data/postgres && chown -R postgres:postgres /data
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
   CMD pg_isready -U postgres || exit 1
 ```
-
-MySQL Dockerfile essentials:
-```dockerfile
-RUN mkdir -p /data/mysql && chown -R mysql:mysql /data
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
-  CMD mysqladmin ping -h localhost || exit 1
-CMD ["mysqld", "--datadir=/data/mysql"]   # CLI flag always wins — never rely on config files alone
-```
-
-Config-file gotcha: `RUN echo '...\n...'` writes ONE literal line — use `printf` or a heredoc for multiline configs, or the datadir setting silently fails and data is lost.
 
 ## Deployment Model
 

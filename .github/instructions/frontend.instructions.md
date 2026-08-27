@@ -15,11 +15,9 @@ Core rules (relative `/api` routing, ports 8080/3000, `/health`, security header
 
 | Stack | When | Setup |
 |-------|------|-------|
-| Vanilla HTML/CSS/JS | Simple sites, forms, landing pages | `cp frontend/Dockerfile.vanilla frontend/Dockerfile` |
-| React + Vite | Interactive apps, dashboards | `cp frontend/Dockerfile.react frontend/Dockerfile` |
+| React + Vite | All frontends — pages, forms, dashboards | `cp frontend/Dockerfile.react frontend/Dockerfile` |
 
-- **Vanilla files:** `frontend/index.html`, `frontend/style.css`, optional `frontend/script.js`.
-- **React files:** `frontend/package.json` (React + Vite), `frontend/vite.config.js`, `frontend/src/App.jsx`. Vite builds to static `/dist`, served by nginx.
+- **React files (TypeScript):** `frontend/package.json` (React + Vite), `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/src/App.tsx`. Vite builds to static `/dist`, served by nginx.
 
 ## The Two nginx Configs (critical)
 
@@ -94,15 +92,6 @@ Use these when the feature is needed — keeps projects consistent with platform
 | Drag and drop | `@dnd-kit/core` |
 | Syntax highlighting | `react-syntax-highlighter` |
 
-### Vanilla JS
-
-| Purpose | Library |
-|---------|---------|
-| Charts | `chart.js` |
-| Animations | `gsap` |
-| Date picker | platform snippet `snippets/ui/datepicker-vanilla.js` (no dep) |
-| Drag and drop | `sortablejs` |
-
 Avoid `jquery`, `moment.js`, full `lodash`, `d3` for simple charts — full avoid table in `.platform-rules/scope-backend.md`.
 
 ## Snippets (check before writing code)
@@ -110,7 +99,6 @@ Avoid `jquery`, `moment.js`, full `lodash`, `d3` for simple charts — full avoi
 | Need | Snippet |
 |------|---------|
 | Date picker / range picker (React) | `snippets/ui/datepicker-react.jsx` |
-| Date picker / range picker (vanilla) | `snippets/ui/datepicker-vanilla.js` |
 | Microsoft Graph from the browser (identity, SharePoint, calendar, mail) | `snippets/auth/graph-proxy-client.js` — read `snippets/auth/graph-proxy-operations.md` first |
 
 Deployment, testing, and secrets depth: `.platform-rules/reference/*.md`.
