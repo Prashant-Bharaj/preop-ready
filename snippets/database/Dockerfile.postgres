@@ -1,0 +1,33 @@
+# PostgreSQL Database
+# Standard relational database - good for most web applications
+#
+# Environment variables (set by platform):
+#   POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   The EFS access point is pre-configured with correct ownership (UID 999 = postgres).
+#
+# IMPORTANT: Do NOT use mkdir/chown commands - EFS access points don't support chown
+# and will cause "Operation not permitted" errors on container startup.
+#
+# To use: Copy this file to database/Dockerfile
+
+# IMPORTANT: Use postgres:16 (not alpine) because:
+# - Alpine uses UID 70 for postgres user
+# - Platform EFS access points use UID 999
+# - Standard image uses UID 999 which matches the platform
+FROM postgres:16
+
+# Copy initialization scripts (run on first start only)
+COPY init/ /docker-entrypoint-initdb.d/
+
+# Use /data directly as PGDATA (the EFS mount point in production)
+# EFS access point handles ownership - no chown needed
+ENV PGDATA=/data
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} || exit 1
+
+EXPOSE 5432

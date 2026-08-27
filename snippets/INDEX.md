@@ -18,6 +18,19 @@
 
 ## Available Snippets
 
+### Dockerfile Templates
+
+Byte-deployable Dockerfile templates per scope. Copy via `copy_template(template="Dockerfile.X", dest="<scope>/Dockerfile")` (resolver fetches from `snippets/<scope>/`); or fetch as prose via `get_snippet({path: "<scope>/Dockerfile.X"})` for inlining.
+
+| Template | Scope | File | Purpose |
+|----------|-------|------|---------|
+| Node + Express | backend | `backend/Dockerfile.node` | Node.js runtime, `npm install`, EXPOSE 3000 |
+| Python + FastAPI/Flask | backend | `backend/Dockerfile.python` | Python runtime, `pip install`, `uvicorn main:app`, EXPOSE 3000 |
+| Rust + Cargo | backend | `backend/Dockerfile.rust` | Multi-stage Rust build, EXPOSE 3000 |
+| React + Vite | frontend | `frontend/Dockerfile.react` | Multi-stage build (Node → nginx), non-root, EXPOSE 8080 |
+| PostgreSQL | database | `database/Dockerfile.postgres` | EFS-aware (`PGDATA=/data`), init scripts |
+| pgvector | vectordb | `vectordb/Dockerfile.pgvector` | Pinned to `pgvector/pgvector:0.7.4-pg16` (upstream `pg16` floating tag is unreliable) |
+
 ### Authentication & Access Control
 
 | Snippet | Language | File | Description |
@@ -29,7 +42,6 @@
 | User Roles & Whitelisting | JS + SQL | `auth/user-roles.js` + `auth/user-roles-schema.sql` | Role-based access control (user/expert/admin), approval workflow |
 | User Roles & Whitelisting | Python | `auth/user-roles.py` | RBAC with FastAPI dependencies (same SQL schema) |
 | User Management Page | React | `auth/UserManagement.jsx` | Admin page to approve/deny users and manage roles |
-| User Data Schema | SQL | `auth/user-identity-schema.sql` | User-specific data keyed on stable OIDC sub (PostgreSQL + MySQL) |
 
 ### File Handling
 
@@ -45,43 +57,46 @@
 
 ### AI / LLM
 
+> Apps with AI features wire env vars from workspace root `.env` (written by
+> the harness during `/confirm`): `MGA_API_KEY`, `MGA_BASE_URL`,
+> `MGA_ASSISTANT_ID`. See `.platform-rules/mga-platform.md` for the full
+> capability catalog (models, tools, endpoints).
+
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| Bayer LLM Client | JS | `llm/bayer-llm-client.js` | Direct chat completions via Bayer's internal LLM API |
-| Bayer LLM Client | Python | `llm/bayer-llm-client.py` | Direct chat completions (async httpx) |
-| MGA Assistant Client | JS | `llm/mga-assistant-client.js` | MGA assistant via ChatCompletion API |
-| MGA Assistant Client | Python | `llm/mga-assistant-client.py` | MGA assistant via ChatCompletion API (async httpx) |
-| **Knowledge Base (managed RAG)** | JS | `llm/knowledge-base-client.js` | **PREFERRED for "chat with my documents"**: create KB, upload docs, retrieve chunks — no own vector DB needed |
-| **Knowledge Base (managed RAG)** | Python | `llm/knowledge-base-client.py` | Same, async httpx |
-| RAG Tools | JS | `llm/rag-tools.js` | Embeddings, rerank, chunking, model list — for custom semantic search over the app's OWN data (pairs with vectordb/) |
-| RAG Tools | Python | `llm/rag-tools.py` | Same, async httpx |
+| MGA Assistant Client | JS | `llm/mga-assistant-client.js` | Canonical text chat with the per-app MGA assistant (`/chat/agent`, conversation_id memory) |
+| MGA Assistant Client | Python | `llm/mga-assistant-client.py` | Same, async httpx |
+| MGA Streaming Chat | JS | `llm/mga-streaming-chat.js` | SSE-forwarder for real-time token rendering |
+| MGA Streaming Chat | Python | `llm/mga-streaming-chat.py` | FastAPI SSE endpoint |
+| MGA Vision Chat | JS | `llm/mga-vision-chat.js` | Image input via `/chat/completions` multi-content blocks |
+| MGA Vision Chat | Python | `llm/mga-vision-chat.py` | Same, httpx |
+| MGA Embeddings | JS | `llm/mga-embedding.js` | `/embeddings` for RAG (pairs with vectordb scope) |
+| MGA Embeddings | Python | `llm/mga-embedding.py` | Same, async httpx |
+| MGA File Upload | JS | `llm/mga-file-upload.js` | Upload to `/assistants/{id}/files` for `uploaded_docs` RAG |
+| MGA File Upload | Python | `llm/mga-file-upload.py` | Same, async httpx |
+| Bayer LLM Client | JS | `llm/bayer-llm-client.js` | Direct chat completions (no assistant) — alternative when MGA_ASSISTANT_ID isn't set |
+| Bayer LLM Client | Python | `llm/bayer-llm-client.py` | Same, async httpx |
 
 ### Microsoft 365 Integration
 
-> ⛔ **The platform OBO proxy is the ONLY connector to Microsoft Graph.** Never call `graph.microsoft.com` directly — no per-project Entra app, no client_secret, no MSAL in the browser. The operations catalog covers identity (whoami, me/manager, me/photo), people search, SharePoint/OneDrive (fetch, url/resolve, folder/list, files/recent), calendar (upcoming, getSchedule free/busy), mail, Teams chats, online meetings, and proxied myGenAssist ops (token create/list/delete, knowledge onedrive/sync-all). Rules: `.platform-rules/reference/microsoft-365.md`.
-
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| **Microsoft Graph -- Operations Catalog** | Markdown | `auth/graph-proxy-operations.md` | **READ FIRST.** Every operation -- identity, people search, SharePoint/OneDrive, calendar + free/busy (getSchedule), mail, Teams chats, online meetings, myGenAssist (tokens, knowledge sync) -- with scope, body shape, response shape, and when to use it. |
-| **Microsoft Graph -- Platform Proxy (frontend)** | JS | `auth/graph-proxy-client.js` | Vanilla-JS client. Session bootstrap from `#sid=` fragment, auto-redirect to bouncer on missing session, auto-redirect to consent screen on 403 consent_required. |
-| **Microsoft Graph -- Platform Proxy (backend)** | JS | `auth/graph-proxy-backend.js` | Express handlers. SigV4-signs to the platform proxy with the ECS task role; forwards consent_required + consent_url verbatim. |
-| **Microsoft Graph -- Platform Proxy (backend)** | Python | `auth/graph-proxy-backend.py` | FastAPI/Flask version of the platform-proxy backend pattern. |
-| **Microsoft Graph -- Offline / Cron (backend)** | JS | `auth/graph-proxy-offline.js` | Unattended work on behalf of users (scheduled jobs). Stores each user's session id in SSM (SecureString) and replays it via the proxy; needs `&offline=1` sign-in + consent. `enrollOffline` / `runForEachEnrolledUser`. |
-| **Microsoft Graph -- Offline / Cron (backend)** | Python | `auth/graph-proxy-offline.py` | Same, for FastAPI/Flask. `enroll_offline` / `run_for_each_enrolled_user`. |
+| SharePoint Client | JS | `sharepoint/sharepoint-client.js` | Fetch files from SharePoint/OneDrive via Microsoft Graph API |
+| SharePoint Client | Python | `sharepoint/sharepoint-client.py` | Fetch files from SharePoint/OneDrive (async httpx) |
 
 ### Email
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| SMTP Client | JS | `email/smtp-client.js` | Send emails via Bayer EBR (ebr.bayer.com:2525, no auth, sender must be @bayer.com) |
-| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer EBR (built-in smtplib, sender must be @bayer.com) |
+| SMTP Client | JS | `email/smtp-client.js` | Send emails via Bayer's internal SMTP server |
+| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer SMTP (built-in smtplib) |
 
 ### UI Components
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
 | Datepicker | React | `ui/datepicker-react.jsx` | Date picker + date range picker with timezone-safe helpers |
-| Datepicker | Vanilla JS | `ui/datepicker-vanilla.js` | Date picker + date range picker (no framework) |
+| MGA Chat Panel | React | `frontend/MgaChatComponent.jsx` | Streaming chat UI consuming the backend's SSE proxy (pairs with `llm/mga-streaming-chat.js`) |
 
 ### Realtime
 
@@ -99,11 +114,10 @@
 | App Settings Page | React | `config/AppSettings.jsx` | Admin page for managing app settings |
 | CORS & Proxy | JS | `config/cors-proxy.js` | CORS middleware (when needed) + explanation of platform routing |
 | CORS Middleware | Python | `config/cors-middleware.py` | FastAPI CORS middleware setup |
-| DB Migrations | JS | `config/db-migrations.js` | Ordered .sql migration runner for pg (schema changes after first deploy) |
 
 ### Security
 
-> **REQUIRED**: All projects MUST follow security best practices. See `.platform-rules/02-security.md`
+> **REQUIRED**: All projects MUST follow security best practices. See `.platform-rules/security.md` (served on demand — call `get_rules('security')`).
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
@@ -113,5 +127,3 @@
 | Input Validation | Python | `security/input-validation.py` | Pydantic models + sanitization helpers |
 | Parameterized Queries | JS | `security/parameterized-queries.js` | Safe SQL queries (PostgreSQL/MySQL) |
 | Parameterized Queries | Python | `security/parameterized-queries.py` | Safe SQL queries (asyncpg) |
-| Error Handler | JS | `security/error-handler.js` | Global JSON error responses, proper status codes, no stack traces |
-| Error Handler | Python | `security/error-handler.py` | FastAPI exception handlers (JSON errors, no stack traces) |
