@@ -80,7 +80,7 @@ Use these when the feature is needed — keeps projects consistent with platform
 | Complex charts | `chart.js` + `react-chartjs-2` |
 | Data tables | `@tanstack/react-table` |
 | Icons | `lucide-react` |
-| Date picker | platform snippet `snippets/ui/datepicker-react.jsx` (no dep) |
+| Date picker | platform snippet `snippets/ui/datepicker-react.tsx` (no dep) |
 | Form handling | `react-hook-form` |
 | Animations | `framer-motion` |
 | Toast notifications | `react-hot-toast` |
@@ -97,7 +97,7 @@ Avoid `jquery`, `moment.js`, full `lodash`, `d3` for simple charts — full avoi
 
 | Need | Snippet |
 |------|---------|
-| Date picker / range picker (React) | `snippets/ui/datepicker-react.jsx` |
+| Date picker / range picker (React) | `snippets/ui/datepicker-react.tsx` |
 | Microsoft Graph from the browser (identity, SharePoint, calendar, mail) | `snippets/auth/graph-proxy-client.js` — read `snippets/auth/graph-proxy-operations.md` first |
 
 Deployment, testing, and secrets depth: `.platform-rules/reference/*.md`.

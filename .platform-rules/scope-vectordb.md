@@ -45,4 +45,4 @@ Init scripts (pgvector's `vectordb/init/init.sql`) run on FIRST deploy only — 
 
 ## Generating Embeddings
 
-Use the Bayer LLM clients — `snippets/llm/bayer-llm-client.js` / `.py` (and `snippets/llm/mga-assistant-client.*` for assistants). API key via the `OPENAI_KEY` secret per the core rules.
+Use the Bayer LLM clients — `snippets/llm/bayer-llm-client.ts` / `.py` (and `snippets/llm/mga-assistant-client.*` for assistants). API key via the `OPENAI_KEY` secret per the core rules.

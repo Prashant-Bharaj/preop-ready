@@ -115,7 +115,13 @@ export function getSnippet(snippetPath, opts = {}) {
     return `Invalid path: "${snippetPath}"`;
   }
 
-  const filePath = path.join(ws, 'snippets', normalized);
+  let filePath = path.join(ws, 'snippets', normalized);
+  // TS-convergence tolerance: the template is TypeScript, so a request for a
+  // pruned .js/.jsx snippet resolves to its .ts/.tsx twin when that exists.
+  if (!existsSync(filePath) && /\.(js|jsx)$/.test(normalized)) {
+    const tsTwin = path.join(ws, 'snippets', normalized.replace(/\.jsx$/, '.tsx').replace(/\.js$/, '.ts'));
+    if (existsSync(tsTwin)) filePath = tsTwin;
+  }
   if (!existsSync(filePath)) {
     // Path-overlap correction: if the requested path doesn't resolve under
     // snippets/ but DOES exist as a workspace file, the agent likely meant

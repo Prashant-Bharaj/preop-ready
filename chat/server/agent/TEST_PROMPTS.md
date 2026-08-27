@@ -35,7 +35,7 @@ Add a minimal Node + Express backend with a single GET /health endpoint that ret
 ```
 
 - **Expected scope**: `backend`
-- **Expected MCP fetches**: `get_rules("backend")`, `list_snippets`, `get_snippet("backend/express-server-template.js")`, `get_snippet("security/sanitize-middleware.js")`
+- **Expected MCP fetches**: `get_rules("backend")`, `list_snippets`, `get_snippet("backend/express-server-template.ts")`, `get_snippet("security/sanitize-middleware.ts")`
 - **Expected file writes**: `backend/src/index.js`, `backend/package.json`, `backend/Dockerfile` (copy from template)
 - **Success**: `/health` endpoint exists in `backend/src/index.js`, Dockerfile uses non-root user
 - **Cline baseline we're beating**: 137.6s, 427.8K prompt tokens, 14 API calls
@@ -63,7 +63,7 @@ Add a backend with a GET /api/whoami endpoint that reads the current user's emai
 ```
 
 - **Expected scope**: `backend`
-- **Expected MCP fetches**: `get_rules("backend")`, `get_rules("user-identity")`, `list_snippets`, `get_snippet("auth/user-identity.js")`
+- **Expected MCP fetches**: `get_rules("backend")`, `get_rules("user-identity")`, `list_snippets`, `get_snippet("auth/user-identity.ts")`
 - **Key check**: did the model call `get_rules("user-identity")`? That's the selectivity test. If yes → selectivity works. If no → we need to make the use case clearer in the assistant prompt.
 - **Success**: endpoint reads `X-User-Email`, returns 400 or similar on missing, implementation report mentions the header
 

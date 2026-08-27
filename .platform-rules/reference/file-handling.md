@@ -36,9 +36,9 @@ by row, not `.toString()` on a huge buffer) — an OOM kill restarts the contain
 
 | Need | Snippet |
 |------|---------|
-| Upload handler (memory storage), JS | `snippets/file-handling/upload-handler.js` |
+| Upload handler (memory storage), JS | `snippets/file-handling/upload-handler.ts` |
 | Upload handler (FastAPI UploadFile) | `snippets/file-handling/upload-handler.py` |
-| Extract text from PDF/DOCX/XLSX/PPTX/CSV, JS | `snippets/file-handling/document-text-extractor.js` |
+| Extract text from PDF/DOCX/XLSX/PPTX/CSV, JS | `snippets/file-handling/document-text-extractor.ts` |
 | Same, Python (pypdf, python-docx, openpyxl) | `snippets/file-handling/document-text-extractor.py` |
 
 Remember routing: frontend calls `fetch('/api/upload')`, backend route is `/upload` (no `/api` prefix — see `01-common.md`).

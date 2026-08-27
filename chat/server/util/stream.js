@@ -5,7 +5,7 @@ import { getGitMeta } from './git-meta.js';
 
 /**
  * Event delivery via Socket.IO, matching the pattern from
- * snippets/realtime/websocket-helper.js.
+ * snippets/realtime/websocket-helper.ts.
  *
  * Socket.IO negotiates transport automatically: WebSocket when the proxy
  * allows the upgrade, HTTP long-polling when it doesn't (e.g. Codespaces'

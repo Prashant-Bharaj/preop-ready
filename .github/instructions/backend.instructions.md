@@ -148,7 +148,7 @@ If the user insists on another library that's fine — these are defaults, not h
 | Need | Snippet |
 |------|---------|
 | Input validation, sanitize middleware, safe SQL | `snippets/security/*` |
-| Logged-in user from OIDC headers | `snippets/auth/user-identity.js` / `.py` / `.rs` |
+| Logged-in user from OIDC headers | `snippets/auth/user-identity.ts` / `.py` / `.rs` |
 | LLM chat / MGA assistant | `snippets/llm/*` |
 | Send email via Bayer SMTP | `snippets/email/*` |
 | WebSocket (Socket.IO) server + client | `snippets/realtime/*` |
