@@ -48,6 +48,7 @@ credentials.json
 service-account*.json
 secrets/
 .secrets/
+.chat/
 
 # ==========================================================
 # DOCUMENTS & DATA FILES — NEVER COMMIT
