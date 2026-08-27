@@ -30,14 +30,12 @@ auto_update:
     description: "Dependabot cadence: weekly grouped updates with cooldown (no per-push PR bursts)"
     
   # Frontend Dockerfile templates
-  - path: "frontend/Dockerfile.vanilla"
-    description: "Vanilla HTML/CSS/JS Dockerfile template (secure, non-root)"
   - path: "frontend/Dockerfile.react"
     description: "React/Vite Dockerfile template (secure, non-root)"
 
   # Docker build-context exclusions — Docker does NOT read .gitignore, so
-  # without these a local .env is baked into the image (and, for the vanilla
-  # frontend, SERVED at /.env). One per build context; the root one is inert.
+  # without these a local .env is baked into the image. One per build context;
+  # the root one is inert.
   - path: "frontend/.dockerignore"
     description: "Keeps .env and friends out of the frontend image (build context = ./frontend)"
   - path: "backend/.dockerignore"
@@ -64,15 +62,9 @@ auto_update:
   # Database Dockerfile templates
   - path: "database/Dockerfile.postgres"
     description: "PostgreSQL database template"
-  - path: "database/Dockerfile.mysql"
-    description: "MySQL database template"
   # Vector Database Dockerfile templates
   - path: "vectordb/Dockerfile.pgvector"
     description: "pgvector vector database template"
-  - path: "vectordb/Dockerfile.chroma"
-    description: "ChromaDB vector database template"
-  - path: "vectordb/Dockerfile.qdrant"
-    description: "Qdrant vector database template"
 
   # AI rules — canonical source + generated per-tool adapters
   # (.platform-rules/ is the ONLY hand-edited rules location; the rest is
