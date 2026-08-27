@@ -165,10 +165,11 @@ while IFS= read -r file; do
     fi
 
     # Docker-compose / YAML inline credentials (e.g. MYSQL_PASSWORD=realvalue, POSTGRES_PASSWORD=realvalue).
-    # Harness test fixtures/snapshots under chat/ are example generated apps with the
-    # standard fake local-dev password — exempt them from this warning (hard blocks still apply).
+    # Harness test fixtures/snapshots under chat/ AND the template compose SNIPPETS under
+    # snippets/ are example/template apps with the standard fake local-dev password — exempt
+    # them from this warning (hard blocks still apply).
     case "$file" in
-        chat/*fixtures/*|chat/*snapshots/*) ;;
+        chat/*fixtures/*|chat/*snapshots/*|snippets/*) ;;
         *)
             case "$basename" in
                 docker-compose*.yml|docker-compose*.yaml|compose*.yml|compose*.yaml)
