@@ -45,10 +45,12 @@ import { stageFrontendKit } from './frontend-kit-generator.js';
 import { generateOidcIdentity } from './oidc-identity-generator.js';
 import { LOCAL_DB_CREDENTIALS } from '../../config/defaults.js';
 
-// Project root for snippet templates — CHAT_APP_DIR is .../chat, so up one
-// gets us the spike repo root where snippets/ lives.
+// Project root for canonical templates — CHAT_APP_DIR is .../chat, so up one
+// gets us the template repo root. The canonical Postgres Dockerfile lives at
+// the component root (`database/Dockerfile.postgres`), whitelisted in
+// .template-manifest.yml so it survives Clean.
 const PROJECT_ROOT = path.resolve(CHAT_APP_DIR, '..');
-const CANONICAL_DB_DOCKERFILE = path.join(PROJECT_ROOT, 'snippets', 'database', 'Dockerfile.postgres');
+const CANONICAL_DB_DOCKERFILE = path.join(PROJECT_ROOT, 'database', 'Dockerfile.postgres');
 
 /**
  * Run every contract-driven generator that applies to this contract, write

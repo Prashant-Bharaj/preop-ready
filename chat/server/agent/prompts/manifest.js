@@ -86,7 +86,7 @@ export const ASSISTANTS = {
     source: 'config',
     base: 'chat/prompts/subagent-base.md',
     inlineRules: [],
-    inlineCanonicalSnippet: 'snippets/database/Dockerfile.postgres',
+    inlineCanonicalSnippet: 'database/Dockerfile.postgres',
   },
   'subagent-backend':     {
     src: 'chat/prompts/subagent-backend.md',
@@ -118,8 +118,12 @@ export const ASSISTANTS = {
     envKey: 'SUBAGENT_INTEGRATION_ASSISTANT_ID',
     source: 'config',
     base: 'chat/prompts/subagent-base.md',
-    inlineRules: [],
-    inlinePlatformConstraints: 'snippets/integration/platform-constraints.md',
+    // Integration AUTHORS docker-compose — it needs the compose/cross-service
+    // rules always-on (the retired platform-constraints.md used to supply
+    // this). Inline scope-integration from canonical rather than rely on an
+    // on-demand get_rules fetch it may skip (observed: a vectordb POSTGRES_USER
+    // that drifted from the backend's VECTORDB_USER).
+    inlineRules: ['.platform-rules/scope-integration.md'],
   },
   // W3.INVEST — read-only investigator agent. Triggered on router
   // `action: 'diagnose'`. Emits structured JSON report; never mutates

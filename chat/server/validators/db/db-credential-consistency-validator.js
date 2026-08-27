@@ -142,20 +142,41 @@ export function scanComposeForCredentialDrift(workspaceDir) {
     }
   }
 
-  // Any OTHER postgres-family service (vectordb — excluded from drift
-  // reconciliation above) shares the fatal-startup class: no
-  // POSTGRES_PASSWORD and no POSTGRES_HOST_AUTH_METHOD → the container
-  // exits(1) before compose settles. Add only the password; its DB/user
-  // wiring is owned by the vectordb scaffold. Postgres-family is detected
-  // from the `image:` field OR, for build-based services, the build-context
-  // Dockerfile's FROM — the pgvector scaffold ships a Dockerfile, not an
-  // inline image, so an image-only check skipped it and vectordb never got
-  // a password (observed live: `vectordb-1 | POSTGRES_PASSWORD not specified`).
+  // Any OTHER postgres-family service (vectordb — excluded from the primary-DB
+  // reconciliation above) is a SEPARATE store, but its container creds
+  // (POSTGRES_{DB,USER,PASSWORD}) must still match what the backend connects
+  // with (VECTORDB_{NAME,USER,PASSWORD}) — the backend is authoritative, its
+  // values come from the contract + env wiring. The integration agent sometimes
+  // copies the primary-DB creds onto the vectordb service instead of the
+  // backend's VECTORDB_* target (observed live: vectordb POSTGRES_USER=myapp_user
+  // vs backend VECTORDB_USER=vector_user → `password authentication failed for
+  // user "vector_user"` on the first embedding insert). Align the container to
+  // the backend; when the backend declares no VECTORDB_* target, fall back to
+  // just guaranteeing a password so the container can start (postgres exits(1)
+  // without POSTGRES_PASSWORD/POSTGRES_HOST_AUTH_METHOD). Postgres-family is
+  // detected from `image:` OR, for the build-based pgvector scaffold, the
+  // build-context Dockerfile's FROM.
   for (const [name, service] of Object.entries(services)) {
     if (name === dbName || !service || typeof service !== 'object') continue;
     if (!isPostgresFamilyService(service, workspaceDir)) continue;
     const env = extractEnvFromService(service);
-    if (env.POSTGRES_PASSWORD == null && env.POSTGRES_HOST_AUTH_METHOD == null && service.env_file == null) {
+    if (service.env_file != null || env.POSTGRES_HOST_AUTH_METHOD != null) continue; // creds out of scope
+    const align = {
+      POSTGRES_DB: backendEnv.VECTORDB_NAME,
+      POSTGRES_USER: backendEnv.VECTORDB_USER,
+      POSTGRES_PASSWORD: backendEnv.VECTORDB_PASSWORD || String(c.password),
+    };
+    let alignedAny = false;
+    for (const [key, want] of Object.entries(align)) {
+      if (want == null) continue; // backend didn't declare this dimension
+      alignedAny = true;
+      if (env[key] != null && env[key] !== String(want)) {
+        rewrites.push({ service: name, key, from: env[key], to: String(want) });
+      } else if (env[key] == null) {
+        rewrites.push({ service: name, key, from: null, to: String(want), add: true });
+      }
+    }
+    if (!alignedAny && env.POSTGRES_PASSWORD == null) {
       rewrites.push({ service: name, key: 'POSTGRES_PASSWORD', from: null, to: String(c.password), add: true });
     }
   }
@@ -190,20 +211,44 @@ export function scanComposeForCredentialDrift(workspaceDir) {
  * after the service header when absent. Returns the new text, or null when
  * the service header can't be located.
  */
-function insertEnvEntry(text, serviceName, key, value) {
-  const lines = text.split('\n');
-  const headerRe = new RegExp(`^(\\s+)${serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*$`);
-  let headerIdx = -1;
-  let headerIndent = '';
+// Locate a SERVICE block by anchoring on the `services:`-child indent, so a
+// nested key of the same name (e.g. `depends_on:\n  database:`) is never
+// mistaken for the service header. Returns { headerIdx, blockEnd, headerIndent }
+// or null.
+function findServiceBlock(lines, serviceName) {
+  let servicesIdx = -1;
   for (let i = 0; i < lines.length; i++) {
-    const m = headerRe.exec(lines[i]);
-    if (m) { headerIdx = i; headerIndent = m[1]; break; }
+    if (/^\s*services:\s*$/.test(lines[i])) { servicesIdx = i; break; }
+  }
+  if (servicesIdx === -1) return null;
+  let serviceIndent = null;
+  for (let i = servicesIdx + 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const ind = lines[i].match(/^(\s*)/)[1];
+    if (ind.length === 0) return null; // a top-level key — services had no children
+    serviceIndent = ind;
+    break;
+  }
+  if (serviceIndent == null) return null;
+  const esc = serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const headerRe = new RegExp(`^${serviceIndent}${esc}:\\s*$`);
+  let headerIdx = -1;
+  for (let i = servicesIdx + 1; i < lines.length; i++) {
+    if (headerRe.test(lines[i])) { headerIdx = i; break; }
   }
   if (headerIdx === -1) return null;
   let blockEnd = lines.length;
   for (let i = headerIdx + 1; i < lines.length; i++) {
-    if (lines[i].trim() && !lines[i].startsWith(`${headerIndent} `)) { blockEnd = i; break; }
+    if (lines[i].trim() && !lines[i].startsWith(`${serviceIndent} `)) { blockEnd = i; break; }
   }
+  return { headerIdx, blockEnd, headerIndent: serviceIndent };
+}
+
+function insertEnvEntry(text, serviceName, key, value) {
+  const lines = text.split('\n');
+  const blk = findServiceBlock(lines, serviceName);
+  if (!blk) return null;
+  const { headerIdx, blockEnd, headerIndent } = blk;
   for (let i = headerIdx + 1; i < blockEnd; i++) {
     if (!/^\s+environment:\s*$/.test(lines[i])) continue;
     const next = lines[i + 1] || '';
@@ -215,6 +260,25 @@ function insertEnvEntry(text, serviceName, key, value) {
   }
   lines.splice(headerIdx + 1, 0, `${headerIndent}  environment:`, `${headerIndent}    - ${key}=${value}`);
   return lines.join('\n');
+}
+
+// Replace `key`'s value ONLY within `serviceName`'s block. The earlier global
+// regex assumed POSTGRES_* keys were unique to the database service; once the
+// vectordb service also carries them (with a DIFFERENT target — e.g. database
+// POSTGRES_USER=myapp_user vs vectordb POSTGRES_USER=vector_user), a global
+// replace clobbered the wrong service. Block-scope the replacement instead.
+function replaceEnvEntryInService(text, serviceName, key, value) {
+  const lines = text.split('\n');
+  const blk = findServiceBlock(lines, serviceName);
+  if (!blk) return { text, changed: false };
+  const listRe = new RegExp(`^(\\s*-\\s*${key}\\s*=).*$`);
+  const objRe = new RegExp(`^(\\s*${key}\\s*:[ \\t]*).*$`);
+  let changed = false;
+  for (let i = blk.headerIdx + 1; i < blk.blockEnd; i++) {
+    if (listRe.test(lines[i])) { lines[i] = lines[i].replace(listRe, `$1${value}`); changed = true; }
+    else if (objRe.test(lines[i])) { lines[i] = lines[i].replace(objRe, `$1${value}`); changed = true; }
+  }
+  return { text: lines.join('\n'), changed };
 }
 
 export function applyCredentialConsistencyFixes(workspaceDir, rewrites) {
@@ -235,14 +299,10 @@ export function applyCredentialConsistencyFixes(workspaceDir, rewrites) {
       if (next != null) { modified = next; applied.push(r); }
       continue;
     }
-    // List form:   `- KEY=oldval`  → replace everything after `=` to EOL
-    const listForm = new RegExp(`(^\\s*-\\s*${r.key}\\s*=).*$`, 'gm');
-    // Object form: `  KEY: oldval` → replace everything after `:` to EOL
-    const objForm = new RegExp(`(^\\s*${r.key}\\s*:[ \\t]*).*$`, 'gm');
-    const before = modified;
-    modified = modified.replace(listForm, `$1${r.to}`);
-    modified = modified.replace(objForm, `$1${r.to}`);
-    if (before !== modified) applied.push(r);
+    // Block-scoped replace (POSTGRES_* is no longer service-unique — the
+    // vectordb service carries its own set with different target values).
+    const { text: next, changed } = replaceEnvEntryInService(modified, r.service, r.key, r.to);
+    if (changed) { modified = next; applied.push(r); }
   }
 
   if (modified !== text) {

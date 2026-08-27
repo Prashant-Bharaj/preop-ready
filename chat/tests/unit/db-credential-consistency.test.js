@@ -62,6 +62,57 @@ test('detects + fixes db↔backend mismatch (object form) to canonical', () => {
   assert.doesNotMatch(out, /tasktracker/);
 });
 
+// A pgvector vectordb whose container creds drift from the backend's
+// VECTORDB_* target — the class that 500'd the SOP upload with `password
+// authentication failed for user "vector_user"`. The vectordb is a separate
+// store (excluded from the primary-DB reconciliation), but its container must
+// still be initialized with what the backend connects as.
+const VECTORDB_DRIFT = `
+services:
+  backend:
+    build: ./backend
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: database
+      DATABASE_NAME: myapp
+      DATABASE_USER: myapp_user
+      DATABASE_PASSWORD: localdev123
+      VECTORDB_HOST: vectordb
+      VECTORDB_NAME: sop_vectors
+      VECTORDB_USER: vector_user
+      VECTORDB_PASSWORD: localdev123
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: localdev123
+  vectordb:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: localdev123
+`;
+
+test('aligns vectordb container creds to the backend VECTORDB_* target', () => {
+  const dir = tmpWorkspace(VECTORDB_DRIFT);
+  const issues = scanComposeForCredentialDrift(dir);
+  assert.ok(issues.some(i => i.service === 'vectordb' && i.key === 'POSTGRES_USER' && i.to === 'vector_user'));
+  assert.ok(issues.some(i => i.service === 'vectordb' && i.key === 'POSTGRES_DB' && i.to === 'sop_vectors'));
+  // the primary DB is already canonical — no spurious rewrites there
+  assert.ok(!issues.some(i => i.service === 'database'));
+  applyCredentialConsistencyFixes(dir, issues);
+  const out = read(dir);
+  const vdbBlock = out.slice(out.indexOf('vectordb:'));
+  assert.match(vdbBlock, /POSTGRES_USER:\s*vector_user/);
+  assert.match(vdbBlock, /POSTGRES_DB:\s*sop_vectors/);
+  // idempotent: a second pass finds nothing
+  assert.deepEqual(scanComposeForCredentialDrift(dir), []);
+});
+
 test('fixes list form (- KEY=val) on the backend service', () => {
   const dir = tmpWorkspace(`
 services:

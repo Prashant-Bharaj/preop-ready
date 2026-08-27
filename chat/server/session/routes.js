@@ -2659,16 +2659,18 @@ export function mountSessionRoutes(app) {
       // ── Pre-stage Dockerfiles from router-emitted task.dockerfile ──
       // The router picks the canonical Dockerfile filename per task (set in
       // router.md output contract). We copy the template from
-      // `snippets/<scope>/<dockerfile>` into `<scope>/Dockerfile` BEFORE
-      // phase agents dispatch, so agents focus on app code and never touch
-      // Dockerfile authoring. The auto-fill safety net in agent.js
-      // (ensureScopeDockerfile) stays as a defensive backstop for older
-      // router outputs that omit the field.
+      // `<scope>/<dockerfile>` (the template's component-root Dockerfiles —
+      // `backend/Dockerfile.node`, `database/Dockerfile.postgres`, etc. — which
+      // .template-manifest.yml whitelists so they survive Clean) into
+      // `<scope>/Dockerfile` BEFORE phase agents dispatch, so agents focus on
+      // app code and never touch Dockerfile authoring. The auto-fill safety net
+      // in agent.js (ensureScopeDockerfile) stays as a defensive backstop for
+      // older router outputs that omit the field.
       try {
         const fs = await import('node:fs');
         for (const t of tasks) {
           if (!t || !t.scope || !t.dockerfile) continue;
-          const src = path.join(WORKSPACE_DIR, 'snippets', t.scope, t.dockerfile);
+          const src = path.join(WORKSPACE_DIR, t.scope, t.dockerfile);
           const dest = path.join(WORKSPACE_DIR, t.scope, 'Dockerfile');
           if (!fs.existsSync(src)) {
             tlog('[session] Pre-stage skipped scope=%s — template %s not on disk', t.scope, t.dockerfile);

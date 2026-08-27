@@ -47,10 +47,13 @@ const CANONICAL_FILE_MAP = {
   // local dev). When integration writes the Dockerfile but no agent wrote
   // nginx.conf, fall back to the canonical production config.
   // Observed on t30 ORCH (2026-05-04 Step 5c verification gate).
-  'nginx.conf': { snippet: 'frontend/nginx-production.conf', scope: 'frontend' },
+  // Master keeps the canonical nginx configs at the component root
+  // (frontend/nginx.conf, frontend/nginx.local.conf), whitelisted in
+  // .template-manifest.yml — resolved against the repo root, not snippets/.
+  'nginx.conf': { source: 'frontend/nginx.conf', scope: 'frontend' },
   // Local-dev variant. Less common (compose mounts it as a volume, doesn't
   // typically COPY it into the image), but include for symmetry.
-  'nginx.local.conf': { snippet: 'frontend/nginx-local-proxy.conf', scope: 'frontend' },
+  'nginx.local.conf': { source: 'frontend/nginx.local.conf', scope: 'frontend' },
 };
 
 // Match `COPY [--chown=...] [--from=...] <src> <dst>` and `ADD <src> <dst>`.
@@ -123,7 +126,7 @@ export function scanForMissingCanonicalFiles(workspaceDir) {
       if (canonical.scope && canonical.scope !== scope) continue;
       const expectedDiskPath = path.join(scopeDir, normalized);
       if (fs.existsSync(expectedDiskPath)) continue; // agent wrote it; nothing to fix
-      const snippetPath = path.join(SNIPPETS_DIR, canonical.snippet);
+      const snippetPath = path.join(SPIKE_ROOT, canonical.source);
       if (!fs.existsSync(snippetPath)) continue; // canonical missing in repo; can't fix
       issues.push({
         scope,

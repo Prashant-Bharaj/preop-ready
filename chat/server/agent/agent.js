@@ -188,12 +188,12 @@ function ensureScopeDockerfile(scope, writtenPaths, emit, logScope, _prompt = nu
   }
   if (!template) return null;
 
-  const templateAbs = path.join(WORKSPACE_DIR, 'snippets', scope, template);
+  const templateAbs = path.join(WORKSPACE_DIR, scope, template);
   if (!existsSync(templateAbs)) return null;
 
   try {
     copyFileSync(templateAbs, dockerfileAbs);
-    const templateRel = `snippets/${scope}/${template}`;
+    const templateRel = `${scope}/${template}`;
     console.log(`[${new Date().toTimeString().slice(0, 8)}] ${logScope} auto-filled missing ${dockerfileRel} from ${templateRel}`);
     emit({ say: 'text', text: `[agent] auto-filled missing ${dockerfileRel} from ${templateRel}` });
     return { dockerfile: dockerfileRel, template: templateRel };

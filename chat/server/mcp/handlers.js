@@ -31,34 +31,43 @@ function resolveWorkspaceDir(override) {
 
 // ── Name → file mapping for rules (same list as mcp-server.js) ──
 
+// Maps friendly rule ids → files in the CANONICAL `.platform-rules/` tree
+// (master's scheme: 00-global / 01-common / 02-security / scope-* / reference/*).
+// This is the harness's single-source link to the same tree the tool adapters
+// are generated from. Ids the harness once had but master folded away
+// (migration → journey; error-recovery → troubleshooting; ai-file-input →
+// file-handling; api-keys → secrets-and-keys) resolve to their master home.
 export const RULE_FILE_MAP = {
   backend:     'scope-backend.md',
   frontend:    'scope-frontend.md',
   database:    'scope-database.md',
   vectordb:    'scope-vectordb.md',
   integration: 'scope-integration.md',
-  migration:   'scope-migration.md',
 
-  'common-patterns': 'common.md',
-  global:            'global.md',
-  security:          'security.md',
+  common:            '01-common.md',
+  'common-patterns': '01-common.md',
+  global:            '00-global.md',
+  security:          '02-security.md',
 
   verify: 'verify-checklist.md',
 
-  'error-recovery':     'reference/error-recovery.md',
   troubleshooting:      'reference/troubleshooting.md',
+  'error-recovery':     'reference/troubleshooting.md',
   'file-handling':      'reference/file-handling.md',
-  secrets:              'reference/secrets.md',
+  'ai-file-input':      'reference/file-handling.md',
+  secrets:              'reference/secrets-and-keys.md',
+  'api-keys':           'reference/secrets-and-keys.md',
   'status-tracking':    'reference/status-tracking.md',
-  urls:                 'reference/urls.md',
   'user-identity':      'reference/user-identity.md',
-  'snippets-guide':     'reference/snippets.md',
   'sensitive-files':    'reference/sensitive-files.md',
-  'api-keys':           'reference/api-keys.md',
   deployment:           'reference/deployment.md',
-  'background-commands':'reference/background-commands.md',
-  'ai-file-input':      'reference/ai-file-input.md',
-  subagents:            'reference/subagents.md',
+  'testing-local':      'reference/testing-local.md',
+  'background-commands':'reference/testing-local.md',
+  urls:                 'reference/testing-local.md',
+  'ai-features':        'reference/ai-features.md',
+  journey:              'reference/journey.md',
+  migration:            'reference/journey.md',
+  'microsoft-365':      'reference/microsoft-365.md',
 };
 
 export const AVAILABLE_RULES = Object.keys(RULE_FILE_MAP).sort().join(', ');
