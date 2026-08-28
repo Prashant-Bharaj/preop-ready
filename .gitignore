@@ -48,7 +48,9 @@ credentials.json
 service-account*.json
 secrets/
 .secrets/
-.chat/
+.chat/*
+!.chat/secrets.example.json
+!.chat/README.md
 
 # ==========================================================
 # DOCUMENTS & DATA FILES — NEVER COMMIT
