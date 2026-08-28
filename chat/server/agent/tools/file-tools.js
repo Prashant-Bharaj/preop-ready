@@ -13,9 +13,10 @@
  * [MessageBubble.jsx].
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../../core/paths.js';
+import { isSensitiveWorkspacePath } from '../../core/sensitive-paths.js';
 import { relFromWorkspace, makeToolEventPayload } from './core.js';
 import { resolveWorkspacePath, PathEscapeError } from './util/resolve-path.js';
 import { checkWritePermission } from './util/check-permissions.js';
@@ -82,8 +83,23 @@ export async function toolReadFile(params, ctx) {
   const rel = params.path;
   if (!rel) throw new Error('read_file: missing path');
 
+  // Credentials live inside the workspace (.chat/secrets.json holds the live
+  // MGA key; a workspace .env may hold MGA_API_KEY). Containment alone would
+  // let a prompt-injected agent read them — deny by name/segment.
+  if (isSensitiveWorkspacePath(rel)) {
+    throw new Error(`read_file: access to '${rel}' is not allowed (credential/secret path)`);
+  }
+
   const abs = resolvePath(rel, ctx);
   if (!existsSync(abs)) throw fileNotFoundWithContext(rel, abs, writtenPaths);
+
+  // Symlink-aware re-check: the raw-path guard above misses an in-workspace
+  // symlink whose name is innocuous but whose target is a secret. Re-test the
+  // resolved real path (the file exists, so realpathSync succeeds).
+  const wsDir = (ctx && ctx.workspaceDir) || WORKSPACE_DIR;
+  if (isSensitiveWorkspacePath(path.relative(wsDir, realpathSync(abs)))) {
+    throw new Error(`read_file: access to '${rel}' is not allowed (credential/secret path)`);
+  }
 
   const st = statSync(abs);
   if (st.isDirectory()) throw new Error(`Path is a directory, use list_files: ${rel}`);

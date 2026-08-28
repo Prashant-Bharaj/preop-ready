@@ -32,6 +32,10 @@
  *   Production task definitions never set it, so a header-less request in
  *   production yields 401.
  *
+ *   Optional hardening: set EXPECTED_ALB_ARN to this app's load-balancer ARN to
+ *   pin the token issuer — the regional key endpoint serves keys for every ALB
+ *   in the region, so pinning rejects a token minted by any other ALB.
+ *
  * DEPENDENCIES:
  *   None — uses built-in Node.js modules (node:crypto, global fetch on Node 18+).
  *
@@ -77,6 +81,7 @@ interface OidcPayload {
   family_name?: string;
   picture?: string;
   exp?: number;
+  signer?: string; // ARN of the ALB that issued the token
 }
 
 // Augment Express Request with the typed `user` field added by the middleware.
@@ -121,7 +126,9 @@ export async function verifyOidcToken(oidcData: string): Promise<OidcPayload | n
       console.error('OIDC verify: missing kid or AWS_REGION');
       return null;
     }
-    if (header.alg && header.alg !== 'ES256') return null; // ALB signs with ES256
+    // Pin the algorithm: ALB signs with ES256. Reject a missing/other `alg`
+    // rather than merely tolerating it, to foreclose alg-confusion attempts.
+    if (header.alg !== 'ES256') return null;
 
     const pem = await getAlbPublicKeyPem(header.kid, region);
     const key = createPublicKey(pem);
@@ -134,7 +141,18 @@ export async function verifyOidcToken(oidcData: string): Promise<OidcPayload | n
     if (!ok) return null;
 
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as OidcPayload;
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null; // exp is seconds
+
+    // Require a valid, unexpired `exp` — a token without one must not be treated
+    // as never-expiring. (`exp` is seconds since epoch.)
+    if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+
+    // Optional but recommended: pin the issuing load balancer. The regional key
+    // endpoint serves the signing keys for EVERY ALB in the region, so without
+    // this any ALB in the account can mint a token that verifies. Set
+    // EXPECTED_ALB_ARN to this app's ALB ARN to reject tokens signed elsewhere.
+    const expectedArn = process.env.EXPECTED_ALB_ARN;
+    if (expectedArn && payload.signer !== expectedArn) return null;
+
     return payload;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -2022,9 +2022,12 @@ export async function tryAutoStartApp(session, envContext, routerContracts = {})
       const tables = envData?.dataModel?.tables || [];
       const missing = [];
       // SQL identifier guard: `t.name` originates from the (LLM-authored)
-      // contract, so it must NEVER be interpolated into a shell string.
-      // contracts-schema.js already rejects non-identifier table names at
-      // ingest; this is the defensive second layer at the use site.
+      // contract, so it must NEVER be interpolated into a shell/SQL string.
+      // NOTE: readContracts() only JSON.parses — it does NOT run the
+      // contracts-schema validator (that runs only in the type generator), so
+      // THIS use-site check is the sole enforced guard on the drift path. Keep
+      // it even if ingest validation is later added here. Combined with
+      // execFileSync (no shell) below, it closes both shell- and SQL-injection.
       const SQL_IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
       for (const t of tables) {
         if (!SQL_IDENT.test(String(t.name || ''))) continue;

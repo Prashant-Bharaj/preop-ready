@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, statSync, realpathSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import multer from 'multer';
 import { WORKSPACE_DIR } from '../core/paths.js';
+import { isSensitiveWorkspacePath } from '../core/sensitive-paths.js';
 import { parseFile } from '../parsers/index.js';
 
 export const CONTEXT_DIR = path.join(WORKSPACE_DIR, 'context');
@@ -183,6 +184,14 @@ export function mountUploadRoutes(app) {
       return res.status(400).send('Bad path');
     }
 
+    // Never serve credential/secret paths that live INSIDE the workspace —
+    // notably .chat/secrets.json (the live MGA key) and workspace .env files.
+    // The basename blocklist below is not enough: it misses secrets.json and
+    // is directory-blind, so this segment-aware check runs first.
+    if (isSensitiveWorkspacePath(normalised)) {
+      return res.status(403).send('File type not allowed');
+    }
+
     const absPath = path.join(WORKSPACE_DIR, normalised);
     const workspaceReal = path.resolve(WORKSPACE_DIR);
     if (!path.resolve(absPath).startsWith(workspaceReal + path.sep) && path.resolve(absPath) !== workspaceReal) {
@@ -203,6 +212,13 @@ export function mountUploadRoutes(app) {
       }
     } catch {
       return res.status(404).send('Not found');
+    }
+
+    // Re-run the strong secret predicate on the RESOLVED real target — a symlink
+    // named innocuously (notes.txt) could point at .chat/secrets.json, which the
+    // requested-path check above wouldn't catch.
+    if (isSensitiveWorkspacePath(path.relative(WORKSPACE_DIR, realPath))) {
+      return res.status(403).send('File type not allowed');
     }
 
     // Blocklist (basename only — matches upload rules), on the REAL target.
