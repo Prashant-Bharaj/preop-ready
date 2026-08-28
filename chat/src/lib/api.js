@@ -2,11 +2,13 @@ const API_BASE = '/api';
 
 export async function getAuthStatus() {
   const res = await fetch(`${API_BASE}/auth/status`);
+  if (!res.ok) throw new Error(`Failed to load auth status (${res.status})`);
   return res.json();
 }
 
 export async function getAuthSettings() {
   const res = await fetch(`${API_BASE}/auth/settings`);
+  if (!res.ok) throw new Error(`Failed to load auth settings (${res.status})`);
   return res.json();
 }
 
@@ -36,12 +38,14 @@ export async function saveConnectionConfig({ baseUrl }) {
 
 export async function getModels() {
   const res = await fetch(`${API_BASE}/auth/models`);
+  if (!res.ok) throw new Error(`Failed to load models (${res.status})`);
   return res.json();
 }
 
 /** Fetch models from MGA / Bayer Chat API (via server proxy, uses stored creds) */
 export async function getMgaModels() {
   const res = await fetch(`${API_BASE}/auth/mga-models`);
+  if (!res.ok) throw new Error(`Failed to load MGA models (${res.status})`);
   return res.json();
 }
 
@@ -61,6 +65,7 @@ export async function getModelsForKey(apiKey) {
 /** Run health checks for LLM, assistant and MGA connectivity */
 export async function getHealthStatus() {
   const res = await fetch(`${API_BASE}/auth/health`);
+  if (!res.ok) throw new Error(`Failed to load health status (${res.status})`);
   return res.json();
 }
 

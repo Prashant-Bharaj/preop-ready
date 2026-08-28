@@ -1059,11 +1059,15 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
       setWorkingElapsedSec(0);
       return;
     }
-    const startedAt = Date.now();
-    const id = setInterval(() => {
-      setWorkingElapsedSec(Math.floor((Date.now() - startedAt) / 1000));
-    }, 1000);
-    return () => clearInterval(id);
+    // The phrase only changes at these thresholds, so fire a timer at each
+    // boundary instead of ticking every second — ~5 re-renders per wait window
+    // rather than ~40. workingElapsedSec is bumped to the boundary value it
+    // crossed, which the phrase map below reads.
+    setWorkingElapsedSec(0);
+    const timers = [4, 10, 18, 28, 45].map((sec) =>
+      setTimeout(() => setWorkingElapsedSec(sec), sec * 1000)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [isWorking]);
 
   // Map elapsed seconds → phrase. Null means "don't show any suffix yet".

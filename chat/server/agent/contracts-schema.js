@@ -49,6 +49,12 @@ function isNonEmptyString(v) {
   return typeof v === 'string' && v.length > 0;
 }
 
+// Plain SQL identifier — table/column names must match this because they are
+// interpolated into a psql query in the live schema-drift check
+// (session/docker-orchestration.js). Rejecting anything else at ingest keeps
+// quotes/shell metacharacters out of that call.
+const SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 /**
  * Validate the contracts envelope.
  *
@@ -152,6 +158,11 @@ function validateDataModel(dataModel, basePath, errors) {
     }
     if (!isNonEmptyString(table.name)) {
       errors.push({ path: `${tPath}.name`, message: 'expected non-empty string' });
+    } else if (!SQL_IDENTIFIER.test(table.name)) {
+      // Table/column names reach a psql query (live schema-drift check) — reject
+      // anything that isn't a plain SQL identifier so a name can never carry
+      // quotes/shell metacharacters into that call.
+      errors.push({ path: `${tPath}.name`, message: 'must be a valid SQL identifier ([A-Za-z_][A-Za-z0-9_]*)' });
     }
     if (!Array.isArray(table.columns)) {
       errors.push({ path: `${tPath}.columns`, message: `expected array, got ${typeof table.columns}` });
@@ -165,6 +176,8 @@ function validateDataModel(dataModel, basePath, errors) {
       }
       if (!isNonEmptyString(col.name)) {
         errors.push({ path: `${cPath}.name`, message: 'expected non-empty string' });
+      } else if (!SQL_IDENTIFIER.test(col.name)) {
+        errors.push({ path: `${cPath}.name`, message: 'must be a valid SQL identifier ([A-Za-z_][A-Za-z0-9_]*)' });
       }
       if (!isNonEmptyString(col.type)) {
         errors.push({ path: `${cPath}.type`, message: 'expected non-empty string' });

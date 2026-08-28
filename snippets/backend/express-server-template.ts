@@ -34,7 +34,18 @@ interface ItemsResponse {
 }
 
 const app = express();
-app.use(cors());
+
+// CORS: the SPA is served same-origin (Traefik routes `/` and `/api/*` to the
+// same host), so cross-origin access is normally unnecessary. Lock it to the
+// app's own origin rather than a wildcard — `cors()` with no options reflects
+// any Origin, which would let any intranet page read authenticated responses.
+// Set APP_ORIGIN in production, e.g.
+// APP_ORIGIN=https://<repo>.vibe.intranet.cnb (comma-separate for multiple).
+const ALLOWED_ORIGINS: string[] = (process.env.APP_ORIGIN || 'http://localhost:8080')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json());
 
 // Health check (REQUIRED — do not remove)

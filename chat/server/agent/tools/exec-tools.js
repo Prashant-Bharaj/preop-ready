@@ -16,6 +16,18 @@ import { resolveWorkspacePath, PathEscapeError } from './util/resolve-path.js';
 
 // ── execute_command ──
 
+// The harness's OWN LLM credentials. Agent-run build commands never need these,
+// so we strip them from the subprocess environment: the agent already has a
+// shell (and could `printenv`), but this keeps the MGA key out of the default
+// env a build step, a dependency's postinstall, or a leaked log would see.
+const STRIPPED_ENV_KEYS = ['MGA_API_KEY', 'OPENAI_API_KEY', 'OPENAI_COMPAT_API_KEY'];
+
+function subprocessEnv() {
+  const env = { ...process.env };
+  for (const k of STRIPPED_ENV_KEYS) delete env[k];
+  return env;
+}
+
 export async function toolExecuteCommand(params, ctx) {
   const { emit, signal } = ctx || {};
   const cwd = (ctx && ctx.workspaceDir) || WORKSPACE_DIR;
@@ -36,7 +48,7 @@ export async function toolExecuteCommand(params, ctx) {
     const proc = spawn(cmd, {
       cwd,
       shell: true,
-      env: process.env,
+      env: subprocessEnv(),
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: true,
     });
@@ -134,9 +146,14 @@ export async function toolExecuteCommand(params, ctx) {
  *   3. Otherwise allow.
  *
  * Path inference is heuristic. The exec dispatch already runs inside the
- * workspace `cwd`, so unscoped paths land where they would normally;
- * the gate here is a belt-and-braces against `rm -rf .github/workflows`
- * shaped accidents, not a complete sandboxing strategy.
+ * workspace `cwd`, so unscoped paths land where they would normally.
+ *
+ * ⚠️ THIS IS NOT A SECURITY BOUNDARY. execute_command runs an arbitrary shell
+ * (`shell: true`) BY DESIGN, so a determined or prompt-injected agent trivially
+ * evades this gate with any unmodeled verb (`find -delete`, `python -c`,
+ * `$(...)`, `xargs`, `truncate`, …). It is purely a belt-and-braces guard
+ * against `rm -rf .github/workflows`-shaped ACCIDENTS — do not treat it as
+ * sandboxing or containment.
  */
 const DESTRUCTIVE_PREFIXES = [
   /^\s*rm\b/,

@@ -23,12 +23,28 @@ import type { Express } from 'express';
 declare const app: Express; // expected to be defined in the entry file scope
 declare const PORT: number;
 
+// Lock WebSocket CORS to the app's own origin. `origin: '*'` disables the WS
+// origin check, letting a malicious intranet page open a socket as the
+// logged-in victim (cross-site WebSocket hijacking) and drive any
+// socket-triggered action. Set APP_ORIGIN in production, e.g.
+// APP_ORIGIN=https://<repo>.vibe.intranet.cnb (comma-separate for multiple).
+const ALLOWED_ORIGINS: string[] = (process.env.APP_ORIGIN || 'http://localhost:8080')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const server: HttpServer = createServer(app);
 const io: SocketIOServer = new SocketIOServer(server, {
-  cors: { origin: '*' },
+  cors: { origin: ALLOWED_ORIGINS, credentials: true },
 });
 
 io.on('connection', (socket: Socket) => {
+  // Defense in depth: reject a handshake whose Origin isn't allowlisted.
+  const origin = socket.handshake.headers.origin;
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    socket.disconnect(true);
+    return;
+  }
   console.log('Client connected:', socket.id);
   socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
 });

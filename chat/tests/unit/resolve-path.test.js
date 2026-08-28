@@ -151,31 +151,28 @@ test('resolveWorkspacePath: deep `a/b/c/../../d` resolves inside workspace', asy
 
 // ── (e) Symlink traversal ────────────────────────────────────────────────
 //
-// path.resolve does NOT follow symlinks (it operates on the textual path).
-// PathEscapeError is therefore symlink-blind at the textual layer; this is
-// intentional — checkWritePermission inherits the same workspace-relative
-// check on the textual abs. The escape-via-symlink-as-target attack
-// surface here is "does the resolved string still live under workspaceDir?".
-// The test below documents this: if a CALLER passes a path containing a
-// symlink that LOOKS workspace-relative, resolve-path accepts it (the abs
-// path string is under workspaceDir). The defense against malicious
-// symlinks LIVES IN THE FILESYSTEM LAYER — fs.realpath would follow it.
-// We exercise the textual contract here.
+// path.resolve does NOT follow symlinks (it operates on the textual path), so
+// a symlink that LOOKS workspace-relative would pass the textual containment
+// check. resolveWorkspacePath closes this with a second, symlink-aware pass:
+// it realpaths the deepest existing prefix of both the workspace root and the
+// resolved target and re-checks containment. An in-workspace symlink whose
+// target is OUTSIDE the workspace is therefore rejected here, not just
+// "downstream at the fs layer".
 
-test('resolveWorkspacePath: symlinked subdir whose target is outside workspace — textual abs still rejects when path escapes', async () => {
+test('resolveWorkspacePath: symlinked subdir whose target is outside workspace is REJECTED (realpath containment)', async () => {
   const wsOuter = await createTestWorkspace({ scope: 'resolve-path', scenarioName: 'symlink-outer' });
   const wsInner = await createTestWorkspace({ scope: 'resolve-path', scenarioName: 'symlink-inner' });
   try {
-    // Make a symlink inside wsInner that POINTS at wsOuter. resolve-path is
-    // purely textual: `linkdir/file.txt` resolves to `<wsInner>/linkdir/file.txt`,
-    // which is workspace-relative and ALLOWED. The actual escape is
-    // detected at runtime by the fs layer if the caller follows the link
-    // (or by realpath checks downstream). This test pins that contract.
+    // Make a symlink inside wsInner that POINTS at wsOuter. `linkdir/file.txt`
+    // is textually workspace-relative, but the real path lands in wsOuter — the
+    // realpath re-check must catch that and throw PathEscapeError.
     const linkPath = path.join(wsInner.dir, 'linkdir');
     await symlink(wsOuter.dir, linkPath, 'dir');
-    const abs = resolveWorkspacePath('linkdir/file.txt', { workspaceDir: wsInner.dir });
-    assert.equal(abs, path.join(wsInner.dir, 'linkdir/file.txt'),
-      'textual path is workspace-relative; symlink resolution happens (or not) at fs layer downstream');
+    assert.throws(
+      () => resolveWorkspacePath('linkdir/file.txt', { workspaceDir: wsInner.dir }),
+      PathEscapeError,
+      'a symlink resolving outside the workspace must be rejected, not accepted',
+    );
   } finally {
     await wsInner.cleanup();
     await wsOuter.cleanup();

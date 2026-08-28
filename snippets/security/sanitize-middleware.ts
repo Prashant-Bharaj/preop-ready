@@ -95,6 +95,14 @@ export function sanitizeBody(
 /**
  * Middleware: sanitize all string values in JSON responses.
  * Wraps res.json() to strip HTML from outgoing data.
+ *
+ * OPT-IN, NOT default (see applySecurityMiddleware). Escaping belongs at render
+ * time — the React frontend already escapes by default — so stripping HTML on
+ * the way OUT is the wrong layer: it walks every response and runs every string
+ * through sanitize-html on the hot path, and it silently CORRUPTS legitimate
+ * data that contains `<`/`>` (code snippets, math, user prose). Attach it only
+ * to a specific route whose output is truly rendered as raw HTML by a client
+ * you don't control.
  */
 export function sanitizeResponse(
   _req: Request,
@@ -189,5 +197,8 @@ export function applySecurityMiddleware(app: Express): void {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(sanitizeBody);
-  app.use(sanitizeResponse);
+  // NOTE: sanitizeResponse is intentionally NOT applied globally — it corrupts
+  // legitimate `<`/`>` data and costs O(response size) per request. Escape at
+  // render time instead; attach sanitizeResponse per-route only if a specific
+  // endpoint's output is rendered as raw HTML by an untrusted client.
 }

@@ -11,7 +11,7 @@
  */
 
 import path from 'node:path';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, realpathSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import multer from 'multer';
 import { WORKSPACE_DIR } from '../core/paths.js';
@@ -189,11 +189,25 @@ export function mountUploadRoutes(app) {
       return res.status(400).send('Bad path');
     }
 
-    // Blocklist (basename only — matches upload rules)
-    const basename = path.basename(absPath);
-    if (checkBlocked(basename)) return res.status(403).send('File type not allowed');
-
     if (!existsSync(absPath)) return res.status(404).send('Not found');
+
+    // Symlink-aware containment: the textual check above passes for a symlink
+    // that lives inside the workspace but points OUT of it, and sendFile()
+    // follows symlinks. Resolve the real path and re-check before serving.
+    let realPath;
+    try {
+      realPath = realpathSync(absPath);
+      const realRoot = realpathSync(WORKSPACE_DIR);
+      if (realPath !== realRoot && !realPath.startsWith(realRoot + path.sep)) {
+        return res.status(400).send('Bad path');
+      }
+    } catch {
+      return res.status(404).send('Not found');
+    }
+
+    // Blocklist (basename only — matches upload rules), on the REAL target.
+    const basename = path.basename(realPath);
+    if (checkBlocked(basename)) return res.status(403).send('File type not allowed');
     try {
       const st = statSync(absPath);
       if (!st.isFile()) return res.status(404).send('Not found');

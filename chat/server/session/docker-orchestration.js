@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { appendEvent } from './transcript.js';
@@ -2021,12 +2021,24 @@ export async function tryAutoStartApp(session, envContext, routerContracts = {})
       const envData = readContracts(WORKSPACE_DIR)?.data;
       const tables = envData?.dataModel?.tables || [];
       const missing = [];
+      // SQL identifier guard: `t.name` originates from the (LLM-authored)
+      // contract, so it must NEVER be interpolated into a shell string.
+      // contracts-schema.js already rejects non-identifier table names at
+      // ingest; this is the defensive second layer at the use site.
+      const SQL_IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
       for (const t of tables) {
+        if (!SQL_IDENT.test(String(t.name || ''))) continue;
         let live = '';
         try {
-          live = execSync(
-            `docker compose exec -T database psql -U ${LOCAL_DB_CREDENTIALS.user} -d ${LOCAL_DB_CREDENTIALS.name} -t -A -c "SELECT column_name FROM information_schema.columns WHERE table_name='${t.name}'"`,
-            { cwd: WORKSPACE_DIR, stdio: 'pipe', timeout: 15_000 }).toString();
+          // execFileSync (no shell) — args are passed literally, so even a
+          // malformed name can't break out into the host shell. The name is
+          // additionally identifier-validated above before reaching the SQL.
+          live = execFileSync('docker', [
+            'compose', 'exec', '-T', 'database',
+            'psql', '-U', LOCAL_DB_CREDENTIALS.user, '-d', LOCAL_DB_CREDENTIALS.name,
+            '-t', '-A', '-c',
+            `SELECT column_name FROM information_schema.columns WHERE table_name='${t.name}'`,
+          ], { cwd: WORKSPACE_DIR, stdio: 'pipe', timeout: 15_000 }).toString();
         } catch { /* table query failed → counts as missing below */ }
         const liveCols = new Set(live.split('\n').map((x) => x.trim()).filter(Boolean));
         if (liveCols.size === 0) { missing.push(`table ${t.name} missing entirely`); continue; }

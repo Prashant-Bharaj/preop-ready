@@ -28,6 +28,29 @@
  */
 
 import path from 'node:path';
+import { realpathSync } from 'node:fs';
+
+/**
+ * Realpath the deepest EXISTING ancestor of `p` and rejoin the not-yet-created
+ * tail. This resolves any symlink in the existing prefix (write targets don't
+ * exist yet, so their final segment can't itself be a symlink). Falls back to
+ * the input when nothing resolves (e.g. permission error at the root).
+ */
+function realpathOfExistingPrefix(p) {
+  let cur = p;
+  const tail = [];
+  for (;;) {
+    try {
+      const real = realpathSync(cur);
+      return tail.length ? path.join(real, ...tail.reverse()) : real;
+    } catch {
+      const parent = path.dirname(cur);
+      if (parent === cur) return p; // reached filesystem root without resolving
+      tail.push(path.basename(cur));
+      cur = parent;
+    }
+  }
+}
 
 export class PathEscapeError extends Error {
   constructor(input, resolved, workspaceDir) {
@@ -72,6 +95,16 @@ export function resolveWorkspacePath(input, ctx) {
   const rel = path.relative(ctx.workspaceDir, abs);
   if (rel.startsWith('..') || path.isAbsolute(rel)) {
     throw new PathEscapeError(input, abs, ctx.workspaceDir);
+  }
+
+  // Symlink-aware re-check: the textual check above passes for a symlink that
+  // lives INSIDE the workspace but points OUT of it. Resolve real paths and
+  // confirm containment before returning.
+  const realRoot = realpathOfExistingPrefix(ctx.workspaceDir);
+  const realAbs = realpathOfExistingPrefix(abs);
+  const realRel = path.relative(realRoot, realAbs);
+  if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
+    throw new PathEscapeError(input, realAbs, ctx.workspaceDir);
   }
 
   return abs;
