@@ -10,7 +10,9 @@
 # .gitignore concerns and each worktree keeps its own attestation.
 audit_state_dir() {
   local gd
-  gd="$(git rev-parse --git-dir 2>/dev/null)" || return 1
+  # --absolute-git-dir so downstream paths are absolute (a relative ".git"
+  # breaks node's require()/path resolution and is worktree-fragile).
+  gd="$(git rev-parse --absolute-git-dir 2>/dev/null)" || return 1
   printf '%s/audit' "$gd"
 }
 audit_state_file()  { printf '%s/state.json' "$(audit_state_dir)"; }
@@ -34,9 +36,11 @@ audit_tree_hash() {
 audit_json_get() {
   local file="$1" key="$2"
   [ -f "$file" ] || return 0
+  # readFileSync (not require) so relative paths resolve against cwd and a
+  # ".git/..." path isn't mistaken for a node_modules package.
   node -e '
     try {
-      const s = require(process.argv[1]);
+      const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
       const v = s[process.argv[2]];
       process.stdout.write(v == null ? "" : String(v));
     } catch { /* missing/malformed → empty */ }
