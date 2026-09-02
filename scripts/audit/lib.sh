@@ -48,16 +48,19 @@ audit_json_get() {
 }
 
 # Write the attestation atomically. Args: <verdict> <critical> <high> [note]
+# Uses printf (not node) to write the JSON — a multi-line `node -e` script is
+# mangled by Git Bash → node.exe on Windows ("stdout is not a tty", empty file),
+# whereas printf is pure-bash and cross-platform.
 audit_write_state() {
-  local verdict="$1" critical="$2" high="$3" note="${4:-}"
+  local verdict="$1" critical="${2:-0}" high="${3:-0}" note="${4:-}"
   local dir; dir="$(audit_state_dir)" || return 1
   mkdir -p "$dir"
-  local tmp="$dir/state.json.tmp.$$"
-  node -e '
-    const [verdict, critical, high, treeHash, note] = process.argv.slice(1);
-    process.stdout.write(JSON.stringify({
-      verdict, critical: Number(critical), high: Number(high),
-      treeHash, note, timestamp: new Date().toISOString(),
-    }, null, 2) + "\n");
-  ' "$verdict" "$critical" "$high" "$(audit_tree_hash)" "$note" > "$tmp" && mv "$tmp" "$dir/state.json"
+  local hash ts tmp
+  hash="$(audit_tree_hash)"
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  # JSON-escape backslashes and double-quotes in the free-text note.
+  note="${note//\\/\\\\}"; note="${note//\"/\\\"}"
+  tmp="$dir/state.json.tmp.$$"
+  printf '{\n  "verdict": "%s",\n  "critical": %s,\n  "high": %s,\n  "treeHash": "%s",\n  "note": "%s",\n  "timestamp": "%s"\n}\n' \
+    "$verdict" "$critical" "$high" "$hash" "$note" "$ts" > "$tmp" && mv "$tmp" "$dir/state.json"
 }
