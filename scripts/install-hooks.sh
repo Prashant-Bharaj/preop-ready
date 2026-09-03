@@ -35,8 +35,15 @@ install_hook() {
         local cur
         cur="$(readlink "$target" 2>/dev/null || true)"
         if [ "$cur" = "$source" ] || [ "$cur" = "$rel" ]; then
-            return 0   # already installed correctly
+            return 0   # already installed correctly (symlink — macOS/Linux)
         fi
+    fi
+    # Already installed as a content-identical copy? On Windows Git Bash `ln -s`
+    # COPIES the file (not a real symlink), so the hook is a regular file whose
+    # content matches the source — treat that as already-installed to avoid
+    # churning a .backup on every run.
+    if [ -f "$target" ] && [ ! -L "$target" ] && cmp -s "$target" "$source"; then
+        return 0
     fi
     if [ -f "$target" ] && [ ! -L "$target" ]; then
         mv "$target" "$target.backup"
