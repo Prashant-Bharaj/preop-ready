@@ -86,6 +86,8 @@ export function writeRunSummary(sessionId, summary) {
       contractAttempt: summary.contractAttempt || null,
       endpointProbe: summary.endpointProbe || null,
       uiSanity: summary.uiSanity || null,
+      // Post-build security review: {reviewed, critical, high, fixed, stillOpen, reportOnly}.
+      security: summary.security || null,
       // CDD health: what the contract store did this run — diff kinds merged
       // on iterate, routes adopted from reconciler-legitimate verdicts, and
       // the envelope's revision count at write time. Aggregated across runs:

@@ -1820,12 +1820,89 @@ export async function runSmokeAndPrompt(session, envContext, routerContracts = {
   }
 
   tlog('[session] Auto-start: emitting app_ready_prompt');
+  const securityLine = session.securitySummary?.stillOpen
+    ? ` ${session.securitySummary.stillOpen} security issue(s) need your attention (see above).`
+    : '';
   const promptEvent = appendEvent(session.id, 'app_ready_prompt', {
     url,
-    message: buildAppReadyMessage(verification, backendErrors) + mgaLine,
+    message: buildAppReadyMessage(verification, backendErrors) + mgaLine + securityLine,
   });
   sessionEvents.emit('event', session.id, promptEvent);
   tlog('[session] Auto-start: app_ready_prompt emitted; runSmokeAndPrompt returning');
+}
+
+/**
+ * Security review of the GENERATED app. Runs on every build, BEFORE containers
+ * build (so an auto-fix re-drives the container build + all downstream verify).
+ * Reviews the source, AUTO-FIXES Critical/High (one round per scope, modeled on
+ * the authz gate), and reports the rest. Non-blocking — findings never stop the
+ * build. Sets session.securitySummary for the app-ready line + run summary.
+ * SECURITY_REVIEW_SKIP=true disables it.
+ */
+async function runSecurityReviewAndFix(session, scopeCounters, routerContracts) {
+  if (process.env.SECURITY_REVIEW_SKIP === 'true') return;
+  const scopes = Array.isArray(routerContracts?.tasks)
+    ? [...new Set(routerContracts.tasks.map((t) => t && t.scope).filter(Boolean))]
+    : [];
+  try {
+    emitVerifyStep(session.id, 'security-review', 'start');
+    const { reviewGeneratedApp, partitionFindings, formatSecurityFixDirective } =
+      await import('../reconciler/security-review.js');
+    const result = await reviewGeneratedApp({ workspaceDir: WORKSPACE_DIR, scopes });
+    if (result.skipped) { emitVerifyStep(session.id, 'security-review', 'done', 'skipped'); return; }
+
+    const findings = result.findings || [];
+    const { criticalHigh, reportOnly, byScope } = partitionFindings(findings);
+
+    let fixedCount = 0;
+    const stillOpen = [];
+    for (const [scope, scopeFindings] of byScope) {
+      const counter = scopeCounters.get(scope) || {};
+      if (counter.securityFixAttempts) { stillOpen.push(...scopeFindings); continue; } // budget: 1/scope/build
+      counter.securityFixAttempts = 1;
+      scopeCounters.set(scope, counter);
+      const ev = appendEvent(session.id, 'security_fix_dispatch', { scope, count: scopeFindings.length, findings: scopeFindings });
+      sessionEvents.emit('event', session.id, ev);
+      try {
+        const { buildFixDirective, pushAutoRecoveryRecord } = await import('./auto-recovery.js');
+        pushAutoRecoveryRecord(session, { scope, attemptN: 1, triggeredBy: 'security-review', failureSummary: `${scopeFindings.length} security finding(s)`, exhausted: false });
+        const formatted = formatSecurityFixDirective(scope, scopeFindings);
+        const directive = buildFixDirective(scope, [{ source: 'security', formatted }]);
+        const { runCustomAgent } = await import('../agent/agent.js');
+        const { PHASES } = await import('../agent/loop/phase.js');
+        const agentResult = await runCustomAgent(session.id, directive, { conversationId: null, scope, phase: PHASES.SUBAGENT, priorTokenTotals: session.coderTokenTotals || null });
+        accumulateAgentTotals(session, agentResult);
+        fixedCount += scopeFindings.length; // dispatched; the ensuing build + verify re-check the code
+      } catch (err) {
+        logAndSwallow(err, '[security-review] fix dispatch threw');
+        stillOpen.push(...scopeFindings);
+      }
+    }
+
+    session.securitySummary = {
+      reviewed: findings.length,
+      critical: findings.filter((f) => f.severity === 'Critical').length,
+      high: findings.filter((f) => f.severity === 'High').length,
+      fixed: fixedCount,
+      stillOpen: stillOpen.length,
+      reportOnly: reportOnly.length,
+    };
+    const detail = findings.length === 0
+      ? 'no issues'
+      : `${criticalHigh.length} critical/high (${fixedCount} auto-fixed${stillOpen.length ? `, ${stillOpen.length} open` : ''}), ${reportOnly.length} lower`;
+    emitVerifyStep(session.id, 'security-review', stillOpen.length ? 'warn' : 'done', detail);
+
+    const notable = [...stillOpen, ...reportOnly];
+    if (notable.length) {
+      const lines = notable.map((f) => `  [${f.severity}] ${f.summary}${f.file ? ` (${f.file}${f.line ? `:${f.line}` : ''})` : ''}`);
+      const msg = `Security review — ${fixedCount ? `auto-fixed ${fixedCount} critical/high issue(s); ` : ''}${notable.length} item(s) to review:\n\n${lines.join('\n')}\n\nAsk me to fix any of these.`;
+      const warnEv = appendEvent(session.id, 'cline', { say: 'text', text: msg });
+      sessionEvents.emit('event', session.id, warnEv);
+    }
+  } catch (err) {
+    emitVerifyStep(session.id, 'security-review', 'warn', 'review skipped');
+    logAndSwallow(err, '[security-review] phase threw');
+  }
 }
 
 /**
@@ -2005,6 +2082,11 @@ export async function tryAutoStartApp(session, envContext, routerContracts = {})
   } catch (err) {
     logAndSwallow(err, '[session] Auto-recovery loop failed (non-fatal)');
   }
+
+  // Security review of the generated app. Placed BEFORE containers build so an
+  // auto-fix re-drives buildAndStartContainers + the whole downstream verify
+  // against fixed code. Non-blocking; own try/catch inside.
+  await runSecurityReviewAndFix(session, scopeCounters, routerContracts);
 
   emitVerifyStep(session.id, 'containers', 'start');
   const containersOk = await buildAndStartContainers(session);

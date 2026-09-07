@@ -250,6 +250,7 @@ export function buildFixDirective(scope, failures) {
   const runtimeGate = failures.find((f) => f.source === 'runtime-gate');
   const endpointProbe = failures.find((f) => f.source === 'endpoint-probe');
   const visualCheck = failures.find((f) => f.source === 'visual-check');
+  const security   = failures.find((f) => f.source === 'security');
   const structural = failures.filter((f) => f.source === 'structural-check');
   const layout     = failures.filter((f) => f.source === 'file-structure');
   const asserts    = failures.filter((f) => f.source === 'runtime-assert');
@@ -281,6 +282,13 @@ export function buildFixDirective(scope, failures) {
   // app): its `formatted` block carries the defect list + primary view/action.
   if (visualCheck && !typeGate && !runtimeGate && !endpointProbe && !structural.length && !layout.length && !asserts.length && !mgaWiring.length) {
     return visualCheck.formatted +
+      '\n\nReply with attempt_completion after the edits land.';
+  }
+
+  // Same fast-path for security-review-only findings: its `formatted` block
+  // carries the finding list + the rules to fix them against.
+  if (security && !typeGate && !runtimeGate && !endpointProbe && !visualCheck && !structural.length && !layout.length && !asserts.length && !mgaWiring.length) {
+    return security.formatted +
       '\n\nReply with attempt_completion after the edits land.';
   }
 
