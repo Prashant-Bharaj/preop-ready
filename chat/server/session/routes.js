@@ -1224,6 +1224,7 @@ async function dispatchIterateAndFinalize(session, routerResult, envContext, upl
       snippetFetches: getSnippetFetchMirror(session.id),
       autoRecoveryAttempts: session.autoRecoveryAttempts || [],
       investigatorRecords: session.investigatorRecords || [],
+      security: session.securitySummary || null,
       contractStore: {
         ...(session.contractStoreStats || { mergedKinds: [], adoptedRoutes: 0 }),
         revisionCount: (() => { try { return (readContracts(WORKSPACE_DIR)?.data?.revisions || []).length; } catch { return 0; } })(),
