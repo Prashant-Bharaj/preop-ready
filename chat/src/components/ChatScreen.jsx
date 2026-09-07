@@ -264,7 +264,13 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
       // replay (any prior `app_ready` event) but never self-clears when the
       // app later gets stopped — leaving the Stop/Start button stuck on
       // "Stop application" even though there's nothing to stop.
-      if (!running) setAppRunning(false);
+      if (!running) {
+        setAppRunning(false);
+        // The "your app is running — open it?" banner must not outlive the
+        // running app. Clear it whenever docker truth says nothing is up
+        // (covers the app being stopped, crashing, or brought down externally).
+        setPendingAppOpen(null);
+      }
     } catch { /* ignore — keep last known value */ }
   }, []);
 
@@ -993,6 +999,7 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
       await closeAutoStartedApp(sessionId);
       setAppRunning(false);
       setDockerRunning(false);
+      setPendingAppOpen(null); // clear the stale "app is running" banner immediately
       showToast('Application stopped (containers down).', 'success', 3000);
     } catch (err) {
       console.error('Stop app failed:', err);
