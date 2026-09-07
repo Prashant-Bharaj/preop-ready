@@ -49,6 +49,27 @@ io.on('connection', (socket: Socket) => {
   socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
 });
 
+// ── Broadcasting on a state change (the point of real-time) ─────────────────
+// A socket that only handles `connection` pushes NOTHING to clients. For a live
+// app you MUST emit whenever data changes — from your REST handlers, AFTER the
+// write succeeds — so clients update without polling. Example: a route that
+// updates a row and then broadcasts it.
+//
+//   app.put('/lines/:id/status', async (req, res) => {
+//     const { rows } = await pool.query(
+//       'UPDATE lines SET status = $1 WHERE id = $2 RETURNING *',
+//       [req.body.status, req.params.id],
+//     );
+//     if (!rows[0]) return res.status(404).json({ error: 'NOT_FOUND', message: 'Line not found', statusCode: 404 });
+//     broadcast('status-changed', rows[0]);   // ← push to every connected client
+//     res.json(rows[0]);
+//   });
+//
+// Room-scoped variant (when sockets join rooms): io.to(`line:${id}`).emit(...).
+export function broadcast<T>(event: string, payload: T): void {
+  io.emit(event, payload);
+}
+
 // IMPORTANT: use server.listen(), not app.listen()
 server.listen(PORT, () => console.log(`Server on port ${PORT}`));
 

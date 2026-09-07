@@ -234,6 +234,35 @@ export function sendToUser(
   io.to(`user:${userId}`).emit(event, data);
 }
 
+/**
+ * Broadcast a data change to all connected clients (or a room). Call this from
+ * your REST handlers AFTER the write succeeds — the whole point of real-time is
+ * that a mutation pushes to clients so they never poll. A Socket.IO server that
+ * only handles `connection` pushes NOTHING; that is the most common real-time
+ * bug.
+ *
+ * Example — an Express route that updates a row, then broadcasts it:
+ *
+ *   app.put('/lines/:id/status', async (req, res) => {
+ *     const { rows } = await pool.query(
+ *       'UPDATE lines SET status = $1 WHERE id = $2 RETURNING *',
+ *       [req.body.status, req.params.id],
+ *     );
+ *     if (!rows[0]) return res.status(404).json({ error: 'NOT_FOUND', message: 'Line not found', statusCode: 404 });
+ *     broadcastChange(io, 'status-changed', rows[0]);   // ← push to every client
+ *     res.json(rows[0]);
+ *   });
+ */
+export function broadcastChange(
+  io: Server,
+  event: string,
+  data: unknown,
+  room?: string
+): void {
+  if (room) io.to(room).emit(event, data);
+  else io.emit(event, data);
+}
+
 // =============================================================================
 // CLIENT SIDE — copy into frontend/src/socket.ts
 // =============================================================================

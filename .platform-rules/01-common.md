@@ -123,3 +123,12 @@ never proxy WebSockets through production nginx.conf.
 - Implementation: COPY `snippets/realtime/websocket-helper.*` — it authenticates every
   socket from the OIDC headers and gates rooms. Gate sockets like API routes: no
   identity/approval check = broadcasting data to users your routes would block.
+- **Emit on every state change.** A socket that only handles `connection` pushes
+  nothing. After a REST handler writes, call `io.emit(event, row)` (or the
+  `broadcastChange` helper in `snippets/realtime/websocket-helper.*`, room-scoped
+  if gated) so clients update live without polling. Connection-only Socket.IO is
+  the most common real-time bug.
+- **Seed the reference entities your routes act on.** If status/history routes
+  target a fixed set (e.g. production "lines"), add them to `database/seed/`
+  (fake data) or expose a create route — a handler that 404s because the row was
+  never created looks "working" to the probe but is broken for the user.
