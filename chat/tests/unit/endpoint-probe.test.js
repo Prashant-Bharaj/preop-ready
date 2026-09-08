@@ -14,6 +14,7 @@ import {
   bodyContainsId,
   deriveSamplePayload,
   classifyProbeOutcome,
+  extractFirstId,
   probeApiEndpoints,
   checkComposeHealthAfterProbe,
   formatProbeFailures,
@@ -257,4 +258,138 @@ test('bodyContainsId: shapes and string/number id equivalence', () => {
   assert.equal(bodyContainsId({ items: [{ id: 4 }] }, 5), false);
   assert.equal(bodyContainsId(null, 5), false);
   assert.equal(bodyContainsId('5', 5), false);
+});
+
+// ── reference-data (tables the API never creates) ─────────────────────────
+
+test('plan: a parameterized POST ranks with PUT/PATCH, after the collection GET; hasParams survives consecutive param paths', () => {
+  const plan = buildProbePlan({
+    endpoints: [
+      { method: 'GET', path: '/lines/:id' },
+      { method: 'POST', path: '/lines/:id/status' }, // consecutive param paths (the /g lastIndex trap)
+      { method: 'GET', path: '/lines' },
+      { method: 'POST', path: '/notes' },
+      { method: 'PUT', path: '/lines/:id' },
+    ],
+  });
+  assert.deepEqual(plan.map((s) => `${s.method} ${s.path}`), [
+    'POST /notes', 'GET /lines', 'GET /lines/:id', 'PUT /lines/:id', 'POST /lines/:id/status',
+  ]);
+  assert.ok(plan.every((s) => s.hasParams === /:/.test(s.path)));
+});
+
+test('extractFirstId: arrays, wrapped collections, singleton, none', () => {
+  assert.equal(extractFirstId([{ id: 7 }, { id: 8 }]), 7);
+  assert.equal(extractFirstId({ data: [{ id: 'a1' }] }), 'a1');
+  assert.equal(extractFirstId({ lines: [{ name: 'x' }, { id: 3 }] }), 3);
+  assert.equal(extractFirstId({ id: 2 }), 2);
+  assert.equal(extractFirstId([]), null);
+  assert.equal(extractFirstId({ count: 0, items: [] }), null);
+  assert.equal(extractFirstId('nope'), null);
+});
+
+test('seeded reference table: collection GET supplies the id, the mutation hits a real row', async () => {
+  const seen = [];
+  const { server, url } = await startServer((req, res) => {
+    seen.push(`${req.method} ${req.url}`);
+    if (req.url === '/api/lines') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify([{ id: 11, name: 'Line 1' }, { id: 12, name: 'Line 2' }]));
+    } else if (req.url === '/api/lines/11' || req.url === '/api/lines/11/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"id":11}');
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end('{"error":"NOT_FOUND"}');
+    }
+  });
+  try {
+    const result = await probeApiEndpoints({
+      baseUrl: url,
+      apiContract: { endpoints: [
+        { method: 'GET', path: '/lines' },
+        { method: 'GET', path: '/lines/:id' },
+        { method: 'POST', path: '/lines/:id/status', request: { status: 'string required' } },
+      ] },
+      referencePrefixes: ['/lines'],
+      timeouts: { requestMs: 2000, aiRequestMs: 2000, totalMs: 20000 },
+    });
+    assert.equal(result.failed.length, 0, JSON.stringify(result.failed));
+    assert.equal(result.passed, 3);
+    assert.deepEqual(seen, ['GET /api/lines', 'GET /api/lines/11', 'POST /api/lines/11/status']);
+  } finally {
+    server.close();
+  }
+});
+
+test('empty reference table: mutation 404 on a guessed id is a reference-data failure; GET 404 still passes', async () => {
+  const { server, url } = await startServer((req, res) => {
+    if (req.url === '/api/lines') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('[]');
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end('{"error":"NOT_FOUND","message":"Line not found"}');
+    }
+  });
+  try {
+    const contract = { endpoints: [
+      { method: 'GET', path: '/lines' },
+      { method: 'GET', path: '/lines/:id' },
+      { method: 'POST', path: '/lines/:id/status', request: { status: 'string required' } },
+      { method: 'PATCH', path: '/notes/:id' }, // not a reference prefix → 404 stays pass
+    ] };
+    const result = await probeApiEndpoints({
+      baseUrl: url, apiContract: contract, referencePrefixes: ['/lines'],
+      timeouts: { requestMs: 2000, aiRequestMs: 2000, totalMs: 20000 },
+    });
+    assert.equal(result.passed, 3);
+    assert.equal(result.failed.length, 1);
+    assert.equal(result.failed[0].path, '/lines/:id/status');
+    assert.equal(result.failed[0].status, 404);
+    assert.match(result.failed[0].error, /^reference-data: \/lines has no rows/);
+
+    // Without referencePrefixes the legacy semantics hold: every 4xx passes.
+    const legacy = await probeApiEndpoints({
+      baseUrl: url, apiContract: contract,
+      timeouts: { requestMs: 2000, aiRequestMs: 2000, totalMs: 20000 },
+    });
+    assert.equal(legacy.failed.length, 0);
+
+    const text = formatProbeFailures(result.failed);
+    assert.match(text, /POST \/lines\/:id\/status — HTTP 404/);
+    assert.match(text, /reference-data failure means the table behind that route is empty/);
+    assert.match(text, /database\/init\/02_reference_data\.sql/);
+    assert.match(text, /backend\/migrations\/NNN_\*\.sql/);
+  } finally {
+    server.close();
+  }
+});
+
+test('nested POST does not overwrite the parent id captured by the collection POST', async () => {
+  const seen = [];
+  const { server, url } = await startServer((req, res) => {
+    seen.push(`${req.method} ${req.url}`);
+    res.writeHead(req.method === 'POST' ? 201 : 200, { 'Content-Type': 'application/json' });
+    if (req.method === 'POST' && req.url === '/api/projects') res.end('{"id":5}');
+    else if (req.method === 'POST' && req.url === '/api/projects/5/tasks') res.end('{"id":99}');
+    else if (req.url === '/api/projects') res.end('[{"id":5}]');
+    else res.end('{"id":5}');
+  });
+  try {
+    const result = await probeApiEndpoints({
+      baseUrl: url,
+      apiContract: { endpoints: [
+        { method: 'POST', path: '/projects', request: { name: 'string required' } },
+        { method: 'POST', path: '/projects/:id/tasks', request: { title: 'string required' } },
+        { method: 'GET', path: '/projects' },
+        { method: 'GET', path: '/projects/:id' },
+      ] },
+      timeouts: { requestMs: 2000, aiRequestMs: 2000, totalMs: 20000 },
+    });
+    assert.equal(result.failed.length, 0, JSON.stringify(result.failed));
+    assert.deepEqual(seen, ['POST /api/projects', 'GET /api/projects', 'GET /api/projects/5', 'POST /api/projects/5/tasks']);
+  } finally {
+    server.close();
+  }
 });

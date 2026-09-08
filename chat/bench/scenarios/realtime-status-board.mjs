@@ -10,6 +10,14 @@
 import { io } from 'socket.io-client';
 import { api, apiSmart, discoverEp, fill } from '../lib/app-client.mjs';
 
+function firstId(body) {
+  if (body == null || typeof body !== 'object') return null;
+  if (Array.isArray(body)) { for (const v of body) { const id = firstId(v); if (id != null) return id; } return null; }
+  if (body.id != null) return body.id;
+  for (const v of Object.values(body)) { if (v && typeof v === 'object') { const id = firstId(v); if (id != null) return id; } }
+  return null;
+}
+
 export default {
   name: 'realtime-status-board',
   prompt: 'Build a live production line status board. Operators set a line\'s status (running, blocked, down) and everyone watching the board sees the change instantly without refreshing. Keep a history of status changes.',
@@ -17,6 +25,7 @@ export default {
   answerClarify() {
     return [
       'Single role: operator — everyone can set and view.',
+      'The lines are a fixed set configured once (e.g. three lines) — the app only changes their status, it does not create or delete lines.',
       'Statuses are exactly: running, blocked, down.',
       'Instant updates must be pushed over websockets (Socket.IO), not polling.',
       'History shows line, old status, new status, and timestamp. No extras.',
@@ -28,12 +37,19 @@ export default {
   async threeAction(marker) {
     const actions = [];
 
-    // A line to work with.
-    const lineEp = discoverEp('POST', /line/i);
+    // A line to work with. Lines are a fixed reference set in most builds
+    // (no create route) — the harness pre-seeds them, so read the first id
+    // from the list like a user would; create one only when the API offers it.
+    const lineEp = discoverEp('POST', /^\/[^:]*line[^:]*$/i);
     const line = lineEp
       ? await apiSmart('POST', lineEp.path, { role: 'operator', spec: lineEp.request, marker, overrides: { name: `Bench Line ${marker}` } })
       : { status: -1, json: null, text: 'no line-creation endpoint in contract' };
-    const lineId = line.json?.id ?? 1;
+    let lineId = line.json?.id ?? null;
+    if (lineId == null) {
+      const listEp = discoverEp('GET', /^\/[^:]*line[^:]*$/i);
+      const list = listEp ? await api('GET', listEp.path, { role: 'operator' }) : null;
+      lineId = firstId(list?.json) ?? 1;
+    }
 
     // 1. REST: set a status.
     const statusEp = discoverEp('PUT', /status/i) || discoverEp('PATCH', /status/i) || discoverEp('POST', /status/i)

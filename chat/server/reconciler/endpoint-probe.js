@@ -13,6 +13,13 @@
  *          parameterized GET = handler exists, row doesn't; 400/422 = the
  *          sample payload was rejected by validation, which still proves the
  *          handler ran without crashing).
+ *   fail (reference-data) — the one 404 that is never legitimate: a mutation
+ *          (POST/PUT/PATCH) on a `:id` route whose collection the contract
+ *          never creates (`POST /lines/:id/status`, no `POST /lines`) and
+ *          whose collection GET returned no ids. The table is empty and the
+ *          API offers no way to fill it — every real user hits the same 404.
+ *          Only prefixes the caller names in `referencePrefixes` (the tables
+ *          the reference-data generator seeds) are held to this.
  *
  * Pure functions except probeApiEndpoints (network via injectable fetchImpl)
  * and checkComposeHealthAfterProbe (docker via injectable runComposeImpl).
@@ -28,8 +35,13 @@ import {
 const AI_PATH_RE = /(chat|ask|generate|summar|analy|recommend|suggest|embed|assist|ai)/i;
 
 const METHOD_RANK = { POST: 0, GET: 1, PUT: 2, PATCH: 2, DELETE: 3 };
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH']);
 
 const PARAM_RE = /:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+// Non-global twin for boolean tests: a /g regex's `.test()` resumes from
+// `lastIndex`, so two consecutive parameterized paths made the second one
+// read as parameter-free.
+const PARAM_TEST_RE = new RegExp(PARAM_RE.source);
 
 // Stub ALB identity header — a base64url JWT-shaped payload so identity
 // middleware has something to parse. Apps that verify the signature will
@@ -44,7 +56,9 @@ const STUB_OIDC_HEADER = [
  * Order the contract's endpoints for probing: POST first (creates rows and
  * captures ids), then GETs (collection before :id), then PUT/PATCH, DELETE
  * last. Within a rank, non-parameterized before parameterized, shorter
- * paths first.
+ * paths first. A parameterized POST (`POST /lines/:id/status`) mutates an
+ * existing row rather than creating one, so it ranks with PUT/PATCH — after
+ * the collection GET that supplies a real id.
  *
  * @param {object} apiContract - { endpoints: [{ method, path, request?, response? }] }
  * @param {(step) => boolean} [filter] - optional subset (re-probe failed only)
@@ -57,12 +71,13 @@ export function buildProbePlan(apiContract, filter = null) {
       method: e.method.toUpperCase(),
       path: e.path,
       request: e.request || null,
-      hasParams: PARAM_RE.test(e.path),
+      hasParams: PARAM_TEST_RE.test(e.path),
     }))
     .filter((s) => METHOD_RANK[s.method] !== undefined)
     .filter((s) => (filter ? filter(s) : true));
+  const rank = (s) => (s.method === 'POST' && s.hasParams ? METHOD_RANK.PUT : METHOD_RANK[s.method]);
   steps.sort((a, b) =>
-    (METHOD_RANK[a.method] - METHOD_RANK[b.method])
+    (rank(a) - rank(b))
     || (Number(a.hasParams) - Number(b.hasParams))
     || (a.path.length - b.path.length));
   return steps;
@@ -154,6 +169,8 @@ export function classifyProbeOutcome({ status, error }) {
  * @param {function} [opts.fetchImpl] - injectable for tests
  * @param {function} [opts.filter] - probe a subset (re-probe failed only)
  * @param {object}   [opts.timeouts] - { requestMs, aiRequestMs, totalMs } overrides
+ * @param {string[]} [opts.referencePrefixes] - collection prefixes ('/lines') of
+ *   tables the API never creates; a mutation 404 on a guessed id there fails
  * @returns {Promise<{ probed, passed, failed: Array<{method, path, status, error, bodySnippet, responseMs}>, skipped: string[], durationMs }>}
  */
 export async function probeApiEndpoints({
@@ -163,6 +180,7 @@ export async function probeApiEndpoints({
   fetchImpl = fetch,
   filter = null,
   timeouts = {},
+  referencePrefixes = [],
 } = {}) {
   const requestMs = timeouts.requestMs ?? ENDPOINT_PROBE_REQUEST_MS;
   const aiRequestMs = timeouts.aiRequestMs ?? ENDPOINT_PROBE_AI_REQUEST_MS;
@@ -174,12 +192,16 @@ export async function probeApiEndpoints({
   const skipped = [];
   let passed = 0;
   const idByPrefix = new Map();
+  const createdByPost = new Set();
+  const referenceSet = new Set(referencePrefixes);
 
   for (const step of plan) {
     if (Date.now() - started > totalMs) {
       skipped.push(`${step.method} ${step.path}`);
       continue;
     }
+    const prefix = collectionPrefix(step.path);
+    const guessedId = step.hasParams && !idByPrefix.has(prefix);
     const concretePath = substituteParams(step.path, idByPrefix);
     const url = joinUrl(baseUrl, concretePath);
     const isAiStep = AI_PATH_RE.test(step.path) || (isAiApp && step.method === 'POST');
@@ -206,14 +228,28 @@ export async function probeApiEndpoints({
     }
 
     if (classifyProbeOutcome(outcome) === 'pass') {
+      // Reference-data: see module header. The id was a guess because
+      // neither a POST nor the collection GET produced one — the table is
+      // empty and nothing in the API can fill it.
+      if (guessedId && outcome.status === 404 && MUTATION_METHODS.has(step.method) && referenceSet.has(prefix)) {
+        failed.push({
+          method: step.method,
+          path: step.path,
+          status: outcome.status,
+          error: `reference-data: ${prefix} has no rows (GET ${prefix} returned no ids) and the contract has no route that creates them, so this ${step.method} can never succeed — seed starter rows`,
+          bodySnippet: (outcome.bodyText || '').slice(0, 300),
+          responseMs: outcome.responseMs,
+        });
+        continue;
+      }
       // Persistence round-trip: a collection GET that follows a successful
       // POST on the same path must contain the created row. HTTP 200 with
       // the row missing means the write never landed (observed live: AI
       // analyses returned 201 but the history list stayed empty — every
       // gate green, app broken for the user). Only plain collection GETs
       // are checked; :id paths already prove existence by returning 200.
-      const createdId = step.method === 'GET' && !step.hasParams
-        ? idByPrefix.get(collectionPrefix(step.path)) : undefined;
+      const createdId = step.method === 'GET' && !step.hasParams && createdByPost.has(prefix)
+        ? idByPrefix.get(prefix) : undefined;
       if (createdId !== undefined && outcome.status === 200 && !bodyContainsId(outcome.bodyJson, createdId)) {
         failed.push({
           method: step.method,
@@ -226,9 +262,18 @@ export async function probeApiEndpoints({
         continue;
       }
       passed++;
-      if (step.method === 'POST' && outcome.status >= 200 && outcome.status < 300 && outcome.bodyJson) {
+      if (step.method === 'POST' && !step.hasParams && outcome.status >= 200 && outcome.status < 300 && outcome.bodyJson) {
+        // Only a collection POST creates a row of ITS collection — a nested
+        // POST (/projects/:id/tasks) returns the child's id, which must not
+        // overwrite the parent's.
         const id = extractId(outcome.bodyJson);
-        if (id !== null) idByPrefix.set(collectionPrefix(step.path), String(id));
+        if (id !== null) { idByPrefix.set(prefix, String(id)); createdByPost.add(prefix); }
+      } else if (step.method === 'GET' && !step.hasParams && outcome.status === 200 && !idByPrefix.has(prefix)) {
+        // A collection GET is the only id source for tables the API never
+        // creates (seeded reference tables) — take the first row's id so the
+        // :id routes that follow hit a real row instead of the guess '1'.
+        const id = extractFirstId(outcome.bodyJson);
+        if (id !== null) idByPrefix.set(prefix, String(id));
       }
     } else {
       failed.push({
@@ -292,6 +337,20 @@ function extractId(body) {
   return null;
 }
 
+/** First id found in a collection body: `[{id}]`, `{ data: [{id}] }`, `{ items: [...] }`. */
+export function extractFirstId(body) {
+  if (body == null || typeof body !== 'object') return null;
+  if (Array.isArray(body)) {
+    for (const v of body) { const id = extractFirstId(v); if (id !== null) return id; }
+    return null;
+  }
+  if (body.id !== undefined && body.id !== null) return body.id;
+  for (const v of Object.values(body)) {
+    if (v && typeof v === 'object') { const id = extractFirstId(v); if (id !== null) return id; }
+  }
+  return null;
+}
+
 function joinUrl(baseUrl, apiPath) {
   const base = String(baseUrl || '').replace(/\/+$/, '');
   const p = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
@@ -351,6 +410,10 @@ export function formatProbeFailures(failures, { logsTail = '', crashed = [], max
   lines.push('');
   lines.push('These requests went through the frontend proxy exactly like real traffic.');
   lines.push('A 5xx or connection failure on a fresh build means the handler crashed, an env var is missing, or the process died — fix the root cause; do not change the contract.');
+  if (failures.some((f) => String(f.error || '').startsWith('reference-data:'))) {
+    lines.push('');
+    lines.push('A reference-data failure means the table behind that route is empty and the API has no route to create rows in it. Seed 3 placeholder rows with a guarded block (`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM <table>) THEN INSERT INTO <table> (...) VALUES (...); END IF; END $$;`): in `database/init/02_reference_data.sql` when the table was created this build (the harness re-applies that file to the running database), or in the next `backend/migrations/NNN_*.sql` when the table came from a migration (init never re-runs on an initialized volume). Placeholder values only — never real data. Do not change the contract.');
+  }
   if (logsTail) {
     lines.push('');
     lines.push('Backend container log tail:');

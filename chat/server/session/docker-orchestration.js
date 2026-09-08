@@ -23,6 +23,7 @@ import { scanBackendForEsmFootguns, applyEsmFootgunFixes } from '../validators/c
 import { flushReconcilerVerdicts } from '../util/telemetry-verdicts.js';
 import { adoptLegitimateExtras } from '../agent/coordinator/contract-store.js';
 import { readContracts } from './harness-state.js';
+import { findReferenceTables, REFERENCE_DATA_FILE } from '../agent/coordinator/reference-data-generator.js';
 import {
   COMPOSE_DEFAULT_MS,
   COMPOSE_BUILD_MS,
@@ -1287,6 +1288,7 @@ async function runEndpointVerificationLoop(session, baseUrl, routerContracts, sc
   }
 
   const isAiApp = isMgaApp(WORKSPACE_DIR);
+  const referencePrefixes = resolveReferencePrefixes(routerContracts, apiContract);
   const emitProbeEvent = (type, payload) => {
     const ev = appendEvent(session.id, type, payload);
     sessionEvents.emit('event', session.id, ev);
@@ -1296,7 +1298,7 @@ async function runEndpointVerificationLoop(session, baseUrl, routerContracts, sc
   tlog('[endpoint-probe] starting: %d endpoint(s) via %s (isAiApp=%s)',
     apiContract.endpoints.length, baseUrl, isAiApp);
 
-  let result = await probeApiEndpoints({ baseUrl, apiContract, isAiApp });
+  let result = await probeApiEndpoints({ baseUrl, apiContract, isAiApp, referencePrefixes });
   let health = checkComposeHealthAfterProbe(runCompose);
   const probedTotal = result.probed;
   const initialFailed = result.failed.length;
@@ -1321,7 +1323,7 @@ async function runEndpointVerificationLoop(session, baseUrl, routerContracts, sc
     await new Promise((r) => setTimeout(r, 10_000));
     const failedContract = { endpoints: apiContract.endpoints.filter((ep) =>
       result.failed.some((f) => f.method === ep.method && f.path === ep.path)) };
-    const reprobe = await probeApiEndpoints({ baseUrl, apiContract: failedContract, isAiApp });
+    const reprobe = await probeApiEndpoints({ baseUrl, apiContract: failedContract, isAiApp, referencePrefixes });
     rounds++;
     emitProbeEvent('endpoint_probe_result', {
       round: rounds, probed: reprobe.probed, passed: reprobe.passed,
@@ -1403,8 +1405,17 @@ async function runEndpointVerificationLoop(session, baseUrl, routerContracts, sc
     for (const f of result.failed) {
       if (String(f.error || '').startsWith('persistence:')) failedKeys.add(`POST ${f.path}`);
     }
+    // A reference-data failure is only fixable by rows landing in the live
+    // DB: init/ never re-runs on an initialized volume, so re-apply the seed
+    // file the fix was told to write, then re-probe the collection GET too —
+    // it is what supplies the id for the mutation.
+    const referenceFailures = result.failed.filter((f) => String(f.error || '').startsWith('reference-data:'));
+    if (referenceFailures.length) {
+      applyReferenceDataFile();
+      for (const f of referenceFailures) failedKeys.add(`GET ${probeCollectionPrefix(f.path)}`);
+    }
     result = await probeApiEndpoints({
-      baseUrl, apiContract, isAiApp,
+      baseUrl, apiContract, isAiApp, referencePrefixes,
       filter: (s) => failedKeys.has(`${s.method} ${s.path}`),
     });
     health = checkComposeHealthAfterProbe(runCompose);
@@ -1446,6 +1457,48 @@ async function runEndpointVerificationLoop(session, baseUrl, routerContracts, sc
  * MGA env vars missing AND compose doesn't wire them (env plumbing gap);
  * backend for everything else (5xx = handler/code).
  */
+/**
+ * Collection prefixes ('/lines') of tables the API acts on via :id routes
+ * but never creates — the same detection that pre-staged their starter rows.
+ * A mutation 404 there is the empty-table silent failure, not a legitimate
+ * "row doesn't exist". Empty when the data model is unavailable.
+ */
+function resolveReferencePrefixes(routerContracts, apiContract) {
+  try {
+    const dataModel = routerContracts?.dataModel || readContracts(WORKSPACE_DIR)?.data?.dataModel || null;
+    if (!dataModel) return [];
+    return findReferenceTables({ dataModel, apiContract }).flatMap((r) => r.prefixes);
+  } catch (err) {
+    logAndSwallow(err, '[endpoint-probe] reference-table detection failed');
+    return [];
+  }
+}
+
+function probeCollectionPrefix(p) {
+  const idx = p.search(/:[A-Za-z_]|\{[A-Za-z_]/);
+  return (idx === -1 ? p : p.slice(0, idx)).replace(/\/+$/, '');
+}
+
+/** Re-run database/init/02_reference_data.sql against the live DB (idempotent: guarded blocks). */
+function applyReferenceDataFile() {
+  const file = path.join(WORKSPACE_DIR, REFERENCE_DATA_FILE);
+  if (!existsSync(file)) return false;
+  try {
+    const db = LOCAL_DB_CREDENTIALS;
+    execSync(`docker compose exec -T database psql -v ON_ERROR_STOP=1 -U ${db.user} -d ${db.name}`, {
+      cwd: WORKSPACE_DIR,
+      input: readFileSync(file, 'utf-8'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 60_000,
+    });
+    tlog('[endpoint-probe] re-applied %s to the running database', REFERENCE_DATA_FILE);
+    return true;
+  } catch (err) {
+    tlog('[endpoint-probe] re-applying %s failed: %s', REFERENCE_DATA_FILE, (err.stderr?.toString() || err.message || '').slice(0, 300));
+    return false;
+  }
+}
+
 function classifyProbeFailureScope(logsTail) {
   if (/MGA(_API_KEY|_BASE_URL|_ASSISTANT_ID)?[^\n]*(undefined|not configured)|MGA not configured/i.test(logsTail)) {
     try {

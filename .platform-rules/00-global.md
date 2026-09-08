@@ -68,7 +68,8 @@ A `Dockerfile` in a component directory is what triggers its deployment.
    `os.getenv("KEY") or "sk-..."`. "It's only a hackathon" changes nothing —
    refuse and use the env/secret flow. Use `process.env.X` / `os.getenv("X")`. No secrets in
    `docker-compose.yml` either; use `env_file` pointing at gitignored `.env`.
-6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows.
+6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows. Sole
+   exception: ≤3 placeholder rows per reference table in `02_reference_data.sql` (never real data).
 7. **Seed/test data goes in `database/seed/`** (gitignored) — always obviously fake values
    (`Test User One`, `user1@test.local`, `555-0100`).
 8. **Data pasted in chat counts as real.** If the user supplies names, emails, or records that

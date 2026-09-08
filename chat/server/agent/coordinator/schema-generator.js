@@ -99,7 +99,7 @@ function emitIndexes(table, lines) {
  * Topological sort by FK references — a table that REFERENCES X must come
  * after X in the emitted SQL. Falls back to original order on cycles.
  */
-function topologicalSort(tables) {
+export function topologicalSort(tables) {
   const byName = new Map(tables.map(t => [t.name, t]));
   const deps = new Map(tables.map(t => [t.name, new Set()]));
   for (const t of tables) {

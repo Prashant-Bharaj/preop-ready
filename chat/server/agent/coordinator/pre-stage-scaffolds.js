@@ -34,6 +34,7 @@ import { WORKSPACE_DIR, CHAT_APP_DIR } from '../../core/paths.js';
 import { emitTsContracts } from '../contract-types-generator.js';
 import { generateApiClient } from './api-client-generator.js';
 import { generateSchema } from './schema-generator.js';
+import { generateReferenceData, REFERENCE_DATA_FILE } from './reference-data-generator.js';
 import { generateVectorSearchHelper } from './vector-search-helper-generator.js';
 import { generateVectordbInit, generateVectordbSearchHelper, synthesizeVectordbReport } from './vectordb-scaffold-generator.js';
 import { generateEmbedHelper } from './embed-helper-generator.js';
@@ -276,8 +277,17 @@ export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDi
     const dockerCopied = safeRun(() => copyDockerfile(wd, out), '[pre-stage] db Dockerfile copy failed');
     if (schema && dockerCopied) {
       writeFile(wd, 'database/init/01_schema.sql', schema.source, out);
+      // Reference tables (acted on via :id routes, never created by the API)
+      // get placeholder rows — nothing else would ever populate them and the
+      // planner's "seed N sample rows" prose has no reader on fresh builds.
+      const referenceData = safeRun(() => generateReferenceData(contract), '[pre-stage] reference-data-generator failed');
+      if (referenceData) {
+        writeFile(wd, REFERENCE_DATA_FILE, referenceData.source, out);
+        tlog('[pre-stage] reference data staged for %s', referenceData.seeded.map((s) => s.table).join(', '));
+        for (const s of referenceData.skipped) tlog('[pre-stage] reference table %s not seeded: %s', s.table, s.reason);
+      }
       out.databaseHandled = true;
-      out.databaseReport = synthesizeDatabaseReport(contract, schema.tableNames || []);
+      out.databaseReport = synthesizeDatabaseReport(contract, schema.tableNames || [], referenceData?.seeded || []);
       tlog('[pre-stage] database fully scaffolded (schema + Dockerfile); subagent dispatch will be skipped');
     } else {
       // Partial — let the database subagent take over rather than ship half-staged state.
@@ -387,7 +397,7 @@ function copyDockerfile(workspaceDir, out) {
  * via `=== COMPLETED: DATABASE ===` injection from the orchestration stash,
  * so they need the same shape they'd get from a real subagent run.
  */
-function synthesizeDatabaseReport(contract, tableNames) {
+function synthesizeDatabaseReport(contract, tableNames, seeded = []) {
   const tables = contract?.dataModel?.tables || [];
   const lines = [];
   lines.push('--- PHASE AGENT REPORT ---');
@@ -398,12 +408,17 @@ function synthesizeDatabaseReport(contract, tableNames) {
   lines.push('');
   lines.push('**Files written:**');
   lines.push('- database/init/01_schema.sql');
+  if (seeded.length) lines.push(`- ${REFERENCE_DATA_FILE}`);
   lines.push('- database/Dockerfile');
   lines.push('');
   lines.push('**Summary:**');
   lines.push('');
   const tableList = tableNames.length > 0 ? tableNames.join(', ') : (tables.map(t => t.name).join(', ') || '(none)');
   lines.push(`Schema pre-staged deterministically from the data_model contract. Tables created in topological order: ${tableList}. Foreign-key references and ON DELETE behaviors preserved verbatim from the contract; conventional indexes added on FK columns and \`created_at\` (DESC). ${contract?.vectorEngine === 'pgvector' ? 'pgvector extension enabled; HNSW cosine indexes on every VECTOR column.' : ''}`.trim());
+  if (seeded.length) {
+    lines.push('');
+    lines.push(`Reference tables pre-seeded with ${seeded[0].rows} placeholder rows each (SERIAL ids start at 1; inserted only when the table is empty): ${seeded.map((s) => `\`${s.table}\` (${s.columns.join(', ') || 'defaults'})`).join(', ')}. These tables have no create route in the API contract — routes that take their :id can rely on those rows existing.`);
+  }
   lines.push('');
   lines.push('**Contracts for sibling scopes:**');
   lines.push('');
