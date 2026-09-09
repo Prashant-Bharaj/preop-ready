@@ -13,11 +13,39 @@ command -v node >/dev/null 2>&1 || { echo "[audit-setup] node not found — skip
 
 mkdir -p .claude/commands
 
-# 1) Merge the Stop hook into .claude/settings.json (create if missing).
+# 1) Merge our hooks into .claude/settings.json (create if missing):
+#    - Stop: audit attestation gate
+#    - SessionStart: platform template status (open sync PR / outdated sync
+#      workflow / version) printed into Claude's context so the first reply
+#      can act on it — the same check the rules ask every AI tool to run.
 node - <<'NODE'
 const fs = require('fs');
 const path = '.claude/settings.json';
-const HOOK_CMD = '"${CLAUDE_PROJECT_DIR}"/scripts/audit/stop-hook.sh';
+
+const WANTED = [
+  {
+    event: 'Stop',
+    matcher: undefined,
+    marker: 'scripts/audit/stop-hook.sh',
+    hook: {
+      type: 'command',
+      command: '"${CLAUDE_PROJECT_DIR}"/scripts/audit/stop-hook.sh',
+      timeout: 30,
+      statusMessage: 'Checking audit attestation…',
+    },
+  },
+  {
+    event: 'SessionStart',
+    matcher: 'startup|resume|clear',
+    marker: 'scripts/check-template-pr.sh',
+    hook: {
+      type: 'command',
+      command: '"${CLAUDE_PROJECT_DIR}"/scripts/check-template-pr.sh',
+      timeout: 30,
+      statusMessage: 'Checking for platform template updates…',
+    },
+  },
+];
 
 let settings = {};
 if (fs.existsSync(path)) {
@@ -29,28 +57,26 @@ if (fs.existsSync(path)) {
   }
 }
 settings.hooks = settings.hooks || {};
-const stop = Array.isArray(settings.hooks.Stop) ? settings.hooks.Stop : [];
 
-const already = stop.some((entry) =>
-  Array.isArray(entry?.hooks) &&
-  entry.hooks.some((h) => typeof h?.command === 'string' && h.command.includes('scripts/audit/stop-hook.sh'))
-);
-if (already) {
-  console.log('[audit-setup] Stop hook already registered — no change.');
-  process.exit(0);
+let changed = false;
+for (const w of WANTED) {
+  const list = Array.isArray(settings.hooks[w.event]) ? settings.hooks[w.event] : [];
+  const already = list.some((entry) =>
+    Array.isArray(entry?.hooks) &&
+    entry.hooks.some((h) => typeof h?.command === 'string' && h.command.includes(w.marker))
+  );
+  if (already) {
+    console.log(`[audit-setup] ${w.event} hook already registered — no change.`);
+    continue;
+  }
+  const entry = { hooks: [w.hook] };
+  if (w.matcher) entry.matcher = w.matcher;
+  list.push(entry);
+  settings.hooks[w.event] = list;
+  changed = true;
+  console.log(`[audit-setup] Registered ${w.event} hook in .claude/settings.json.`);
 }
-
-stop.push({
-  hooks: [{
-    type: 'command',
-    command: HOOK_CMD,
-    timeout: 30,
-    statusMessage: 'Checking audit attestation…',
-  }],
-});
-settings.hooks.Stop = stop;
-fs.writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
-console.log('[audit-setup] Registered audit Stop hook in .claude/settings.json.');
+if (changed) fs.writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
 NODE
 
 # 2) Write the /audit command if absent (don't overwrite a customized one).

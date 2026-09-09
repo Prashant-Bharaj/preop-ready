@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
 import { getCachedEnvContext, refreshEnvContext } from '../agent/context/env-context.js';
+import { describeTemplateCheck } from './template-check.js';
 import { routeMessage } from '../agent/planner/two-agent.js';
 import { DOCKER_INFO_PROBE_MS, ENV_DETECT_MS } from '../config/defaults.js';
 import { logAndSwallow } from '../util/log-helpers.js';
@@ -109,6 +110,21 @@ function runPreflightChecks() {
       : 'Deploy workflow missing — check your template setup',
     status: hasDeployWorkflow ? 'pass' : 'warn',
     category: 'deploy',
+  });
+
+  // ── Platform template updates (open sync PR / outdated sync workflow) ──
+  const tc = getCachedEnvContext()?.templateCheck || null;
+  const tcSummary = describeTemplateCheck(tc);
+  checks.push({
+    id: 'template-update',
+    label: 'Platform template',
+    description: tcSummary
+      ? `Update pending: ${tcSummary} — ask the assistant to apply it`
+      : tc?.prUnknown
+        ? 'Could not check GitHub for platform updates (gh not available)'
+        : 'No platform updates pending',
+    status: tcSummary ? 'warn' : 'pass',
+    category: 'platform',
   });
 
   // ── Docker availability ──

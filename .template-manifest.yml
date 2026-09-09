@@ -154,6 +154,8 @@ auto_update:
     description: "Pre-deployment validation checks"
   - path: "scripts/check-dependabot-prs.sh"
     description: "Codespace-start Dependabot handler: auto-merge green patch/minor, surface majors"
+  - path: "scripts/check-template-pr.sh"
+    description: "Session-start platform status for AI tools: open sync PR, sync-workflow state, version"
 
 # -----------------------------------------------------------------------------
 # Files to merge intelligently

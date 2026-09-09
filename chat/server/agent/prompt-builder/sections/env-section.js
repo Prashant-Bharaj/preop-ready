@@ -41,9 +41,16 @@ export function buildEnvSection(env) {
     }
   }
 
-  // Template version
+  // Template version / pending platform sync PR
   if (env.templateVersion?.needsUpdate) {
     lines.push(`WARNING: Template update available (${env.templateVersion.current} → ${env.templateVersion.latest})`);
+  }
+  const tc = env.templateCheck;
+  if (tc?.pr) {
+    lines.push(`WARNING: Platform sync PR #${tc.pr.number} is open (${tc.pr.url})${tc.pr.heldWorkflows ? ' — after merging, workflow files still need `bash scripts/apply-updates.sh` + commit' : ''}. Mention it and offer to apply it${tc.autoUpdate ? '; auto-update is ON for this repo — apply it without asking' : ''}.`);
+  }
+  if (tc?.caller === 'outdated' || tc?.caller === 'missing') {
+    lines.push('WARNING: This repo\'s weekly template sync cannot reach the template (pre-platform workflow copy). One `bash scripts/apply-updates.sh` run + commit fixes it — offer that.');
   }
 
   // App secrets — names + descriptions + isSet, never values. Read fresh from

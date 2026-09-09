@@ -18,12 +18,11 @@ Run in order, silently — never narrate these steps:
    - Non-compliant → explain the violation, suggest a valid name, offer to rename (code and history preserved).
    - User says YES: `gh api repos/{owner}/{old} --method PATCH -f name='{new}'`, then `git remote set-url origin https://github.com/{owner}/{new}.git`, verify with `git remote get-url origin`.
    - User says NO: continue normally; warn deployment may fail.
-4. **Check updates:** `./scripts/check-updates.sh` and store the result:
-
-| Output | Action |
-|--------|--------|
-| `UP_TO_DATE` or `CHECK_FAILED` | Don't mention updates |
-| `UPDATE_AVAILABLE\|old\|new` | Offer the update in your greeting |
+4. **Check platform updates:** `bash scripts/check-template-pr.sh` — the line-by-line
+   meaning and the actions (apply the platform's sync PR, run the engine, auto mode) are in
+   the always-on core (`.platform-rules/00-global.md`, "Session Start"). Store the result for
+   the greeting. Claude Code runs this for you through a SessionStart hook; if its output is
+   already in your context, do not run it again.
 
 5. **Dependabot PRs:** `./scripts/check-dependabot-prs.sh` (safe: auto-merges only green
    patch/minor, never majors). The startup flow then fast-forwards the default branch so
@@ -37,14 +36,22 @@ Run in order, silently — never narrate these steps:
 
 5. **Read status:** `cat docs/PROJECT_STATUS.md 2>/dev/null`. Project Idea = `_Awaiting user input_` → **NEW** user; anything else → **RETURNING**. A fresh file with defaults is still NEW — never say "Welcome back" to a new user.
 
-### Update flow (if user accepts)
+### Update flow (if user accepts, or `TEMPLATE_AUTO_UPDATE|on`)
 
-Run `./scripts/apply-updates.sh`:
-- `UPDATE_COMPLETE|<version>` → confirm version, list updated files, note that user code (`frontend/*`, `backend/*`, `database/init/*`) was NOT touched.
-- `UPDATE_FAILED|<reason>` → explain simply, continue working.
-- User declines → "No problem — you can update anytime by asking me to *update platform files*."
+1. A sync PR exists (`TEMPLATE_PR|<n>|…`): `gh pr merge <n> --squash --delete-branch`, then
+   `git pull --ff-only`. Stop here unless the line said `held_workflows=yes`.
+2. Otherwise, or to finish held workflow files: `bash scripts/apply-updates.sh`
+   - `UPDATE_COMPLETE|<version>` → stage exactly the files it listed as updated plus
+     `.template-version` (never `git add .`), commit `chore: apply platform template update`,
+     push. Confirm the version and note that user code (`frontend/*`, `backend/*`,
+     `database/init/*`) was NOT touched.
+   - `UPDATE_FAILED|Cannot read template repo (auth)` in a Codespace → run the login it prints
+     (`unset GITHUB_TOKEN GH_TOKEN`, `gh auth login --web --hostname github.com`), then retry.
+   - Any other `UPDATE_FAILED|<reason>` → explain simply, continue working.
+3. User declines → "No problem — you can update anytime by asking me to *update platform files*."
 
-Manual fallback if scripts misbehave: run `./scripts/check-updates.sh` then `./scripts/apply-updates.sh` yourself.
+Why the PR sometimes cannot include workflow files: GitHub forbids the platform's token from
+writing `.github/workflows/`. Your commit from the user's account can.
 
 ## 2. Greeting
 

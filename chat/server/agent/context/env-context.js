@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../../core/paths.js';
 import { GIT_QUICK_MS, BASH_SCRIPT_MS } from '../../config/defaults.js';
+import { runTemplateCheck } from '../../core/template-check.js';
 
 let cachedContext = null;
 
@@ -18,6 +19,9 @@ export async function gatherEnvContext() {
     hasStructure: scanProjectStructure(),
     projectStatus: parseProjectStatus(),
     templateVersion: checkTemplateVersion(),
+    // Open platform sync PR / outdated sync workflow — the session-start check
+    // every AI tool runs; the harness surfaces it in the preflight list + prompt.
+    templateCheck: runTemplateCheck(),
     recentCommits: getRecentCommits(),
     hasUncommittedChanges: hasUncommittedChanges(),
   };
