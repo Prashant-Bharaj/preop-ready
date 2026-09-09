@@ -24,9 +24,10 @@ WORKDIR /app
 COPY package*.json tsconfig.json ./
 RUN npm install --no-audit --no-fund
 
-# Copy sources and emit JS to dist/.
+# Copy sources and emit JS to dist/. The migrations/ dir must always exist
+# so the runtime stage can copy it even before the first migration is written.
 COPY . .
-RUN npm run build
+RUN npm run build && mkdir -p migrations
 
 # Prune dev deps so the runtime stage copies a production-only node_modules.
 RUN npm prune --omit=dev
@@ -57,6 +58,9 @@ RUN chown appuser:appgroup /app
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
 COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:appgroup /app/package.json ./package.json
+# Schema migrations (backend/migrations/NNN_*.sql) — applied at startup by
+# src/lib/migrate.ts. Without this line they never reach the container.
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 
 USER appuser
 

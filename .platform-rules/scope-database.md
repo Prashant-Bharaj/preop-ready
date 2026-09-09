@@ -35,7 +35,7 @@ a data-model redesign (documents → relational tables).
 ## Init Scripts — first deploy ONLY
 
 - `database/init/*.sql` runs ONCE, when the data directory is empty (first deployment). Editing existing files OR adding new ones afterwards has NO effect — the directory is only read on that first boot. This includes the LOCAL docker volume: if `docker-compose up` has ever initialized the database, new init files silently never run.
-- ⛔ **Once the app has a running database, treat `database/init/` as FROZEN.** EVERY new table or column goes into `backend/migrations/NNN_*.sql` (runner: `snippets/config/db-migrations.js`) — even mid-build, even for a brand-new feature. After adding schema, PROVE it exists before writing code that uses it: `docker compose exec db psql -U postgres -c '\d <table>'`.
+- ⛔ **Once the app has a running database, treat `database/init/` as FROZEN.** EVERY new table or column goes into `backend/migrations/NNN_*.sql` (runner: `backend/src/lib/migrate.ts`, staged by the harness from `snippets/database/migration-runner.ts`; the backend must `await runMigrations(pool)` before `app.listen`) — even mid-build, even for a brand-new feature. After adding schema, PROVE it exists before writing code that uses it: `docker compose exec db psql -U postgres -c '\d <table>'`.
 - ⛔ **Migrations live in `backend/migrations/` and NOWHERE else** — not `database/migrations/`, not the repo root. The runner executes INSIDE the backend container, whose image contains only `backend/`; a migration file anywhere else is invisible to it and will NEVER run, locally or deployed. Preflight fails on misplaced migration files. The only `.sql` allowed under `database/` is `init/` (schema, first boot only) and `seed/` (gitignored fake data).
 - Use `CREATE TABLE IF NOT EXISTS ...` so local re-runs are safe.
 - ⛔ **Schema only** in `database/init/` — CREATE TABLE / INDEX statements, **no INSERT data rows**. Sole exception: `02_reference_data.sql`, ≤3 placeholder rows per table the API acts on via `:id` routes but never creates, each block guarded by `IF NOT EXISTS (SELECT 1 FROM <table>)`. Never real data.
@@ -66,7 +66,7 @@ Never rebuild the DB container to change schema, and never commit SQL dumps to g
 
 ## Schema Changes After First Deploy = Backend Migrations
 
-Add migration logic to the backend that runs on startup — use `snippets/config/db-migrations.js` (a `_migrations` table tracks applied migration names; each pending one runs once).
+The runner is staged at `backend/src/lib/migrate.ts` (Node/TS; a `_migrations` table tracks applied names, each pending file runs once in its own transaction) and `backend/Dockerfile.node` ships `backend/migrations/` into the runtime image. The backend must call `await runMigrations(pool)` before `app.listen`. Python backends: port the same logic (`snippets/config/db-migrations.js`) into a `run_migrations()` called at startup.
 
 Migration rules:
 - Always ADD new migrations — never edit or delete old ones; name sequentially (`001_`, `002_`, ...)

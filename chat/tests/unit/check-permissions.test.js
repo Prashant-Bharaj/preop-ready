@@ -311,6 +311,33 @@ test('Gate (d2) platform-locked: pre-staged mga-client.ts is denied when on disk
   }
 });
 
+test('Gate (d2) platform-locked: staged migration runner is denied, but backend/migrations/*.sql stays writable', async () => {
+  const ws = await createTestWorkspace({ scope: 'check-perm', scenarioName: 'migrate-locked' });
+  try {
+    const runner = path.join(ws.dir, 'backend/src/lib/migrate.ts');
+    fs.mkdirSync(path.dirname(runner), { recursive: true });
+    fs.writeFileSync(runner, '// staged by pre-stage');
+    const denied = checkWritePermission(runner, { workspaceDir: ws.dir, scope: 'backend' });
+    assert.equal(denied.verdict, 'deny');
+    assert.match(denied.reason, /pre-staged platform helper/i);
+    // The backend scope owns migration files (iterate schema changes).
+    const migration = checkWritePermission(
+      path.join(ws.dir, 'backend/migrations/001_add_projects.sql'),
+      { workspaceDir: ws.dir, scope: 'backend' },
+    );
+    assert.equal(migration.verdict, 'allow');
+    // The database scope is fenced out of backend/ — which is why it reports DDL instead of writing.
+    const fenced = checkWritePermission(
+      path.join(ws.dir, 'backend/migrations/001_add_projects.sql'),
+      { workspaceDir: ws.dir, scope: 'database' },
+    );
+    assert.equal(fenced.verdict, 'deny');
+    assert.match(fenced.reason, /may only write under 'database\/'/);
+  } finally {
+    await ws.cleanup();
+  }
+});
+
 test('Gate (d2) platform-locked: mga-client.ts is allowed when NOT pre-staged', async () => {
   const ws = await createTestWorkspace({ scope: 'check-perm', scenarioName: 'mga-unlocked' });
   try {

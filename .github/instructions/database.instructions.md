@@ -13,7 +13,8 @@ applyTo: "database/**"
 |----------|----------------------|------|
 | Initial schema | `database/init/*.sql` | ONCE, first boot of an empty volume — FROZEN after that |
 | Every schema change after first boot | `backend/migrations/NNN_*.sql` | Backend startup, via the runner |
-| Seed/test data (fake only) | `database/seed/` (gitignored) | Manually |
+| Reference rows the API never creates (≤3 placeholders/table) | `database/init/02_reference_data.sql` (harness-generated) | First boot, with the schema |
+| Seed/test data (fake only) | `database/seed/` (gitignored) | Manually — nothing runs it |
 
 **NEVER create `database/migrations/` or a repo-root `migrations/`** — migrations execute
 inside the backend container, whose image contains ONLY `backend/`; files anywhere else
@@ -35,10 +36,10 @@ a data-model redesign (documents → relational tables).
 ## Init Scripts — first deploy ONLY
 
 - `database/init/*.sql` runs ONCE, when the data directory is empty (first deployment). Editing existing files OR adding new ones afterwards has NO effect — the directory is only read on that first boot. This includes the LOCAL docker volume: if `docker-compose up` has ever initialized the database, new init files silently never run.
-- ⛔ **Once the app has a running database, treat `database/init/` as FROZEN.** EVERY new table or column goes into `backend/migrations/NNN_*.sql` (runner: `snippets/config/db-migrations.js`) — even mid-build, even for a brand-new feature. After adding schema, PROVE it exists before writing code that uses it: `docker compose exec db psql -U postgres -c '\d <table>'`.
+- ⛔ **Once the app has a running database, treat `database/init/` as FROZEN.** EVERY new table or column goes into `backend/migrations/NNN_*.sql` (runner: `backend/src/lib/migrate.ts`, staged by the harness from `snippets/database/migration-runner.ts`; the backend must `await runMigrations(pool)` before `app.listen`) — even mid-build, even for a brand-new feature. After adding schema, PROVE it exists before writing code that uses it: `docker compose exec db psql -U postgres -c '\d <table>'`.
 - ⛔ **Migrations live in `backend/migrations/` and NOWHERE else** — not `database/migrations/`, not the repo root. The runner executes INSIDE the backend container, whose image contains only `backend/`; a migration file anywhere else is invisible to it and will NEVER run, locally or deployed. Preflight fails on misplaced migration files. The only `.sql` allowed under `database/` is `init/` (schema, first boot only) and `seed/` (gitignored fake data).
 - Use `CREATE TABLE IF NOT EXISTS ...` so local re-runs are safe.
-- ⛔ **Schema only** in `database/init/` — CREATE TABLE / INDEX statements, **no INSERT data rows**.
+- ⛔ **Schema only** in `database/init/` — CREATE TABLE / INDEX statements, **no INSERT data rows**. Sole exception: `02_reference_data.sql`, ≤3 placeholder rows per table the API acts on via `:id` routes but never creates, each block guarded by `IF NOT EXISTS (SELECT 1 FROM <table>)`. Never real data.
 - Seed data goes in `database/seed/` (gitignored) and must be obviously fake data.
 
 ## Persistence (EFS mounted at /data)
@@ -66,7 +67,7 @@ Never rebuild the DB container to change schema, and never commit SQL dumps to g
 
 ## Schema Changes After First Deploy = Backend Migrations
 
-Add migration logic to the backend that runs on startup — use `snippets/config/db-migrations.js` (a `_migrations` table tracks applied migration names; each pending one runs once).
+The runner is staged at `backend/src/lib/migrate.ts` (Node/TS; a `_migrations` table tracks applied names, each pending file runs once in its own transaction) and `backend/Dockerfile.node` ships `backend/migrations/` into the runtime image. The backend must call `await runMigrations(pool)` before `app.listen`. Python backends: port the same logic (`snippets/config/db-migrations.js`) into a `run_migrations()` called at startup.
 
 Migration rules:
 - Always ADD new migrations — never edit or delete old ones; name sequentially (`001_`, `002_`, ...)

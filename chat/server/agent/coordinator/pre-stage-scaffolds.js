@@ -52,6 +52,11 @@ import { LOCAL_DB_CREDENTIALS } from '../../config/defaults.js';
 // .template-manifest.yml so it survives Clean.
 const PROJECT_ROOT = path.resolve(CHAT_APP_DIR, '..');
 const CANONICAL_DB_DOCKERFILE = path.join(PROJECT_ROOT, 'database', 'Dockerfile.postgres');
+// Migration runner staged into every Node backend that has a database, so an
+// iterate only has to drop backend/migrations/NNN_*.sql — the same runner
+// applies it locally and in production (the Dockerfile ships migrations/).
+const CANONICAL_MIGRATION_RUNNER = path.join(PROJECT_ROOT, 'snippets', 'database', 'migration-runner.ts');
+export const MIGRATION_RUNNER_PATH = 'backend/src/lib/migrate.ts';
 
 /**
  * Run every contract-driven generator that applies to this contract, write
@@ -131,8 +136,13 @@ export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDi
       'backend/src/mga_client.py',
       'backend/src/lib/vector-search.ts',
       'backend/src/lib/embed.ts',
+      MIGRATION_RUNNER_PATH,
     ];
     const wdIter = wdI;
+    // Apps built before the runner existed get it on their first iterate —
+    // the backend agent is told to `await runMigrations(pool)` and needs the
+    // file to import.
+    safeRun(() => stageMigrationRunner(wdIter, contract, out), '[pre-stage] migration runner staging failed');
     for (const rel of generatedPaths) {
       if (out.filesEmitted.includes(rel)) continue; // regenerated above
       const abs = path.join(wdIter, rel);
@@ -227,6 +237,9 @@ export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDi
       tlog('[pre-stage] mga client staged at %s', mga.relPath);
     }
   } catch (err) { logAndSwallow(err, '[pre-stage] mga client failed'); }
+
+  // ── 2b. Backend: migration runner (any Node backend with a database) ──
+  safeRun(() => stageMigrationRunner(wd, contract, out), '[pre-stage] migration runner staging failed');
 
   // ── 3. Frontend: api-client.ts + component stubs ─────────────────────
   if (contract.apiContract && Array.isArray(contract.apiContract.endpoints) && contract.apiContract.endpoints.length > 0) {
@@ -367,6 +380,29 @@ function writeFile(workspaceDir, relPath, content, out) {
 function safeRun(fn, msg) {
   try { return fn(); }
   catch (err) { logAndSwallow(err, msg); return null; }
+}
+
+/**
+ * Copy snippets/database/migration-runner.ts to backend/src/lib/migrate.ts
+ * when the app has a database and a Node backend. Never overwrites — an
+ * app that already carries the runner keeps its copy. Returns true when
+ * the file is present afterwards.
+ */
+function stageMigrationRunner(workspaceDir, contract, out) {
+  const tables = contract?.dataModel?.tables;
+  const tasks = Array.isArray(contract?.tasks) ? contract.tasks : [];
+  const hasDatabase = (Array.isArray(tables) && tables.length > 0) || tasks.some((t) => t && t.scope === 'database');
+  const pythonBackend = tasks.some((t) => t && t.scope === 'backend' && /python/i.test(String(t.dockerfile || '')));
+  if (!hasDatabase || pythonBackend) return false;
+  const dest = path.join(workspaceDir, MIGRATION_RUNNER_PATH);
+  if (fs.existsSync(dest)) return true;
+  if (!fs.existsSync(CANONICAL_MIGRATION_RUNNER)) {
+    tlog('[pre-stage] migration runner snippet missing at %s — skipping', CANONICAL_MIGRATION_RUNNER);
+    return false;
+  }
+  writeFile(workspaceDir, MIGRATION_RUNNER_PATH, fs.readFileSync(CANONICAL_MIGRATION_RUNNER, 'utf-8'), out);
+  tlog('[pre-stage] migration runner staged at %s', MIGRATION_RUNNER_PATH);
+  return true;
 }
 
 function copyDockerfile(workspaceDir, out) {

@@ -116,7 +116,8 @@ Byte-deployable Dockerfile templates per scope. Copy via `copy_template(template
 |---------|----------|------|-------------|
 | App Settings | TS + SQL | `config/app-settings.ts` + `config/app-settings-schema.sql` | Runtime config from DB (change settings without redeploying) |
 | App Settings | Python | `config/app-settings.py` | Runtime config from DB (asyncpg, same SQL schema) |
-| DB Migration Runner | JS | `config/db-migrations.js` | Startup migration runner (`_migrations` table, sequential idempotent files) |
+| DB Migration Runner | TS | `database/migration-runner.ts` | Staged by the harness at `backend/src/lib/migrate.ts`; applies `backend/migrations/NNN_*.sql` once each at startup (`_migrations` ledger) |
+| DB Migration Runner | JS | `config/db-migrations.js` | Python/CommonJS reference for the same logic (`_migrations` table, sequential idempotent files) |
 | Error Handler | JS + Python | `security/error-handler.js` / `.py` | Global JSON error middleware (structured `{error,message,statusCode}`, no stack leaks) |
 | App Settings Page | React | `config/AppSettings.tsx` | Admin page for managing app settings |
 | CORS & Proxy | TS | `config/cors-proxy.ts` | CORS middleware (when needed) + explanation of platform routing |

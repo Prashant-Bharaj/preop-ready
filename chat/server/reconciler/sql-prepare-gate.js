@@ -34,8 +34,13 @@ const UNDEFINED_COLUMN = /column "([^"]+)" does not exist/i;
 // vector DB (vectordb/init) are separate Postgres instances in production, so
 // each gets its own validation DB — never merged (same-named tables collide).
 const SCOPE_DIRS = { relational: 'database', vector: 'vectordb' };
+// Applied to the relational DB by the backend runner at startup, in name
+// order, after init — so on an iterate a query against a column that only a
+// pending migration adds is VALID. Without this every schema-changing iterate
+// died here as a hard mismatch (observed: add-field → "category does not exist").
+const MIGRATIONS_DIR = path.join('backend', 'migrations');
 
-function collectInitSqlByScope(workspaceDir) {
+export function collectInitSqlByScope(workspaceDir) {
   const out = { relational: [], vector: [] };
   for (const [key, dirName] of Object.entries(SCOPE_DIRS)) {
     const dir = path.join(workspaceDir, dirName, 'init');
@@ -46,6 +51,14 @@ function collectInitSqlByScope(workspaceDir) {
     // by name so they apply in the same order the container would run them.
     for (const f of entries.filter((n) => n.endsWith('.sql') || n.endsWith('.sh')).sort()) {
       out[key].push(path.join(dir, f));
+    }
+  }
+  if (out.relational.length > 0) {
+    const dir = path.join(workspaceDir, MIGRATIONS_DIR);
+    let entries = [];
+    try { entries = fs.readdirSync(dir); } catch { /* no migrations yet */ }
+    for (const f of entries.filter((n) => n.endsWith('.sql')).sort()) {
+      out.relational.push(path.join(dir, f));
     }
   }
   return out;
@@ -142,7 +155,7 @@ export async function runSqlPrepareGate(workspaceDir, { sessionId } = {}) {
           findings.push({
             kind: 'sql-undeclared-column', scope: 'backend', severity: 'hard',
             file: q.file, line: q.line, sql: q.sql,
-            contract: `query references column "${UNDEFINED_COLUMN.exec(colErr)[1]}" not present in the schema (init.sql, .sh init, or app-created tables)`,
+            contract: `query references column "${UNDEFINED_COLUMN.exec(colErr)[1]}" not present in the schema (database/init, backend/migrations, or app-created tables)`,
             actual: colErr.split('\n')[0],
           });
         }

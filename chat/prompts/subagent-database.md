@@ -30,14 +30,13 @@ If you have a strong local reason to deviate from the contract's column shape (e
 
 ## Post-launch schema changes (migrations)
 
-**After first deploy, `database/init/` scripts do NOT re-run** — Postgres skips init when `PGDATA` already has data. To change the schema on an already-deployed database, create a numbered migration file:
+**After first boot, `database/init/` scripts do NOT re-run** — Postgres skips init when `PGDATA` already has data. Every schema change on a live database is a migration file `backend/migrations/NNN_<description>.sql`, and **the backend scope writes it** (it is backend code: the backend image ships it and the staged runner `backend/src/lib/migrate.ts` applies it at startup, local and production alike). You cannot write under `backend/`, and the backend agent runs in parallel with you on an iterate, so:
 
-1. Add `database/migrations/002_<description>.sql` (start from `002`; `001` is the init baseline).
-2. Every statement must be idempotent: use `IF NOT EXISTS`, `IF EXISTS`, or a `DO $$ BEGIN … EXCEPTION WHEN duplicate_column THEN NULL; END $$` guard.
-3. Applied manually: `docker exec -i <db-container> psql -U $POSTGRES_USER -d $POSTGRES_DB < database/migrations/002_<description>.sql`.
-4. **Never edit `database/init/*.sql` post-deploy** — the file is correct but Postgres will not re-read it.
+1. **Do not write migration files** — not under `backend/`, and ⛔ NEVER `database/migrations/` or a repo-root `migrations/` (nothing can ever run them; preflight fails on them).
+2. **Never edit `database/init/*.sql` post-boot** — the file is correct but Postgres will not re-read it. `database/init/` stays exactly as it is.
+3. Put the exact idempotent DDL the change needs under a `**Schema change (backend migration):**` heading in your report (`ALTER TABLE … ADD COLUMN IF NOT EXISTS …`, `CREATE TABLE IF NOT EXISTS …`), then complete. Usually nothing under `database/` changes on an iterate — that is a correct, complete result.
 
-For fresh builds (clean volume), init scripts remain the source of truth. Only create migration files when the task explicitly involves iterating a schema that is already live.
+For fresh builds (clean volume), init scripts remain the source of truth.
 
 ## Verify before `attempt_completion`
 

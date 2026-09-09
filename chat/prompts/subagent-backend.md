@@ -93,6 +93,8 @@ Express entry. Sets up middleware, calls `registerRoutes`, starts the server.
 ```ts
 import express from 'express';
 import cors from 'cors';
+import { pool } from './db.js';
+import { runMigrations } from './lib/migrate.js';   // staged by the harness
 import { registerRoutes } from './routes.js';
 
 const app = express();
@@ -112,8 +114,15 @@ process.on('unhandledRejection', (reason) => console.error('unhandledRejection:'
 process.on('uncaughtException', (err) => console.error('uncaughtException:', err));
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
+await runMigrations(pool);   // applies backend/migrations/*.sql once each — BEFORE listen
 app.listen(PORT, () => console.log(`backend listening on :${PORT}`));
 ```
+
+The `await runMigrations(pool)` line is REQUIRED whenever the app has a database (the `_migrations` ledger is created on first run, so it is safe with zero migration files). Omit the two migrate/db lines only for apps with no database scope.
+
+### Schema changes on iterate → `backend/migrations/NNN_<description>.sql`
+
+`database/init/` runs only on the FIRST boot of an empty volume. When an iterate adds or changes a table or column, YOU write the migration — the database scope cannot write under `backend/` and runs in parallel with you, so it will not. Write ONE idempotent file per iterate in `backend/migrations/` (next free number, `001` if none; look at the directory first and extend an existing file for this iterate rather than adding a second one) — `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, `DROP … IF EXISTS`. Match the `=== DATA MODEL ===` column types exactly. The staged runner applies it at startup, local and production alike, and the reconciler validates your queries against `database/init` + `backend/migrations`, so a query on a new column passes only once the migration file exists. ⛔ NEVER under `database/` or the repo root: the backend image contains only `backend/`, so it would never run.
 
 ### `backend/src/db.ts`
 

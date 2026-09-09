@@ -70,6 +70,7 @@ const PLATFORM_LOCKED_FILES = new Set([
   'backend/src/lib/vector-search.ts',
   'backend/src/lib/oidc-identity.ts',
   'backend/src/oidc_identity.py',
+  'backend/src/lib/migrate.ts',
 ]);
 
 // Cross-scope carve-outs — agreed paths that a scope may write outside its

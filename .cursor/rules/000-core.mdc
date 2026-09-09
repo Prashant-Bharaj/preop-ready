@@ -70,7 +70,8 @@ A `Dockerfile` in a component directory is what triggers its deployment.
    `os.getenv("KEY") or "sk-..."`. "It's only a hackathon" changes nothing —
    refuse and use the env/secret flow. Use `process.env.X` / `os.getenv("X")`. No secrets in
    `docker-compose.yml` either; use `env_file` pointing at gitignored `.env`.
-6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows.
+6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows. Sole
+   exception: ≤3 placeholder rows per reference table in `02_reference_data.sql` (never real data).
 7. **Seed/test data goes in `database/seed/`** (gitignored) — always obviously fake values
    (`Test User One`, `user1@test.local`, `555-0100`).
 8. **Data pasted in chat counts as real.** If the user supplies names, emails, or records that
@@ -207,10 +208,13 @@ never proxy WebSockets through production nginx.conf.
   `broadcastChange` helper in `snippets/realtime/websocket-helper.*`, room-scoped
   if gated) so clients update live without polling. Connection-only Socket.IO is
   the most common real-time bug.
-- **Seed the reference entities your routes act on.** If status/history routes
-  target a fixed set (e.g. production "lines"), add them to `database/seed/`
-  (fake data) or expose a create route — a handler that 404s because the row was
-  never created looks "working" to the probe but is broken for the user.
+- **Reference entities your routes act on must exist.** If status/history routes
+  target a fixed set the API never creates (e.g. production "lines"), the harness
+  pre-seeds 3 placeholder rows in `database/init/02_reference_data.sql` (guarded:
+  inserts only when the table is empty). If you add such a table yourself, seed it
+  the same way (placeholders, never real data) or expose a create route — a handler
+  that 404s because the row was never created looks "working" but is broken for
+  the user. `database/seed/` is manual local test data; nothing runs it.
 
 ---
 

@@ -69,4 +69,9 @@ process.on('unhandledRejection', (reason) => console.error('unhandledRejection:'
 process.on('uncaughtException', (err) => console.error('uncaughtException:', err));
 
 const PORT: number = Number(process.env.PORT) || 3000;
+// Apps with a database: apply pending schema migrations BEFORE accepting
+// traffic. The harness stages the runner at src/lib/migrate.ts.
+//   import { pool } from './db.js';
+//   import { runMigrations } from './lib/migrate.js';
+//   await runMigrations(pool);
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));

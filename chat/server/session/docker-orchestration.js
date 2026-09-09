@@ -1,5 +1,5 @@
 import { execSync, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { appendEvent } from './transcript.js';
 import { sessionEvents } from './events.js';
@@ -24,6 +24,8 @@ import { flushReconcilerVerdicts } from '../util/telemetry-verdicts.js';
 import { adoptLegitimateExtras } from '../agent/coordinator/contract-store.js';
 import { readContracts } from './harness-state.js';
 import { findReferenceTables, REFERENCE_DATA_FILE } from '../agent/coordinator/reference-data-generator.js';
+import { verifyMigrationsApplied, LEDGER_TABLE } from './migration-verify.js';
+import { applyPortOffsetToCompose } from './port-offset.js';
 import {
   COMPOSE_DEFAULT_MS,
   COMPOSE_BUILD_MS,
@@ -87,66 +89,6 @@ export function runCompose(cmd, { timeout = COMPOSE_DEFAULT_MS, captureStdout = 
   return { ok: false, binary: null, stderr: 'neither "docker compose" nor "docker-compose" available' };
 }
 
-/**
- * Rewrite host ports in `<workspace>/docker-compose.yml` by adding
- * `offset * 10` to every host-side port mapping. Used by the smoke harness's
- * parallel mode (smoke.js sets `SMOKE_PORT_OFFSET=<slotIndex>` per scenario)
- * so multiple scenarios running concurrently don't collide on host port 8080
- * or 3000. No-op if the file is missing or has no `ports:` blocks.
- *
- * Returns the list of remappings applied, or null if nothing changed.
- *
- * Conservative regex-based rewrite (no YAML parser) — handles the common
- * compose port-mapping forms the integration agent emits:
- *   - "8080:8080"          — quoted
- *   - 8080:8080            — bare
- *   - "8080:8080/tcp"      — with protocol
- * Does NOT touch bare `8080` (container-port-only, no host bind) or
- * `127.0.0.1:8080:8080` (explicit bind IP — rare in our flows).
- */
-function applyPortOffsetToCompose(workspaceDir, offset) {
-  if (!offset || offset <= 0) return null;
-  const composePath = path.join(workspaceDir, 'docker-compose.yml');
-  if (!existsSync(composePath)) return null;
-  const text = readFileSync(composePath, 'utf-8');
-  const lines = text.split('\n');
-  const out = [];
-  const remappings = [];
-  let inPortsBlock = false;
-  let portsIndent = -1;
-  for (const line of lines) {
-    const lineIndent = (line.match(/^(\s*)/) || ['', ''])[1].length;
-    if (inPortsBlock) {
-      // Block ends when we hit a blank line or pop back to ≤ ports' indent.
-      if (line.trim() === '' || lineIndent <= portsIndent) {
-        inPortsBlock = false;
-        // Fall through to the regular line-handling below (which may also
-        // detect a new `ports:` opener on this line).
-      } else {
-        // Inside the ports block — rewrite the first <host>:<container> on the line.
-        const replaced = line.replace(
-          /(["']?)(\d+):(\d+)(\/[a-z]+)?(["']?)/,
-          (_m, q1, host, ctr, proto, q2) => {
-            const newHost = parseInt(host, 10) + offset * 10;
-            remappings.push({ from: `${host}:${ctr}`, to: `${newHost}:${ctr}` });
-            return `${q1}${newHost}:${ctr}${proto || ''}${q2}`;
-          },
-        );
-        out.push(replaced);
-        continue;
-      }
-    }
-    const portsMatch = line.match(/^(\s*)ports:\s*$/);
-    if (portsMatch) {
-      inPortsBlock = true;
-      portsIndent = portsMatch[1].length;
-    }
-    out.push(line);
-  }
-  if (remappings.length === 0) return null;
-  writeFileSync(composePath, out.join('\n'), 'utf-8');
-  return remappings;
-}
 
 /**
  * Poll a URL until it returns any HTTP response (any status code), or timeout.
@@ -1975,48 +1917,22 @@ function emitVerifyStep(sessionId, step, status, detail = '') {
 }
 
 /**
- * Apply database migrations that landed after the DB volume was created.
- * Init SQL only runs on an EMPTY volume, so an iterate that adds a table
- * ships database/migrations/NNN_*.sql that nothing executes (observed live:
- * prompt_templates table missing → 500s/timeouts on the new endpoints).
- * Ledger at .harness/applied-migrations.json prevents re-runs; failures are
- * warn-level — the endpoint probe downstream surfaces real breakage.
+ * Prove the backend runner applied every backend/migrations/*.sql (ledger
+ * table `_migrations`). The harness no longer applies SQL itself: doing so
+ * made local builds pass while production — where only the backend can run
+ * migrations — silently never ran them (observed: 5 iterate migrations
+ * written to database/migrations/, applied here by psql, never shipped).
  */
-function applyPendingMigrations(session) {
-  const migrationsDir = path.join(WORKSPACE_DIR, 'database', 'migrations');
-  if (!existsSync(migrationsDir)) return { applied: [], failed: [] };
-  const ledgerPath = path.join(WORKSPACE_DIR, '.harness', 'applied-migrations.json');
-  let ledger = [];
-  try { ledger = JSON.parse(readFileSync(ledgerPath, 'utf-8')); } catch { ledger = []; }
-  const files = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
-  const pending = files.filter((f) => !ledger.includes(f));
-  const applied = [];
-  const failed = [];
-  for (const file of pending) {
-    try {
-      const sql = readFileSync(path.join(migrationsDir, file), 'utf-8');
-      const db = LOCAL_DB_CREDENTIALS;
-      execSync(`docker compose exec -T database psql -v ON_ERROR_STOP=1 -U ${db.user} -d ${db.name}`, {
-        cwd: WORKSPACE_DIR,
-        input: sql,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 60_000,
-      });
-      applied.push(file);
-      ledger.push(file);
-      tlog('[migrations] applied %s to the running database', file);
-    } catch (err) {
-      failed.push(file);
-      tlog('[migrations] FAILED to apply %s: %s', file, (err.stderr?.toString() || err.message || '').slice(0, 300));
-    }
-  }
-  if (applied.length) {
-    try {
-      mkdirSync(path.dirname(ledgerPath), { recursive: true });
-      writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2));
-    } catch (err) { logAndSwallow(err, '[migrations] ledger write failed'); }
-  }
-  return { applied, failed };
+function checkMigrationsApplied() {
+  return verifyMigrationsApplied(WORKSPACE_DIR, () => {
+    const db = LOCAL_DB_CREDENTIALS;
+    const out = execFileSync('docker', [
+      'compose', 'exec', '-T', 'database',
+      'psql', '-U', db.user, '-d', db.name, '-t', '-A', '-c',
+      `SELECT name FROM ${LEDGER_TABLE}`,
+    ], { cwd: WORKSPACE_DIR, stdio: 'pipe', timeout: 15_000 }).toString();
+    return out.split('\n').map((x) => x.trim()).filter(Boolean);
+  });
 }
 
 /**
@@ -2192,15 +2108,13 @@ export async function tryAutoStartApp(session, envContext, routerContracts = {})
       }
     } catch (err) { logAndSwallow(err, '[schema-drift] live check failed'); }
 
-    const migrations = applyPendingMigrations(session);
-    if (migrations.applied.length || migrations.failed.length) {
-      emitVerifyStep(session.id, 'migrations',
-        migrations.failed.length ? 'warn' : 'done',
-        [migrations.applied.length ? `applied ${migrations.applied.join(', ')}` : null,
-         migrations.failed.length ? `${migrations.failed.join(', ')} failed` : null].filter(Boolean).join('; '));
+    const migrations = checkMigrationsApplied();
+    if (migrations.status !== 'none') {
+      tlog('[migrations] %s: %s', migrations.status, migrations.detail);
+      emitVerifyStep(session.id, 'migrations', migrations.status, migrations.detail);
     }
   } catch (err) {
-    logAndSwallow(err, '[migrations] apply phase threw');
+    logAndSwallow(err, '[migrations] verify phase threw');
   }
   tlog('[session] Auto-start: containers up, calling runSmokeAndPrompt');
   await runSmokeAndPrompt(session, envContext, routerContracts, scopeCounters);
