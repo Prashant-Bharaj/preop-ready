@@ -64,14 +64,14 @@ export function generateSchema(contract) {
   return { source: lines.join('\n'), tableNames: ordered.map(t => t.name) };
 }
 
-function emitTable(table, lines) {
+export function emitTable(table, lines) {
   lines.push(`CREATE TABLE IF NOT EXISTS ${table.name} (`);
   const colLines = (table.columns || []).map(c => `  ${c.name} ${c.type}`);
   lines.push(colLines.join(',\n'));
   lines.push(`);`);
 }
 
-function emitIndexes(table, lines) {
+export function emitIndexes(table, lines) {
   for (const col of table.columns || []) {
     const type = String(col.type || '');
 

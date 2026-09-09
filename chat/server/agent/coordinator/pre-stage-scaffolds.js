@@ -35,6 +35,7 @@ import { emitTsContracts } from '../contract-types-generator.js';
 import { generateApiClient } from './api-client-generator.js';
 import { generateSchema } from './schema-generator.js';
 import { generateReferenceData, REFERENCE_DATA_FILE } from './reference-data-generator.js';
+import { generateIterateMigration } from './iterate-migration-generator.js';
 import { generateVectorSearchHelper } from './vector-search-helper-generator.js';
 import { generateVectordbInit, generateVectordbSearchHelper, synthesizeVectordbReport } from './vectordb-scaffold-generator.js';
 import { generateEmbedHelper } from './embed-helper-generator.js';
@@ -74,7 +75,7 @@ export const MIGRATION_RUNNER_PATH = 'backend/src/lib/migrate.ts';
  *   scaffoldedComponents: string[],   // ui component names that got stubbed
  * }}
  */
-export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDiffs = null }) {
+export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDiffs = null, priorDataModel = null, iterateSummary = '' }) {
   const out = {
     filesEmitted: [],
     files: [],
@@ -142,7 +143,26 @@ export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDi
     // Apps built before the runner existed get it on their first iterate —
     // the backend agent is told to `await runMigrations(pool)` and needs the
     // file to import.
-    safeRun(() => stageMigrationRunner(wdIter, contract, out), '[pre-stage] migration runner staging failed');
+    const runnerStaged = safeRun(() => stageMigrationRunner(wdIter, contract, out), '[pre-stage] migration runner staging failed');
+    // Purely additive schema changes (new tables, new nullable/defaulted
+    // columns) become a migration file deterministically — same idea as the
+    // fresh-build schema generator. Anything with a rename, drop, type change
+    // or NOT NULL backfill is left entirely to the backend agent.
+    if (runnerStaged && priorDataModel) {
+      const mig = safeRun(() => generateIterateMigration({
+        priorDataModel,
+        dataModel: contract?.dataModel,
+        iterateDiffs,
+        existingFiles: listMigrationFiles(wdIter),
+        summary: iterateSummary,
+      }), '[pre-stage] iterate migration generation failed');
+      if (mig && !fs.existsSync(path.join(wdIter, mig.relPath))) {
+        writeFile(wdIter, mig.relPath, mig.source, out);
+        tlog('[pre-stage] iterate migration staged at %s (%s)', mig.relPath, mig.describe);
+      } else if (mig === null) {
+        tlog('[pre-stage] iterate schema change not purely additive (or none) — migration left to the backend agent');
+      }
+    }
     for (const rel of generatedPaths) {
       if (out.filesEmitted.includes(rel)) continue; // regenerated above
       const abs = path.join(wdIter, rel);
@@ -403,6 +423,12 @@ function stageMigrationRunner(workspaceDir, contract, out) {
   writeFile(workspaceDir, MIGRATION_RUNNER_PATH, fs.readFileSync(CANONICAL_MIGRATION_RUNNER, 'utf-8'), out);
   tlog('[pre-stage] migration runner staged at %s', MIGRATION_RUNNER_PATH);
   return true;
+}
+
+function listMigrationFiles(workspaceDir) {
+  try {
+    return fs.readdirSync(path.join(workspaceDir, 'backend', 'migrations')).filter((f) => f.endsWith('.sql'));
+  } catch { return []; }
 }
 
 function copyDockerfile(workspaceDir, out) {

@@ -24,6 +24,9 @@
 
 import { tlog } from '../../util/timestamped-log.js';
 import { logAndSwallow } from '../../util/log-helpers.js';
+import { mkdirSync, appendFileSync } from 'node:fs';
+import path from 'node:path';
+import { WORKSPACE_DIR } from '../../core/paths.js';
 import { appendEvent } from '../../session/transcript.js';
 import { sessionEvents } from '../../session/events.js';
 import { emitScopeStatus } from '../../session/lifecycle.js';
@@ -80,6 +83,15 @@ export async function runBuildDispatch(tasks, envContext, session, opts = {}) {
   let effective = { dataModel, apiContract, vectorEngine, uiContract, businessLogicContract };
   let contractRevision = null;
   if (isIterate && iterate.contractDiffs) {
+    // Keep the raw payload: the contract agent's table/column shape is not
+    // observable anywhere else, and every diff-shape bug so far was found by
+    // guessing. Bounded, append-only, gitignored with the rest of .harness.
+    try {
+      const wdDump = envContext?.workspaceDir || WORKSPACE_DIR;
+      mkdirSync(path.join(wdDump, '.harness'), { recursive: true });
+      appendFileSync(path.join(wdDump, '.harness', 'iterate-diffs.jsonl'),
+        JSON.stringify({ ts: Date.now(), summary: iterate.summary || '', diffs: iterate.contractDiffs }).slice(0, 20000) + '\n');
+    } catch (err) { logAndSwallow(err, '[contract-store] iterate diff dump failed'); }
     tlog('[contract-store] iterate raw diff keys: %s', JSON.stringify(
       Object.fromEntries(Object.entries(iterate.contractDiffs).map(([k, v]) => [k, v && typeof v === 'object' ? Object.keys(v) : typeof v]))));
     const { merged, changes } = mergeContractDiffs(effective, iterate.contractDiffs);
@@ -119,6 +131,8 @@ export async function runBuildDispatch(tasks, envContext, session, opts = {}) {
     contract: { dataModel: effective.dataModel, apiContract: effectiveApiContract, uiContract: effective.uiContract, vectorEngine: effective.vectorEngine, businessLogicContract: effective.businessLogicContract, flags, mgaAssistants: opts.mgaAssistants || [], tasks },
     isIterate,
     iterateDiffs: isIterate ? (iterate.contractDiffs || null) : null,
+    priorDataModel: isIterate ? dataModel : null,
+    iterateSummary: isIterate ? (iterate.summary || '') : '',
   });
 
   // When the database scope was fully scaffolded (schema + Dockerfile both

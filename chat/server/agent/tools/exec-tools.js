@@ -186,11 +186,24 @@ function stripQuoted(cmd) {
     .replace(/"(?:\\.|[^"\\])*"/g, '""');
 }
 
+/**
+ * Shell FD redirects that never write a workspace file: `2>/dev/null`,
+ * `>/dev/null`, `&>/dev/null`, `2>&1`, `1>&2`. Observed live: the backend
+ * agent's schema proof `docker compose exec database psql -c '\\d notes'
+ * 2>/dev/null` was BLOCKED because `2>/dev/null` tokenized as a write to
+ * the path '2>/dev/null' (and the `>` made the command "destructive").
+ */
+export function stripFdRedirects(cmd) {
+  return cmd
+    .replace(/(^|\s)&?\d*>{1,2}\s*\/dev\/null\b/g, '$1')
+    .replace(/(^|\s)\d*>&\d+\b/g, '$1');
+}
+
 function inferPathTokens(cmd) {
   // Tokenize ONLY on the quote-stripped command — see stripQuoted comment
   // above. Tokens that were inside quotes are now empty strings and get
   // filtered out below.
-  const stripped = stripQuoted(cmd);
+  const stripped = stripFdRedirects(stripQuoted(cmd));
   const tokens = stripped.split(/\s+/).filter(Boolean);
   const candidates = [];
   for (const raw of tokens) {
@@ -223,7 +236,7 @@ toolExecuteCommand.checkPermissions = function (params, ctx) {
   // Apply destructive-pattern detection on the QUOTE-STRIPPED command, so
   // a `>` or `rm` inside a quoted string (e.g., `grep "</div>"` or
   // `grep "rm -rf"`) is treated as data, not a shell operator.
-  const stripped = stripQuoted(cmd);
+  const stripped = stripFdRedirects(stripQuoted(cmd));
   const isDestructive = DESTRUCTIVE_PREFIXES.some(re => re.test(stripped))
     || />{1,2}\s*[^\s|&;]/.test(stripped); // any write redirect counts as destructive
   if (!isDestructive) return { verdict: 'allow', reason: null };

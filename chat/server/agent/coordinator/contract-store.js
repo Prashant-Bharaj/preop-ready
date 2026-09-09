@@ -152,6 +152,7 @@ const VERB_MAP = [
   { verbs: ['remove_views'], kind: 'ui_contract', field: 'remove_views' },
   { verbs: ['remove_tables'], kind: 'data_model', field: 'remove_tables' },
   { verbs: ['remove_columns'], kind: 'data_model', field: 'remove_columns' },
+  { verbs: ['rename_columns'], kind: 'data_model', field: 'rename_columns' },
   { verbs: ['remove_rules'], kind: 'business_logic_contract', field: 'remove_rules' },
   { verbs: ['remove_side_effects'], kind: 'business_logic_contract', field: 'remove_side_effects' },
   { verbs: ['remove_triggers'], kind: 'business_logic_contract', field: 'remove_triggers' },
@@ -324,7 +325,7 @@ export function mergeContractDiffs(contract, rawDiffs) {
   }
 
   const dmDiff = pick('data_model', 'dataModel');
-  for (const key of ['remove_tables', 'remove_columns']) {
+  for (const key of ['remove_tables', 'remove_columns', 'rename_columns']) {
     if (dmDiff && Array.isArray(dmDiff[key]) && dmDiff[key].length) {
       // Tables/columns are never retired by a diff: the data persists, the
       // live schema-drift check would go blind, and a fresh volume would lose
