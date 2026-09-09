@@ -149,6 +149,35 @@ jobs:
       AWS_DEPLOY_ROLE_ARN: "arn:aws:iam::992872368362:role/vibe-platform-github-deploy"
 
   # ---------------------------------------------------------------------------
+  # Preflight (ADVISORY): the same checks scripts/preflight-check.sh runs
+  # locally — misplaced migration files, unwired migration runner, hardcoded
+  # secrets, root containers, missing health endpoints. It cannot block the
+  # deploy yet (continue-on-error); a failure shows as a warning on the run
+  # and in the job summary. Tighten to a hard gate once projects are clean.
+  # ---------------------------------------------------------------------------
+  preflight:
+    name: Preflight checks (advisory)
+    needs: gate
+    if: needs.gate.outputs.should-deploy == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run preflight checks
+        run: |
+          set -o pipefail
+          bash scripts/preflight-check.sh 2>&1 | tee preflight.log
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo '## Preflight (advisory)'
+            echo '```'
+            sed 's/\x1b\[[0-9;]*m//g' preflight.log | grep -E 'PASS|FAIL|WARN|issue\(s\) found|All checks' || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
   # Deploy to ECS (frontend-only or full-stack; needs frontend/Dockerfile or backend/Dockerfile)
   # ---------------------------------------------------------------------------
   deploy:
