@@ -106,22 +106,29 @@ export default {
     // Contracts often leave export rights unstated and apps legitimately
     // pick qa_lead-or-admin — the assert is "an authorized elevated user can
     // export", not a role name. Fall back to admin on a role rejection.
+    // Apps legitimately scope the export per deviation
+    // (GET /deviations/:id/audit-logs/export) — fill OUR id, never send ':id'.
+    const exportPath = exportEp ? fill(exportEp.path, { id: devId ?? 1 }) : null;
+    const scopedExport = Boolean(exportEp && /:[A-Za-z_]+/.test(exportEp.path));
     let csv = exportEp
-      ? await api('GET', exportEp.path, { role: 'qa_lead' })
+      ? await api('GET', exportPath, { role: 'qa_lead' })
       : { status: -1, text: 'no export endpoint in contract' };
     if (exportEp && (csv.status === 401 || csv.status === 403)) {
-      csv = await api('GET', exportEp.path, { role: 'admin' });
+      csv = await api('GET', exportPath, { role: 'admin' });
     }
     // Marker text only lands in the CSV when the app copies field values into
     // audit details — contracts vary. Structural fallback: the audit trail
-    // must reference OUR deviation (its id on a deviation-ish row).
+    // must reference OUR deviation (its id on a deviation-ish row) — or, for
+    // an export already scoped to our deviation, simply carry rows.
+    const csvRows = (csv.text || '').split('\n').filter((r) => r.trim());
     const hasMarker = (csv.text || '').includes(marker);
-    const hasDevRow = devId != null && (csv.text || '').split('\n')
+    const hasDevRow = devId != null && csvRows
       .some((row) => /deviation/i.test(row) && new RegExp(`(^|,)"?${devId}"?(,|$)`).test(row));
+    const hasScopedRows = scopedExport && csvRows.length >= 2;
     actions.push({
       name: 'CSV export contains the audit trail',
-      ok: csv.status === 200 && (hasMarker || hasDevRow),
-      detail: `HTTP ${csv.status} markerInCsv=${hasMarker} devRowInCsv=${hasDevRow} bytes=${(csv.text || '').length}`,
+      ok: csv.status === 200 && (hasMarker || hasDevRow || hasScopedRows),
+      detail: `HTTP ${csv.status} markerInCsv=${hasMarker} devRowInCsv=${hasDevRow} scopedRows=${hasScopedRows ? csvRows.length - 1 : 'n/a'} bytes=${(csv.text || '').length}`,
     });
 
     // Role gate: operator must NOT be able to manage plant areas. Send a

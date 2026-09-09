@@ -18,6 +18,7 @@ export default {
   answerClarify() {
     return [
       'Roles: admin configures the webhook URL, operators record events.',
+      'The webhook receiver is an internal intranet service: plain http:// URLs and private/internal addresses are the normal case and must be accepted.',
       'The signing secret comes from the environment (WEBHOOK_SECRET), never from the UI.',
       'Forward immediately when an event is recorded — no queues, no retries.',
       'Events have a title, severity (low, medium, high), and description. No extras.',

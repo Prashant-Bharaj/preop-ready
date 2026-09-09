@@ -18,6 +18,7 @@ import {
   partitionFindings,
   collectReviewFiles,
   formatSecurityFixDirective,
+  SYSTEM_PROMPT,
 } from '../../server/reconciler/security-review.js';
 
 test('parseSecurityFindings: parses fenced JSON, normalizes severity, infers scope', () => {
@@ -98,4 +99,14 @@ test('formatSecurityFixDirective: includes findings + rule anchor', () => {
   assert.match(d, /02-security\.md/);
   assert.match(d, /SQL by concat/);
   assert.match(d, /backend\/src\/db\.ts:10/);
+});
+
+// Observed live (webhook-integration bench): the review flagged an ADMIN-configured
+// webhook URL as SSRF and the auto-fix enforced https-only + private-range
+// blocking — which makes an intranet webhook forwarder unusable in production.
+test('review prompt scopes SSRF to non-admin URLs and forbids https-only / private-range mitigations', () => {
+  assert.match(SYSTEM_PROMPT, /INSIDE the Bayer intranet/);
+  assert.match(SYSTEM_PROMPT, /only an ADMIN configures[\s\S]*not SSRF/);
+  assert.match(SYSTEM_PROMPT, /NEVER prescribe "https only" or "block private IP ranges"/);
+  assert.match(SYSTEM_PROMPT, /169\.254\.0\.0\/16/);
 });
