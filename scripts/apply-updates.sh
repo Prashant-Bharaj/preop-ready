@@ -86,17 +86,46 @@ if git remote get-url template >/dev/null 2>&1; then
 else
     git remote add template "$TEMPLATE_URL" 2>/dev/null || true
 fi
-if ! git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_BRANCH_REF}" 2>/dev/null; then
-    echo "Could not fetch the template repo (${TEMPLATE_REPO})."
-    echo "In Codespaces this is expected sometimes: the built-in token only sees THIS"
-    echo "repo, and it also OVERRIDES gh logins. Fix (one-time per Codespace) — use"
-    echo "your BAYER GitHub account, not a personal one:"
-    echo '    unset GITHUB_TOKEN GH_TOKEN'
-    echo '    gh auth login --web --hostname github.com'
-    echo '    export TEMPLATE_URL="https://x-access-token:$(gh auth token)@github.com/'"${TEMPLATE_REPO}"'.git"'
-    echo '    bash scripts/apply-updates.sh'
-    fail "Could not fetch template (git)"
-fi
+# Keep git's error so the cause can be classified — "could not fetch" reads the
+# same whether the token cannot see the template or the network is down, and
+# those need different fixes (same token list as check-updates.sh).
+FETCH_ERR=$(git fetch -q template "+refs/heads/${TEMPLATE_BRANCH}:refs/remotes/${TEMPLATE_BRANCH_REF}" 2>&1) || {
+    case "$FETCH_ERR" in
+        *"Authentication failed"*|*"could not read Username"*|*"Permission denied"*|*"403"*|*"not found"*|*"access rights"*)
+            FETCH_CAUSE="auth" ;;
+        *"Could not resolve host"*|*"unable to access"*|*"Connection timed out"*|*"Network is unreachable"*|*"Operation timed out"*|*"Connection refused"*)
+            FETCH_CAUSE="network" ;;
+        *)
+            FETCH_CAUSE="unknown" ;;
+    esac
+    echo "Could not fetch the template repo (${TEMPLATE_REPO}) — cause: ${FETCH_CAUSE}."
+    # git echoes the remote URL, which may embed a token — strip userinfo.
+    echo "  git: $(echo "$FETCH_ERR" | sed -E 's#://[^/@[:space:]]*@#://***@#g' | tail -1)"
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        case "$FETCH_CAUSE" in
+            auth)
+                echo "The token this workflow used cannot read ${TEMPLATE_REPO}. A repository's"
+                echo "GITHUB_TOKEN never can — the template is internal. The sync must run through the"
+                echo "platform's reusable workflow (dd-platform-repository template-sync.yml), which"
+                echo "reads the template token from the platform, or be given a TEMPLATE_READ_TOKEN"
+                echo "secret with Contents: read on the template repo." ;;
+            network)
+                echo "GitHub was unreachable from the runner. Re-run the workflow." ;;
+        esac
+    elif [ "$FETCH_CAUSE" = "network" ]; then
+        echo "GitHub was unreachable — check your connection/VPN and run it again:"
+        echo '    bash scripts/apply-updates.sh'
+    else
+        echo "In Codespaces this is expected sometimes: the built-in token only sees THIS"
+        echo "repo, and it also OVERRIDES gh logins. Fix (one-time per Codespace) — use"
+        echo "your BAYER GitHub account, not a personal one:"
+        echo '    unset GITHUB_TOKEN GH_TOKEN'
+        echo '    gh auth login --web --hostname github.com'
+        echo '    export TEMPLATE_URL="https://x-access-token:$(gh auth token)@github.com/'"${TEMPLATE_REPO}"'.git"'
+        echo '    bash scripts/apply-updates.sh'
+    fi
+    fail "Cannot read template repo (${FETCH_CAUSE})"
+}
 # Version tags enable user-modified detection; older templates have none.
 git fetch -q template '+refs/tags/template-v*:refs/tags/template-v*' 2>/dev/null || true
 

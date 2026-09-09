@@ -9,16 +9,19 @@
 #   - Scheduled: Weekly on Monday 9 AM UTC (PR mode - safe, reviewable)
 #   - Called from other workflows via workflow_call
 #
-# What it does:
-#   1. Fetches the template repo as a git remote
-#   2. Runs the shared update engine (scripts/apply-updates.sh --ci).
-#      The engine self-upgrades from the template ref, so even repos with an
-#      old engine copy execute the current sync logic.
-#   3. Opens a PR with the changes (or commits directly if configured)
+# What it does: hands off to the platform's reusable workflow
+# (bayer-int/dd-platform-repository template-sync.yml), which
+#   1. reads the template access token — the template repo is internal and a
+#      project's GITHUB_TOKEN can never read it; the platform keeps the token
+#      in AWS and this repo's own deploy role (vibe-<repo>-deploy) may read it
+#      ONLY from that platform-owned workflow,
+#   2. runs the shared update engine (scripts/apply-updates.sh --ci) in this
+#      repo — the engine self-upgrades from the template ref, so even repos
+#      with an old engine copy execute the current sync logic,
+#   3. opens a PR with the changes (or commits directly if configured).
 #
-# Auth: fetching the template uses TEMPLATE_READ_TOKEN if the org provides it
-# (org-level secret with read access to the template repo), otherwise falls
-# back to the workflow's GITHUB_TOKEN.
+# Repos not yet onboarded to the platform (no deploy role) get a notice and a
+# green run; update from a Codespace instead (see the run log).
 # =============================================================================
 
 name: Check Template Updates
@@ -57,12 +60,12 @@ on:
         value: ${{ jobs.sync.outputs.new_version }}
 
 permissions:
-  contents: write
-  pull-requests: write
+  id-token: write        # assume this repo's platform deploy role (token read)
+  contents: write        # push the sync branch / direct commit
+  pull-requests: write   # open the PR
 
 env:
   TEMPLATE_REPO: bayer-int/dd-template-repository
-  TEMPLATE_BRANCH: master
 
 jobs:
   check-repo:
@@ -92,200 +95,19 @@ jobs:
     name: Sync Template Files
     needs: check-repo
     if: needs.check-repo.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      updated: ${{ steps.result.outputs.updated }}
-      new_version: ${{ steps.run-engine.outputs.new_version }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run update engine
-        id: run-engine
-        run: |
-          # Embed auth in the template URL so the engine's git fetch works.
-          # TEMPLATE_READ_TOKEN (org secret) if present, else GITHUB_TOKEN.
-          TOKEN="${{ secrets.TEMPLATE_READ_TOKEN || secrets.GITHUB_TOKEN }}"
-          export TEMPLATE_URL="https://x-access-token:${TOKEN}@github.com/${{ env.TEMPLATE_REPO }}.git"
-          export TEMPLATE_BRANCH="${{ env.TEMPLATE_BRANCH }}"
-
-          set +e
-          OUTPUT=$(bash scripts/apply-updates.sh --ci 2>&1)
-          STATUS=$?
-          set -e
-          echo "$OUTPUT"
-
-          if echo "$OUTPUT" | grep -q "^UP_TO_DATE|"; then
-            echo "needs_update=false" >> $GITHUB_OUTPUT
-            echo "✅ Already up to date"
-            exit 0
-          fi
-
-          if [ $STATUS -ne 0 ] || ! echo "$OUTPUT" | grep -q "^UPDATE_COMPLETE|"; then
-            echo "❌ Engine failed"
-            exit 1
-          fi
-
-          NEW_VERSION=$(echo "$OUTPUT" | grep "^UPDATE_COMPLETE|" | cut -d'|' -f2)
-          echo "needs_update=true" >> $GITHUB_OUTPUT
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-          # Backed-up user-modified files -> surfaced in the PR body
-          echo "$OUTPUT" | sed -n '/^Backed up /,/^$/p' > /tmp/backup-summary.txt || true
-
-      - name: Check for changes
-        id: changes
-        run: |
-          # Build the explicit staging helper used by the commit/PR steps below.
-          #
-          # `git add -A` is banned by the platform's own rules (and enforced for
-          # users by scripts/pre-commit-security-check.sh): it sweeps up whatever
-          # else happens to be sitting in the working tree — a .env a previous
-          # step wrote, context/ files, .template-backup/ — into a commit that is
-          # frequently auto-merged. Stage exactly the paths the sync touched, and
-          # refuse the sensitive ones outright.
-          cat > "$RUNNER_TEMP/stage-sync-changes.sh" <<'HELPER'
-          stage_sync_changes() {
-            local entry path n=0
-            while IFS= read -r -d '' entry; do
-              path="${entry:3}"
-              case "${entry:0:2}" in
-                R*|C*) echo "  skipped (rename/copy — the engine never produces these): $path"; continue ;;
-              esac
-              case "$path" in
-                .env|.env.*|*/.env|*/.env.*)          echo "  skipped (deny-list): $path"; continue ;;
-                context/|context/*)                   echo "  skipped (deny-list): $path"; continue ;;
-                .template-backup/|.template-backup/*) echo "  skipped (deny-list): $path"; continue ;;
-              esac
-              git add -- "$path"
-              echo "  staged: $path"
-              n=$((n + 1))
-            # -uall is load-bearing: without it git reports a wholly-untracked
-            # directory as one entry ("?? backend/") and staging that would
-            # sweep in a backend/.env the deny-list never got to see.
-            done < <(git status --porcelain -z -uall)
-            echo "Staged $n path(s)."
-          }
-          HELPER
-
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "📝 Changes detected:"
-            git status --short
-          else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "✅ No file changes needed"
-          fi
-
-      - name: Commit directly (if configured)
-        if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit == 'true'
-        run: |
-          source "$RUNNER_TEMP/stage-sync-changes.sh"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          stage_sync_changes
-          if git diff --cached --quiet; then
-            echo "⏭️ Nothing left to commit after the deny-list — skipping."
-            exit 0
-          fi
-          git commit -m "chore: sync platform files from template v${{ steps.run-engine.outputs.new_version }}"
-          git push
-
-          echo "✅ Changes committed directly"
-
-      - name: Create Pull Request
-        if: steps.changes.outputs.has_changes == 'true' && inputs.direct_commit != 'true'
-        id: create-pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          source "$RUNNER_TEMP/stage-sync-changes.sh"
-
-          TEMPLATE="${{ steps.run-engine.outputs.new_version }}"
-          BRANCH="template-sync/v$TEMPLATE"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Changelog entry for the new version (best effort, for the PR body)
-          CHANGELOG=$(git show "template/${{ env.TEMPLATE_BRANCH }}:.template-manifest.yml" 2>/dev/null | awk -v ver="$TEMPLATE" '
-            /^changelog:/ { in_cl=1; next }
-            in_cl && $0 ~ "^  \"" ver "\":" { in_ver=1; next }
-            in_cl && /^  "/ { in_ver=0 }
-            in_ver && /^      - / { sub(/^      - /, "- "); gsub(/"/, ""); print }
-          ' || echo "")
-
-          BACKUPS=""
-          if [ -s /tmp/backup-summary.txt ]; then
-            BACKUPS=$(printf '### ⚠️ User-modified platform files\n\nThese files differed from the shipped version and were backed up to `.template-backup/` (gitignored) before being overwritten:\n\n```\n%s\n```\n' "$(cat /tmp/backup-summary.txt)")
-          fi
-
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
-
-          if [ -n "$EXISTING_PR" ]; then
-            echo "📝 Updating existing PR #$EXISTING_PR..."
-            git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH"
-            stage_sync_changes
-            git commit -m "chore: update platform files to v$TEMPLATE" --allow-empty
-            git push --force origin "$BRANCH"
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-          else
-            echo "📝 Creating new PR..."
-            git checkout -b "$BRANCH"
-            stage_sync_changes
-            git commit -m "chore: sync platform files from template v$TEMPLATE"
-            git push -u origin "$BRANCH"
-
-            PR_URL=$(gh pr create \
-              --title "⬆️ Platform Update: v$TEMPLATE" \
-              --body "## 📦 Template Update
-
-          **New version:** \`$TEMPLATE\`
-
-          ### What changed
-
-          ${CHANGELOG:-See the template changelog in \`.template-manifest.yml\`.}
-
-          ${BACKUPS}
-
-          ### Your Code is Safe ✅
-
-          These are **never modified**:
-          - \`frontend/src/\`, \`frontend/index.html\`
-          - \`backend/server.js\`, \`backend/main.py\`, \`backend/src/\`
-          - \`database/init/\`
-          - Your Dockerfiles (\`frontend/Dockerfile\`, \`backend/Dockerfile\`)
-
-          ---
-          🤖 Auto-generated by Template Sync" \
-              --head "$BRANCH")
-
-            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-            echo "✅ Created PR: $PR_URL"
-          fi
-
-      - name: Auto-merge PR
-        if: steps.create-pr.outputs.pr_number && inputs.auto_merge == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge ${{ steps.create-pr.outputs.pr_number }} --auto --squash || echo "⚠️ Auto-merge not available"
-
-      - name: Set outputs
-        id: result
-        run: |
-          if [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
-            echo "updated=true" >> $GITHUB_OUTPUT
-          else
-            echo "updated=false" >> $GITHUB_OUTPUT
-          fi
+    uses: bayer-int/dd-platform-repository/.github/workflows/template-sync.yml@master
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+    with:
+      project-name: ${{ github.event.repository.name }}
+      direct_commit: ${{ inputs.direct_commit == true }}
+      auto_merge: ${{ inputs.auto_merge == true }}
+    secrets:
+      # Optional override: an org/repo secret with Contents: read on the
+      # template repo. Empty when not provisioned — the platform token is used.
+      TEMPLATE_READ_TOKEN: ${{ secrets.TEMPLATE_READ_TOKEN }}
 
   summary:
     name: Summary
@@ -295,12 +117,18 @@ jobs:
 
     steps:
       - name: Summary
+        env:
+          UPDATED: ${{ needs.sync.outputs.updated }}
+          NEW_VERSION: ${{ needs.sync.outputs.new_version }}
+          SYNC_RESULT: ${{ needs.sync.result }}
         run: |
           echo "## 📊 Template Sync Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.sync.outputs.updated }}" = "true" ]; then
-            echo "✅ **Update applied!** New version: v${{ needs.sync.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          if [ "$SYNC_RESULT" != "success" ]; then
+            echo "❌ **Sync did not complete** (job result: $SYNC_RESULT) — see the *Sync Template Files* log for the cause." >> $GITHUB_STEP_SUMMARY
+          elif [ "$UPDATED" = "true" ]; then
+            echo "✅ **Update applied!** New version: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ **Already up to date**" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Already up to date** (or skipped — see the job log)" >> $GITHUB_STEP_SUMMARY
           fi
