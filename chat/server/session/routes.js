@@ -34,6 +34,7 @@ import {
 import { logAndSwallow } from '../util/log-helpers.js';
 import { PHASES } from '../agent/loop/phase.js';
 import { writeRunSummary } from '../util/run-summary.js';
+import { setPendingPlanCheck } from '../util/stream.js';
 import { getSnippetFetchMirror } from '../util/telemetry-snippets.js';
 import { getSessionRunLogsDir } from '../agent/compaction/run-logger.js';
 import { runBuildDispatch } from '../agent/coordinator/build-dispatcher.js';
@@ -125,6 +126,10 @@ function loadPriorIterateContext(workspaceDir = WORKSPACE_DIR) {
   }
   return { priorBuilt, priorContract };
 }
+
+// Lets the socket layer restore the plan-confirmation card on reconnect
+// (stream.js history_batch) — the pending flag lives only on this map.
+setPendingPlanCheck((sessionId) => Boolean(getSession(sessionId)?.pendingPlan));
 
 function getSession(sessionId) {
   if (!activeSession || activeSession.id !== sessionId) return null;

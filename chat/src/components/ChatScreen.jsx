@@ -406,6 +406,22 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
         }
         if (bestTotals) setTokenTotals(bestTotals);
 
+        // Restore the plan-confirmation card on reload: the server says
+        // whether the last plan_preview is still awaiting confirm/discard
+        // (event.pendingPlan is that payload, or null). Without this a
+        // reload dropped the card while the server kept waiting.
+        if (event.pendingPlan) {
+          setPendingPlan({
+            message: event.pendingPlan.message || '',
+            tasks: event.pendingPlan.tasks || [],
+            modulePlan: event.pendingPlan.modulePlan || null,
+            reasonCodes: event.pendingPlan.reasonCodes || [],
+            confidence: event.pendingPlan.confidence ?? null,
+          });
+        } else {
+          setPendingPlan(null);
+        }
+
         // Restore the "open app" prompt on reload if it was still outstanding:
         // show it again when the last app_ready_prompt has NOT been followed
         // by an app_ready (user clicked Open) or any status 'reset' event.
