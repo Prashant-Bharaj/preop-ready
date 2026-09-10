@@ -8,7 +8,7 @@
  */
 
 import { io } from 'socket.io-client';
-import { api, apiSmart, discoverEp, fill } from '../lib/app-client.mjs';
+import { APP_URL, api, apiSmart, discoverEp, fill } from '../lib/app-client.mjs';
 
 function firstId(body) {
   if (body == null || typeof body !== 'object') return null;
@@ -69,7 +69,7 @@ export default {
     let connected = false;
     let pushed = null;
     try {
-      socket = io('http://localhost:8080', { transports: ['websocket', 'polling'], timeout: 8000, reconnection: false });
+      socket = io(APP_URL, { transports: ['websocket', 'polling'], timeout: 8000, reconnection: false });
       connected = await new Promise((resolve) => {
         const t = setTimeout(() => resolve(false), 10_000);
         socket.on('connect', () => { clearTimeout(t); resolve(true); });
@@ -98,7 +98,7 @@ export default {
     actions.push({
       name: 'socket.io client connects through the frontend proxy',
       ok: connected,
-      detail: connected ? 'connected via :8080/socket.io' : 'connect failed/timed out — /socket.io/* routing broken',
+      detail: connected ? `connected via ${APP_URL}/socket.io` : 'connect failed/timed out — /socket.io/* routing broken',
     });
     actions.push({
       name: 'status change is pushed to connected clients',

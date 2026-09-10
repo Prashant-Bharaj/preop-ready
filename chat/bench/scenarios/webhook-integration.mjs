@@ -9,7 +9,7 @@
  */
 
 import http from 'node:http';
-import { api, apiSmart, discoverEp, discoverAllEp, fill } from '../lib/app-client.mjs';
+import { api, apiSmart, discoverAllEp, discoverEp, explodeSpec, fill } from '../lib/app-client.mjs';
 
 export default {
   name: 'webhook-integration',
@@ -50,10 +50,18 @@ export default {
       const settingsEp = discoverAllEp('PUT', /setting|webhook|config/i)[0]
         || discoverAllEp('POST', /setting|webhook|config/i)[0]
         || discoverAllEp('PATCH', /setting|webhook|config/i)[0] || null;
+      // The URL goes into whatever field the CONTRACT declares for it —
+      // `webhook_url`, `url`, or a generic `value` on a keyed settings route
+      // (PUT /settings/webhook-url {value}). Observed: guessing names left
+      // `value` = the marker string and the app logged "Failed to parse URL".
+      const urlOverrides = { webhook_url: hookUrl, url: hookUrl };
+      for (const field of Object.keys(explodeSpec(settingsEp?.request || {}))) {
+        if (/url|webhook|endpoint|target|value/i.test(field)) urlOverrides[field] = hookUrl;
+      }
       const set = settingsEp
         ? await apiSmart(settingsEp.method, fill(settingsEp.path, {}), {
             role: 'admin', spec: settingsEp.request, marker,
-            overrides: { webhook_url: hookUrl, url: hookUrl },
+            overrides: urlOverrides,
           })
         : { status: -1, text: 'no settings/webhook endpoint in contract' };
       actions.push({
