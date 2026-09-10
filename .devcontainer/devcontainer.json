@@ -74,16 +74,24 @@
   // fail to install inside the nested kernel: containers stay "healthy" (localhost
   // works) but frontend->backend and backend->database TCP silently hang.
   // Verified fix 2026-09-10; harmless where the rules install correctly.
-  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error) || true",
+  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true",
 
-  // 3000 backend · 5173 Vite dev server · 8080 frontend (nginx)
-  // 5050 = chat/ harness (API + built UI), 8889 = its Vite dev client;
-  // 8080/3000 = the generated app; 5173 = Vite for frontend-only projects.
-  "forwardPorts": [3000, 5050, 5173, 8080, 8889],
+  // No pre-forwarded ports on purpose. A forward the devcontainer creates
+  // at startup goes STALE on GitHub's proxy after a Codespace restart (404
+  // in the browser while `gh codespace ports` still lists it and localhost
+  // answers) — only stop-forwarding + re-adding revived it. A forward that
+  // Codespaces creates itself when a process starts listening is fresh every
+  // time, so ports are auto-detected and only labelled/behaved below:
+  // 5050 = harness (`cd chat && npm start`; opens in the browser by itself),
+  // 8080 = the generated app, 3000 = its backend, 5173 = Vite for
+  // frontend-only projects. Verified 2026-09-10.
+  "forwardPorts": [],
 
   "portsAttributes": {
-    "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "notify" },
-    "8889": { "label": "Harness Vite dev client" },
+    "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "openBrowser" },
+    "8080": { "label": "Generated app", "onAutoForward": "notify" },
+    "3000": { "label": "Generated app backend", "onAutoForward": "silent" },
+    "5173": { "label": "Vite (frontend-only projects)", "onAutoForward": "notify" },
     "3456": { "label": "Claude Code Router", "onAutoForward": "silent" }
   }
 }

@@ -155,3 +155,33 @@ sidebar if you want.
 
 - The myGenAssist key lives only in `~/.claude-code-router/config.json` (in `$HOME`, outside the
   repo). Never commit it. If a key is ever exposed, rotate it in myGenAssist.
+
+## Running the harness (chat UI) in a Codespace
+
+The post-start hook installs `chat/` dependencies and builds the UI, so the
+harness is one command away:
+
+```bash
+cd chat && npm start
+```
+
+Port **5050** opens in the browser automatically once the server listens (the
+built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
+reload) is only needed when editing the chat UI itself; if you use it, add the
+port by hand in the Ports tab after Vite is listening — a forward created
+earlier can leave the proxy's 404 page cached in your browser.
+
+After a Codespace restart everything persists (workspace, `.harness/`, Docker
+images and volumes); run `cd chat && npm start` again and, if the app should be
+up, click **Start app** in the UI. The idle timeout can be raised to 4 hours in
+GitHub Settings → Codespaces → Default idle timeout (applies to new codespaces).
+
+### Ports after a Codespace restart
+
+Ports are not pre-forwarded on purpose. A forward created by the devcontainer at
+startup goes stale on GitHub's proxy after a restart: the browser shows "page
+can't be found" while the Ports tab, `gh codespace ports` and `localhost` all look
+fine. Codespaces auto-forwards a port the moment a process listens on it, and
+that forward is fresh every time — so `cd chat && npm start` is all it takes;
+5050 opens in the browser by itself. If a port URL ever 404s, right-click it in
+the Ports tab, **Stop Forwarding Port**, then **Add Port** again.
