@@ -69,7 +69,12 @@
   },
 
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
-  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error) || true",
+  // The sysctl keeps same-bridge container traffic out of iptables. The default
+  // Codespaces image moved to Docker 29.x (2026-09), whose bridge firewall rules
+  // fail to install inside the nested kernel: containers stay "healthy" (localhost
+  // works) but frontend->backend and backend->database TCP silently hang.
+  // Verified fix 2026-09-10; harmless where the rules install correctly.
+  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error) || true",
 
   // 3000 backend · 5173 Vite dev server · 8080 frontend (nginx)
   // 5050 = chat/ harness (API + built UI), 8889 = its Vite dev client;
