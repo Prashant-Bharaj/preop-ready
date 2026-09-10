@@ -69,13 +69,16 @@
   },
 
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
-  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh",
+  "postStartCommand": "bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error) || true",
 
   // 3000 backend · 5173 Vite dev server · 8080 frontend (nginx)
-  // 5050/8888 were the removed chat/ app — deleted by the manifest cleanup.
-  "forwardPorts": [3000, 5173, 8080],
+  // 5050 = chat/ harness (API + built UI), 8889 = its Vite dev client;
+  // 8080/3000 = the generated app; 5173 = Vite for frontend-only projects.
+  "forwardPorts": [3000, 5050, 5173, 8080, 8889],
 
   "portsAttributes": {
+    "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "notify" },
+    "8889": { "label": "Harness Vite dev client" },
     "3456": { "label": "Claude Code Router", "onAutoForward": "silent" }
   }
 }
