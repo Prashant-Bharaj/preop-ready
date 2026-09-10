@@ -166,3 +166,11 @@ npm-debug.log*
 # TEST COVERAGE
 # ==========================================================
 coverage/
+
+# ==========================================================
+# TEMPLATE SYNC ENGINE
+# ==========================================================
+# Backups of platform files the sync engine replaced (never commit)
+.template-backup/
+# Harness bench output (local scratch)
+chat/bench/results/
