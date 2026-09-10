@@ -78,17 +78,22 @@ function portsForUuid(uuid) {
 
 // Best-effort docker rm. Resolves to { removed: number } or { removed: 0 }
 // when docker is unavailable or no containers match. Never throws.
-async function dockerCleanup(containerPrefix) {
+async function dockerCleanup(containerPrefix, { timeoutMs = 3_000 } = {}) {
   return new Promise((resolve) => {
     // `docker ps -aq --filter "name=<prefix>"` is the only call that lists
     // containers by name prefix without requiring compose project knowledge.
     const ps = spawn('docker', ['ps', '-aq', '--filter', `name=${containerPrefix}`], {
       stdio: ['ignore', 'pipe', 'ignore'],
     });
+    // A degraded daemon can leave `docker ps -a` hanging indefinitely
+    // (observed 2026-09-10: every workspace-using test file froze the whole
+    // suite). Cleanup is best-effort — give up rather than hang.
+    const timer = setTimeout(() => { try { ps.kill('SIGKILL'); } catch { /* gone */ } resolve({ removed: 0 }); }, timeoutMs);
     let stdout = '';
     ps.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-    ps.on('error', () => resolve({ removed: 0 })); // docker not installed
+    ps.on('error', () => { clearTimeout(timer); resolve({ removed: 0 }); }); // docker not installed
     ps.on('close', (code) => {
+      clearTimeout(timer);
       if (code !== 0) return resolve({ removed: 0 });
       const ids = stdout.split('\n').map((l) => l.trim()).filter(Boolean);
       if (ids.length === 0) return resolve({ removed: 0 });

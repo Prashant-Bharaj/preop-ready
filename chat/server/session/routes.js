@@ -35,6 +35,7 @@ import { logAndSwallow } from '../util/log-helpers.js';
 import { PHASES } from '../agent/loop/phase.js';
 import { writeRunSummary } from '../util/run-summary.js';
 import { setPendingPlanCheck } from '../util/stream.js';
+import { savePendingPlan, loadPendingPlan, clearPendingPlan } from './pending-plan-store.js';
 import { getSnippetFetchMirror } from '../util/telemetry-snippets.js';
 import { getSessionRunLogsDir } from '../agent/compaction/run-logger.js';
 import { runBuildDispatch } from '../agent/coordinator/build-dispatcher.js';
@@ -2066,6 +2067,7 @@ export function mountSessionRoutes(app) {
             // Null when RAG pattern not detected in the brief.
             ragArchitecture: routerResult.ragArchitecture || null,
           };
+          savePendingPlan(session.id, session.pendingPlan);
           // A6 telemetry — how many attempts the contract agent needed
           // (validation-retry rate is a prompt-drift signal in runs-report).
           session.lastContractAttempt = routerResult.contractAttempt || 1;
@@ -2478,6 +2480,7 @@ export function mountSessionRoutes(app) {
       }
       if (activeSession) {
         appendEvent(activeSession.id, 'status', { status: 'reset' });
+        clearPendingPlan(activeSession.id);
         activeSession = null;
       }
       if (clearedSessionId) {
@@ -2497,6 +2500,7 @@ export function mountSessionRoutes(app) {
     if (activeSession) {
       killAllProcs(activeSession);
       appendEvent(activeSession.id, 'status', { status: 'reset' });
+      clearPendingPlan(activeSession.id);
       activeSession = null;
     }
     res.json({ ok: true });
@@ -2517,6 +2521,7 @@ export function mountSessionRoutes(app) {
     killAllProcs(session);
     // Discard any pending plan too
     session.pendingPlan = null;
+    clearPendingPlan(session.id);
 
     // W2.DISPATCH — drop any queued iteration messages. Cancel implies the
     // user is rethinking — they can re-send if needed. Without this the
@@ -2646,10 +2651,13 @@ export function mountSessionRoutes(app) {
       confidence: pendingConfidenceRaw,
       reasonCodes: pendingReasonCodesRaw,
     } = session.pendingPlan;
+    // Null when the plan was reloaded from disk after a server restart.
+    const envCtx = envContext || await refreshEnvContext();
     const pendingConfidence = typeof pendingConfidenceRaw === 'number' ? pendingConfidenceRaw : 1.0;
     const pendingPlanLen = Array.isArray(pendingModulePlan) ? pendingModulePlan.length : 0;
     const pendingReasonCodes = Array.isArray(pendingReasonCodesRaw) ? pendingReasonCodesRaw : [];
     session.pendingPlan = null;
+    clearPendingPlan(session.id);
     res.json({ ok: true });
 
     // Execute the held plan asynchronously
@@ -2791,7 +2799,7 @@ export function mountSessionRoutes(app) {
       let result;
       if (isSameScopeContinuation) {
         const scope = tasks[0].scope;
-        const enrichedMessage = buildPromptFromSpec({ tasks }, envContext, { uploads });
+        const enrichedMessage = buildPromptFromSpec({ tasks }, envCtx, { uploads });
         const priorConvo = session.coderConversationIds?.[scope] || null;
         tlog('[session] Continuation: direct-to-subagent scope=%s convo=%s (skipping orchestrator)',
           scope, priorConvo || 'new');
@@ -2833,7 +2841,7 @@ export function mountSessionRoutes(app) {
             confidence: pendingConfidence,
             contract: { tasks, dataModel, apiContract, vectorEngine, uiContract, businessLogicContract },
             session,
-            envContext,
+            envContext: envCtx,
           });
           // Persist module state on session so concierge + session-state can read it.
           session.lastModulePlan = hybridResult.modulePlan || null;
@@ -2860,7 +2868,7 @@ export function mountSessionRoutes(app) {
           logAndSwallow(err, '[confirm] hybrid-router failed (non-fatal, proceeding deterministic)');
         }
 
-        result = await runBuildDispatch(dispatchTasks, envContext, session, { uploads, dataModel: dispatchDataModel, apiContract: dispatchApiContract, vectorEngine: dispatchVectorEngine, uiContract: dispatchUiContract, businessLogicContract: dispatchBusinessLogicContract, flags: pendingFlags || [], mgaAssistants: mgaAssistants || [] });
+        result = await runBuildDispatch(dispatchTasks, envCtx, session, { uploads, dataModel: dispatchDataModel, apiContract: dispatchApiContract, vectorEngine: dispatchVectorEngine, uiContract: dispatchUiContract, businessLogicContract: dispatchBusinessLogicContract, flags: pendingFlags || [], mgaAssistants: mgaAssistants || [] });
 
         // Deterministic end-of-build authoring — replaces the LLM
         // orchestrator's write_harness_state tool call + LLM-authored build
@@ -3054,6 +3062,7 @@ export function mountSessionRoutes(app) {
 
     // Discard current pending plan
     session.pendingPlan = null;
+    clearPendingPlan(session.id);
     // Reset router conversation so revisions re-route fresh
     session.routerConversationId = null;
     session.routerMessages = [];
@@ -3136,6 +3145,7 @@ export function mountSessionRoutes(app) {
               // RAG architecture decision
               ragArchitecture: routerResult.ragArchitecture || null,
             };
+            savePendingPlan(session.id, session.pendingPlan);
             const planPreviewEvent = appendEvent(session.id, 'plan_preview', {
               message: routerResult.message || '',
               tasks: routerResult.tasks.map(t => ({
@@ -3215,6 +3225,7 @@ export function mountSessionRoutes(app) {
     emitUserAction(session.id, 'discard');
 
     session.pendingPlan = null;
+    clearPendingPlan(session.id);
     // Reset router conversation so next message starts fresh routing
     session.routerConversationId = null;
     session.routerMessages = [];
@@ -3429,7 +3440,13 @@ export function mountSessionRoutes(app) {
         status: 'idle',
         activeProcs: new Set(),
         startedAt: entry?.createdAt || Date.now(),
+        // A plan held for confirmation survives a server restart (see
+        // pending-plan-store.js); envContext is re-gathered on confirm.
+        pendingPlan: loadPendingPlan(sessionId),
       };
+      if (activeSession.pendingPlan) {
+        tlog('[session] Resume: restored pending plan (%d task(s)) for confirmation', activeSession.pendingPlan.tasks.length);
+      }
       // Restore the session-cumulative token total so a continuation grows the
       // chip instead of resetting it (coderTokenTotals is in-memory only).
       restoreCoderTokenTotals(activeSession);
