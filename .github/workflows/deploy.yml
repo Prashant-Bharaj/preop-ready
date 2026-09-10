@@ -54,6 +54,18 @@ jobs:
       should-deploy: ${{ steps.check.outputs.should-deploy }}
       codeql-failed-on-schedule: ${{ steps.check.outputs.codeql-failed-on-schedule }}
     steps:
+      # The gate inspects the commit CodeQL scanned, not the workflow's default
+      # ref: a repo fresh from the template has no app yet (only the
+      # Dockerfile.node / .python / .react variants), so its "Initial commit"
+      # would otherwise reach the platform deploy and fail with "no deployable
+      # content". Same for any push before the AI sets up the app.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          sparse-checkout: |
+            backend/Dockerfile
+            frontend/Dockerfile
+          sparse-checkout-cone-mode: false
       - name: Check conditions
         id: check
         run: |
@@ -80,6 +92,17 @@ jobs:
             echo "should-deploy=false" >> $GITHUB_OUTPUT
             echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
             echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Nothing deployable yet (fresh template repo, or the app is not set up):
+          # the platform needs backend/Dockerfile or frontend/Dockerfile.
+          if [[ ! -f "backend/Dockerfile" ]] && [[ ! -f "frontend/Dockerfile" ]]; then
+            REASON="no-app-yet"
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
+            echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No backend/Dockerfile or frontend/Dockerfile at this commit — nothing to deploy yet"
             exit 0
           fi
 
@@ -131,6 +154,11 @@ jobs:
               echo "Check the **CodeQL** workflow run for details on security findings."
             elif [[ "$REASON" == "template-repo" ]]; then
               echo "**Reason:** This is the template repository — deployment is disabled."
+            elif [[ "$REASON" == "no-app-yet" ]]; then
+              echo "**Reason:** Nothing to deploy yet — this commit has no \`backend/Dockerfile\` or \`frontend/Dockerfile\`."
+              echo ""
+              echo "This is expected right after creating the repository from the template."
+              echo "Build your app with the AI assistant (it creates the Dockerfiles), then push to deploy."
             fi
           } >> $GITHUB_STEP_SUMMARY
 
