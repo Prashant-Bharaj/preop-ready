@@ -44,6 +44,27 @@ docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend
 
 Service names in docker-compose must stay `frontend`, `backend`, `db`/`database`, `vectordb`.
 
+## ⛔ Existing Project → Continue in ITS Stack
+
+The TypeScript defaults above are for **fresh** projects. If real code already exists, the
+stack is decided — detect it and stay in it, using the matching-language snippet
+(`snippets/**/*.py` for Python, `*.js` for JavaScript, `*.ts` for TypeScript):
+
+| Found | Stack — continue with |
+|-------|-----------------------|
+| `backend/main.py` / `requirements.txt` | Python + FastAPI (first-class: `Dockerfile.python`, 25 `.py` snippets) |
+| `backend/src/index.ts` / `tsconfig.json` | Node + Express, TypeScript |
+| `backend/server.js` / `src/index.js` (no tsconfig) | Node + Express, **JavaScript — do not convert to TS**; keep its existing `backend/Dockerfile` (`Dockerfile.node` is TS-only) |
+| `backend/Cargo.toml` | Rust + Actix-web |
+| `frontend/package.json` with `react` | React + Vite (keep its language: `.jsx` stays `.jsx`) |
+
+`bash scripts/detect-stack.sh` prints the answer (`backend=`, `frontend=`, …). Rewriting a
+working project into another language or framework is never a side effect of a feature
+request — only ever an explicit, separate ask. Two planned, opt-in paths exist:
+a *retired* layer (`retired=…`) → `.platform-rules/scope-migration.md`; a JavaScript layer
+that wants the TypeScript layout → `.platform-rules/scope-typescript.md`. Both need the
+user's yes and start with a backup branch.
+
 ⛔ **Database migrations are BACKEND code**: `backend/migrations/NNN_*.sql`, executed by
 the runner inside the backend container — which contains ONLY `backend/`. A migration
 file under `database/` or the repo root is invisible to it and will NEVER run.

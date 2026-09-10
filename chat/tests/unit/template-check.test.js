@@ -43,6 +43,23 @@ test('outdated caller is flagged even when GitHub could not be asked', () => {
   assert.match(describeTemplateCheck(r), /pre-platform copy/);
 });
 
+test('held major and retired stack are surfaced', () => {
+  const r = parseTemplateCheckOutput('TEMPLATE_PR|none\nTEMPLATE_CALLER|current\nTEMPLATE_VERSION|UPDATE_AVAILABLE|1.4.12|2.0.0\nTEMPLATE_MAJOR_HELD|2|2.0.0\nTEMPLATE_MIGRATION_NEEDED|frontend=vanilla,vectordb=chroma\nTEMPLATE_AUTO_UPDATE|off\n');
+  assert.deepEqual(r.majorHeld, { major: '2', synced: '2.0.0' });
+  assert.equal(r.migrationNeeded, 'frontend=vanilla,vectordb=chroma');
+  assert.equal(templateNeedsAttention(r), true);
+  assert.match(describeTemplateCheck(r), /retired stack \(frontend=vanilla,vectordb=chroma\) — migrate before accepting template v2/);
+  const held = parseTemplateCheckOutput('TEMPLATE_PR|none\nTEMPLATE_CALLER|current\nTEMPLATE_VERSION|UP_TO_DATE\nTEMPLATE_MAJOR_HELD|2|2.0.0\n');
+  assert.match(describeTemplateCheck(held), /template v2 is available \(held until accepted\)/);
+});
+
+test('TypeScript migration offer is informational, not attention-worthy', () => {
+  const r = parseTemplateCheckOutput('TEMPLATE_PR|none\nTEMPLATE_CALLER|current\nTEMPLATE_VERSION|UP_TO_DATE\nTEMPLATE_TS_MIGRATION|backend=node-js,frontend=react-js\nTEMPLATE_AUTO_UPDATE|off\n');
+  assert.equal(r.tsMigration, 'backend=node-js,frontend=react-js');
+  assert.equal(templateNeedsAttention(r), false);
+  assert.equal(describeTemplateCheck(r), null);
+});
+
 test('garbage and empty input degrade to the empty shape', () => {
   for (const input of ['', null, undefined, 'TEMPLATE_PR|abc|x|y\nTEMPLATE_CALLER|weird\nnot a line']) {
     const r = parseTemplateCheckOutput(input);

@@ -24,6 +24,20 @@
 #   TEMPLATE_VERSION|UPDATE_AVAILABLE|<local>|<latest>
 #   TEMPLATE_VERSION|CHECK_FAILED|<reason>     reason as check-updates.sh reports it
 #                               (fetch_auth = cannot read the template from here).
+#   TEMPLATE_MAJOR_HELD|<major>|<synced-version>
+#                               A MAJOR template release is available but held
+#                               (only additive files were synced, up to
+#                               <synced-version>). Opt in with
+#                               `bash scripts/apply-updates.sh --accept-major`.
+#   TEMPLATE_MIGRATION_NEEDED|<retired layers>
+#                               The project is on a retired stack; the major
+#                               cannot be accepted until migrated
+#                               (.platform-rules/scope-migration.md).
+#   TEMPLATE_TS_MIGRATION|<js layers>
+#                               Optional: JavaScript layers that could move to the
+#                               TypeScript layout (.platform-rules/scope-typescript.md).
+#                               Omitted while a major is held or after
+#                               `.template-ts-migration-declined` exists.
 #   TEMPLATE_AUTO_UPDATE|on|off  A tracked file `.template-auto-update` means the
 #                               team opted in to applying updates without asking.
 #
@@ -97,6 +111,24 @@ if [ -f scripts/check-updates.sh ]; then
     esac
 else
     echo "TEMPLATE_VERSION|CHECK_FAILED|script_missing"
+fi
+
+# ── 3b. Held major / retired stack (written by the engine) ───────────────────
+HELD_MAJOR=$(grep "^held_major:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
+if [ -n "$HELD_MAJOR" ]; then
+    SYNCED=$(grep "^additive_synced:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
+    echo "TEMPLATE_MAJOR_HELD|${HELD_MAJOR}|${SYNCED:-?}"
+fi
+if [ -f .template-migration-needed ]; then
+    RETIRED=$(grep "^retired:" .template-migration-needed 2>/dev/null | head -1 | cut -d'"' -f2)
+    echo "TEMPLATE_MIGRATION_NEEDED|${RETIRED:-unknown}"
+fi
+
+# ── 3c. Optional TypeScript migration (v2 projects on JavaScript layers) ─────
+# Informational only; silenced by a tracked `.template-ts-migration-declined`.
+if [ -z "$HELD_MAJOR" ] && [ ! -f .template-ts-migration-declined ] && [ -f scripts/detect-stack.sh ]; then
+    JS_LAYERS=$(bash scripts/detect-stack.sh 2>/dev/null | grep -E '^(backend=node-js|frontend=react-js)$' | paste -sd, -)
+    [ -n "$JS_LAYERS" ] && echo "TEMPLATE_TS_MIGRATION|${JS_LAYERS}"
 fi
 
 # ── 4. Team opt-in to hands-off updates ───────────────────────────────────────

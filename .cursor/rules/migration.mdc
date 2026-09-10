@@ -1,0 +1,10 @@
+---
+description: Migrate a project off a retired stack (vanilla frontend, MySQL, Chroma, Qdrant) to the supported one, then accept the held major template update
+globs: .template-migration-needed
+alwaysApply: false
+---
+
+@.platform-rules/scope-migration.md
+
+Follow `.platform-rules/scope-migration.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

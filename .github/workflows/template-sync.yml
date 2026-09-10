@@ -39,6 +39,16 @@ on:
         required: false
         default: false
         type: boolean
+      accept_major:
+        description: 'Opt in to a MAJOR template release (new AI rules, snippets, harness). Everything replaced is backed up.'
+        required: false
+        default: false
+        type: boolean
+      template_ref:
+        description: 'Platform team only: sync from this template branch instead of the release (canary)'
+        required: false
+        default: ''
+        type: string
 
   schedule:
     - cron: '0 9 * * 1'  # Weekly Monday 9 AM UTC (PR mode)
@@ -49,6 +59,9 @@ on:
         type: boolean
         default: false
       direct_commit:
+        type: boolean
+        default: false
+      accept_major:
         type: boolean
         default: false
     outputs:
@@ -104,6 +117,8 @@ jobs:
       project-name: ${{ github.event.repository.name }}
       direct_commit: ${{ inputs.direct_commit == true }}
       auto_merge: ${{ inputs.auto_merge == true }}
+      accept_major: ${{ inputs.accept_major == true }}
+      template_ref: ${{ inputs.template_ref || '' }}
     secrets:
       # Optional override: an org/repo secret with Contents: read on the
       # template repo. Empty when not provisioned — the platform token is used.
@@ -120,15 +135,23 @@ jobs:
         env:
           UPDATED: ${{ needs.sync.outputs.updated }}
           NEW_VERSION: ${{ needs.sync.outputs.new_version }}
+          HELD_WORKFLOWS: ${{ needs.sync.outputs.held_workflows }}
+          PR_URL: ${{ needs.sync.outputs.pr_url }}
           SYNC_RESULT: ${{ needs.sync.result }}
         run: |
+          # The platform job writes the detailed summary (PR link, held files,
+          # major-release notice); this is the one-line verdict.
           echo "## 📊 Template Sync Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "$SYNC_RESULT" != "success" ]; then
             echo "❌ **Sync did not complete** (job result: $SYNC_RESULT) — see the *Sync Template Files* log for the cause." >> $GITHUB_STEP_SUMMARY
           elif [ "$UPDATED" = "true" ]; then
-            echo "✅ **Update applied!** New version: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "📝 **Sync PR opened for v$NEW_VERSION:** ${PR_URL:-see the job summary} — review and merge." >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ **Already up to date** (or skipped — see the job log)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Nothing to apply** — already up to date, or skipped (see the job summary)." >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "$HELD_WORKFLOWS" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✋ Workflow files were held back (GitHub restriction) — run \`bash scripts/apply-updates.sh\` in a Codespace and commit." >> $GITHUB_STEP_SUMMARY
           fi

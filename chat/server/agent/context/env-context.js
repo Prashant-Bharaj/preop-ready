@@ -22,6 +22,9 @@ export async function gatherEnvContext() {
     // Open platform sync PR / outdated sync workflow — the session-start check
     // every AI tool runs; the harness surfaces it in the preflight list + prompt.
     templateCheck: runTemplateCheck(),
+    // Existing stack (scripts/detect-stack.sh): the planner must continue in
+    // it rather than default to TypeScript — the "existing project" core rule.
+    stack: detectStack(),
     recentCommits: getRecentCommits(),
     hasUncommittedChanges: hasUncommittedChanges(),
   };
@@ -36,6 +39,7 @@ export async function refreshEnvContext() {
   if (!cachedContext) return gatherEnvContext();
   cachedContext.projectPhase = detectProjectPhase();
   cachedContext.hasStructure = scanProjectStructure();
+  cachedContext.stack = detectStack();
   cachedContext.projectStatus = parseProjectStatus();
   cachedContext.recentCommits = getRecentCommits();
   cachedContext.hasUncommittedChanges = hasUncommittedChanges();
@@ -194,6 +198,31 @@ export function hasUncommittedChanges() {
     return output.trim().length > 0;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Detected stack per layer via scripts/detect-stack.sh:
+ * { backend, frontend, database, vectordb, retired } (strings; 'none' when
+ * absent; retired = comma list or 'none'). Null when the script is missing.
+ */
+function detectStack() {
+  const scriptPath = path.join(WORKSPACE_DIR, 'scripts', 'detect-stack.sh');
+  if (!existsSync(scriptPath)) return null;
+  try {
+    const out = execSync(`bash "${scriptPath}" 2>/dev/null`, {
+      cwd: WORKSPACE_DIR,
+      encoding: 'utf-8',
+      timeout: BASH_SCRIPT_MS,
+    });
+    const stack = {};
+    for (const line of out.split('\n')) {
+      const m = /^(backend|frontend|database|vectordb|retired)=(.+)$/.exec(line.trim());
+      if (m) stack[m[1]] = m[2];
+    }
+    return Object.keys(stack).length ? stack : null;
+  } catch {
+    return null;
   }
 }
 

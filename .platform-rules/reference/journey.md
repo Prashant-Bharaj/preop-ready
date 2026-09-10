@@ -108,16 +108,22 @@ Ask human questions, not technical ones: *What problem does it solve? Who will u
 
 Complex idea → break it into build-one-at-a-time steps (basics first, AI features later) and start with step 1.
 
-**Recommend the stack — don't make them choose:**
+**Recommend the stack — don't make them choose (FRESH projects only):**
 
 | They want... | You use... |
 |--------------|------------|
-| A website — pages, forms, or dashboards | React |
-| Save data, user accounts, APIs | Node.js backend |
-| AI/ML features, data science | Python backend |
+| A website — pages, forms, or dashboards | React + Vite (TypeScript) |
+| Save data, user accounts, APIs | Node.js + Express (TypeScript) backend |
+| AI/ML features, data science | Python + FastAPI backend |
 | High-performance APIs (ONLY if they explicitly ask for Rust) | Rust backend |
 
 Default to Node.js or Python — avoid Rust unless explicitly requested. Tell them your recommendation in plain terms.
+
+**Existing project (any real code under `backend/` or `frontend/`): the stack is already chosen.**
+Detect it (`bash scripts/detect-stack.sh`) and continue in it — a JavaScript Express app stays
+JavaScript, a FastAPI app stays Python. Never convert a working project to the default stack.
+The only exception is a *retired* layer (`retired=…` in the output), which has its own rule:
+`.platform-rules/scope-migration.md` — and even that only with the user's explicit yes.
 
 **Project URL is automatic** from the repo name (`https://<repo>.vibe.intranet.cnb`) — never ask for a project name.
 

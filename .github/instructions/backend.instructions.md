@@ -17,11 +17,16 @@ Core rules (routing, ports, `/health`, security musts, secrets table) are in `.p
 
 | Stack | Dockerfile | Entry files |
 |-------|-----------|-------------|
-| Node.js/Express (recommended) | `cp backend/Dockerfile.node backend/Dockerfile` | `src/index.ts`, `package.json`, `tsconfig.json` |
+| Node.js/Express (recommended for NEW projects) | `cp backend/Dockerfile.node backend/Dockerfile` | `src/index.ts`, `package.json`, `tsconfig.json` |
 | Python/FastAPI | `cp backend/Dockerfile.python backend/Dockerfile` | `main.py`, `requirements.txt` |
 | Rust/Actix-web (only if user explicitly asks) | `cp backend/Dockerfile.rust backend/Dockerfile` | `src/main.rs`, `Cargo.toml` |
 
-TypeScript + ESM: source is `src/index.ts`, compiled by `tsc` to `dist/index.js`. `backend/Dockerfile.node` is multi-stage — the builder installs all deps and runs `tsc`; the runtime ships `dist/` plus pruned production deps.
+An existing backend keeps its language (core rule "Existing Project → Continue in ITS Stack").
+A JavaScript `server.js` app stays JavaScript **and keeps its current `backend/Dockerfile`** —
+never re-copy `Dockerfile.node` over it: that template is TypeScript-only (it expects
+`tsconfig.json` and a `build` script and ships `dist/`). Fix a JS project's Dockerfile in place.
+
+TypeScript + ESM (new Node projects): source is `src/index.ts`, compiled by `tsc` to `dist/index.js`. `backend/Dockerfile.node` is multi-stage — the builder installs all deps and runs `tsc`; the runtime ships `dist/` plus pruned production deps.
 
 ## Express Starter
 

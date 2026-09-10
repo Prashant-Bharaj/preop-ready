@@ -28,6 +28,21 @@ export function buildEnvSection(env) {
     lines.push('Existing components: none (fresh project)');
   }
 
+  // Detected stack — an existing project continues in ITS stack (core rule);
+  // the TypeScript default applies to fresh projects only.
+  const st = env.stack;
+  if (st) {
+    const chosen = ['backend', 'frontend', 'database', 'vectordb']
+      .filter((k) => st[k] && st[k] !== 'none')
+      .map((k) => `${k}=${st[k]}`);
+    if (chosen.length > 0) {
+      lines.push(`Detected stack: ${chosen.join(', ')} — continue in this stack; do not convert languages or frameworks unless the user explicitly asks.`);
+    }
+    if (st.retired && st.retired !== 'none') {
+      lines.push(`Retired layer(s): ${st.retired} — keep building on them; migration only via .platform-rules/scope-migration.md with the user's explicit yes.`);
+    }
+  }
+
   // Project status
   if (env.projectStatus) {
     if (env.projectStatus.idea) {
@@ -51,6 +66,14 @@ export function buildEnvSection(env) {
   }
   if (tc?.caller === 'outdated' || tc?.caller === 'missing') {
     lines.push('WARNING: This repo\'s weekly template sync cannot reach the template (pre-platform workflow copy). One `bash scripts/apply-updates.sh` run + commit fixes it — offer that.');
+  }
+  if (tc?.tsMigration) {
+    lines.push(`OPTIONAL: JavaScript layer(s) (${tc.tsMigration}) could move to the TypeScript layout — offer it in one sentence at most once, only do it on an explicit yes (.platform-rules/scope-typescript.md).`);
+  }
+  if (tc?.migrationNeeded) {
+    lines.push(`NOTE: This project is on a retired stack (${tc.migrationNeeded}). Keep building in its existing stack; offer the migration (.platform-rules/scope-migration.md) once, only migrate with an explicit yes.`);
+  } else if (tc?.majorHeld) {
+    lines.push(`NOTE: Template v${tc.majorHeld.major} is available but held (security files synced). Mention once; accept only when the user says so (bash scripts/apply-updates.sh --accept-major).`);
   }
 
   // App secrets — names + descriptions + isSet, never values. Read fresh from

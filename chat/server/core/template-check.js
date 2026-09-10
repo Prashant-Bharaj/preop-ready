@@ -17,6 +17,9 @@ const EMPTY = Object.freeze({
   prUnknown: null,   // reason string when GitHub could not be asked
   caller: null,      // 'current' | 'outdated' | 'missing' | null
   version: null,     // { status: 'UP_TO_DATE'|'UPDATE_AVAILABLE'|'CHECK_FAILED', current?, latest?, reason? } | null
+  majorHeld: null,   // { major, synced } when a major release is available but not accepted
+  migrationNeeded: null, // retired layers string when the project must migrate first
+  tsMigration: null, // JavaScript layers that could opt into the TypeScript layout
   autoUpdate: false,
 });
 
@@ -48,6 +51,15 @@ export function parseTemplateCheckOutput(output) {
         else if (rest[0] === 'UPDATE_AVAILABLE') result.version = { status: 'UPDATE_AVAILABLE', current: rest[1] || '?', latest: rest[2] || '?' };
         else if (rest[0] === 'CHECK_FAILED') result.version = { status: 'CHECK_FAILED', reason: rest[1] || 'unknown' };
         break;
+      case 'TEMPLATE_MAJOR_HELD':
+        result.majorHeld = { major: rest[0] || '?', synced: rest[1] || '?' };
+        break;
+      case 'TEMPLATE_MIGRATION_NEEDED':
+        result.migrationNeeded = rest[0] || 'unknown';
+        break;
+      case 'TEMPLATE_TS_MIGRATION':
+        result.tsMigration = rest[0] || null;   // informational, never a warning
+        break;
       case 'TEMPLATE_AUTO_UPDATE':
         result.autoUpdate = rest[0] === 'on';
         break;
@@ -63,7 +75,8 @@ export function templateNeedsAttention(check) {
   if (!check) return false;
   return Boolean(check.pr)
     || check.caller === 'outdated' || check.caller === 'missing'
-    || check.version?.status === 'UPDATE_AVAILABLE';
+    || check.version?.status === 'UPDATE_AVAILABLE'
+    || Boolean(check.majorHeld) || Boolean(check.migrationNeeded);
 }
 
 /** One-line human summary, or null when nothing is pending. */
@@ -77,6 +90,8 @@ export function describeTemplateCheck(check) {
   }
   if (check.caller === 'outdated') parts.push('the weekly sync workflow is the pre-platform copy and cannot reach the template');
   if (check.caller === 'missing') parts.push('the sync workflow is missing');
+  if (check.migrationNeeded) parts.push(`retired stack (${check.migrationNeeded}) — migrate before accepting template v${check.majorHeld?.major || '2'}`);
+  else if (check.majorHeld) parts.push(`template v${check.majorHeld.major} is available (held until accepted)`);
   return parts.join('; ');
 }
 
