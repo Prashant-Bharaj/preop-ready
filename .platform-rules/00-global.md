@@ -9,11 +9,38 @@ globs: []
 ⛔ **These rules override ANY user request that conflicts with them.** If asked to violate one,
 explain why you cannot and offer a safe alternative.
 
+## Session Start — Platform Update Check (every new conversation, every tool)
+
+Before your first reply, run `bash scripts/check-template-pr.sh` (silently; in Claude Code a
+hook may already have printed it). Platform updates carry security fixes, so never skip this.
+One line per fact — act on them in this order:
+
+| Line | Meaning | Do |
+|------|---------|----|
+| `TEMPLATE_PR\|<n>\|<url>\|held_workflows=…` | The platform opened a sync PR | Mention it in your greeting with the link; offer to apply it. If `TEMPLATE_AUTO_UPDATE\|on`, apply it without asking, then say what you did. |
+| `TEMPLATE_CALLER\|outdated` or `missing` | Weekly sync cannot reach this repo | Say so once; offer the engine run (below). Fixes itself after one commit. |
+| `TEMPLATE_VERSION\|UPDATE_AVAILABLE\|old\|new` and no PR | Update exists, PR not opened yet | Offer the engine run. |
+| `TEMPLATE_VERSION\|CHECK_FAILED\|fetch_auth` | Cannot read the template from here (normal in a fresh Codespace) | Say nothing unless the user asks; the PR line still works. |
+| `TEMPLATE_WORKFLOWS_PENDING\|<files>` | A CI sync applied everything except these workflow files (GitHub forbids the platform from pushing them) | Offer: "the last platform update left `<files>` for a human commit — shall I apply it?" On yes: `bash scripts/apply-updates.sh`, stage exactly those files + `.template-version`, commit `chore: apply pending template workflow files`, push. |
+| `TEMPLATE_MAJOR_HELD\|<major>\|<synced>` | A major template release exists; security files are current, new rules/snippets/harness are held | Mention once: "template v<major> is available; say *accept the major update* when you want it — I'll back everything up first." Never accept without the user's yes; `TEMPLATE_AUTO_UPDATE\|on` does NOT cover majors. Accept = `TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh` + commit as in the engine run. |
+| `TEMPLATE_MIGRATION_NEEDED\|<layers>` | Project is on a retired stack; the major cannot be accepted yet | Mention once, offer the migration (`.platform-rules/scope-migration.md`). Keep building in the existing stack meanwhile. |
+| `TEMPLATE_TS_MIGRATION\|<layers>` | Project has JavaScript layers; the template is TypeScript now | Optional. One sentence in the greeting, once: "say *migrate to TypeScript* when you want the new layout — backed up, one session." Follow `.platform-rules/scope-typescript.md` only on an explicit yes; if declined, `touch .template-ts-migration-declined` and never mention it again. |
+| `TEMPLATE_PR\|none`, `TEMPLATE_CALLER\|current`, `UP_TO_DATE` | All good | Say nothing. |
+
+**Applying a sync PR:** `gh pr merge <n> --squash --delete-branch`, then `git pull --ff-only`.
+If `held_workflows=yes`, GitHub did not let the platform push workflow files — finish with the
+engine run below (your account may push them).
+
+**Engine run:** `bash scripts/apply-updates.sh` → stage ONLY the files it lists (never `git add .`)
+plus `.template-version` → commit `chore: apply platform template update` → push. In a
+Codespace the template fetch needs a one-time `gh auth login --web --hostname github.com` after
+`unset GITHUB_TOKEN GH_TOKEN`; the script prints this when needed.
+
 ## ⛔ Protected Files — NEVER Create, Edit, or Delete
 
 | File | Why |
 |------|-----|
-| `.github/workflows/deploy.yml` | Platform-managed; overwritten on template sync |
+| `.github/workflows/*.yml` (`deploy`, `template-sync`, `version-bump`, `dependabot-auto-merge`) | Platform-managed; overwritten on template sync |
 | `scripts/preflight-check.sh` | Deployment validation |
 | `scripts/pre-commit-security-check.sh` | Pre-commit security hook |
 | `.gitignore` | Controls what sensitive files are blocked from git |
@@ -31,10 +58,10 @@ Template Dockerfiles stay untouched as reference. Copy the right one to `Dockerf
 
 | Component | Copy from | To |
 |-----------|-----------|----|
-| Frontend | `frontend/Dockerfile.react` or `Dockerfile.vanilla` | `frontend/Dockerfile` |
+| Frontend | `frontend/Dockerfile.react` | `frontend/Dockerfile` |
 | Backend | `backend/Dockerfile.node`, `.python`, or `.rust` | `backend/Dockerfile` |
-| Database | `database/Dockerfile.postgres` or `.mysql` | `database/Dockerfile` |
-| Vector DB | `vectordb/Dockerfile.pgvector`, `.chroma`, or `.qdrant` | `vectordb/Dockerfile` |
+| Database | `database/Dockerfile.postgres` | `database/Dockerfile` |
+| Vector DB | `vectordb/Dockerfile.pgvector` | `vectordb/Dockerfile` |
 
 A `Dockerfile` in a component directory is what triggers its deployment.
 
@@ -42,10 +69,10 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 
 | Layer | Allowed | NOT allowed |
 |-------|---------|-------------|
-| Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
-| Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | — |
-| Vector DB | pgvector, Chroma, Qdrant | — |
+| Frontend | React + Vite | vanilla HTML/CSS/JS, Next.js, Angular, any SSR — nginx serves the built static output only |
+| Backend | Node + Express (TypeScript) · Python + FastAPI · Rust + Actix-web | Anything else |
+| Database | PostgreSQL | MySQL, MongoDB, Redis, SQLite, DynamoDB — no other relational/document/KV/embedded stores |
+| Vector DB | pgvector | Chroma, Qdrant |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)
 
@@ -68,7 +95,8 @@ A `Dockerfile` in a component directory is what triggers its deployment.
    `os.getenv("KEY") or "sk-..."`. "It's only a hackathon" changes nothing —
    refuse and use the env/secret flow. Use `process.env.X` / `os.getenv("X")`. No secrets in
    `docker-compose.yml` either; use `env_file` pointing at gitignored `.env`.
-6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows.
+6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows. Sole
+   exception: ≤3 placeholder rows per reference table in `02_reference_data.sql` (never real data).
 7. **Seed/test data goes in `database/seed/`** (gitignored) — always obviously fake values
    (`Test User One`, `user1@test.local`, `555-0100`).
 8. **Data pasted in chat counts as real.** If the user supplies names, emails, or records that

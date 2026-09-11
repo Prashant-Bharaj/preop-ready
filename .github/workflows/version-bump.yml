@@ -166,6 +166,23 @@ jobs:
 
           BUMP_TYPE="${{ inputs.bump_type || 'patch' }}"
 
+          # A push that already changed `version:` in the manifest is a
+          # hand-set release (e.g. the 2.0.0 major landing by PR). Respect it:
+          # tag that version instead of computing a patch bump over it.
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+              BEFORE="${{ github.sha }}^"
+            fi
+            PREVIOUS=$(git show "$BEFORE:.template-manifest.yml" 2>/dev/null | grep "^version:" | head -1 | cut -d'"' -f2)
+            if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" != "$CURRENT" ]; then
+              echo "new_version=$CURRENT" >> $GITHUB_OUTPUT
+              echo "hand_set=true" >> $GITHUB_OUTPUT
+              echo "📦 Version was set by hand in this push ($PREVIOUS → $CURRENT) — tagging it, no bump"
+              exit 0
+            fi
+          fi
+
           case $BUMP_TYPE in
             major)
               MAJOR=$((MAJOR + 1))
@@ -215,15 +232,21 @@ jobs:
             git add .template-manifest.yml .template-version
             git commit -m "chore: bump template version to $NEW_VERSION [skip ci]"
             git push
+            echo "✅ Version bumped to $NEW_VERSION"
+          else
+            echo "⏭️ Manifest already at $NEW_VERSION — nothing to commit"
+          fi
 
-            # Tag the bump commit - the engine uses template-v<version> tags to
-            # detect user-modified platform files in child repos
+          # Tag the release commit (the bump commit, or the hand-set one) -
+          # the engine pins children to template-v<version> and uses the tag
+          # to detect user-modified platform files.
+          if git rev-parse -q --verify "refs/tags/template-v$NEW_VERSION" >/dev/null 2>&1 \
+             || git ls-remote --exit-code --tags origin "template-v$NEW_VERSION" >/dev/null 2>&1; then
+            echo "⏭️ Tag template-v$NEW_VERSION already exists"
+          else
             git tag -a "template-v$NEW_VERSION" -m "Template version $NEW_VERSION"
             git push origin "template-v$NEW_VERSION"
-
-            echo "✅ Version bumped to $NEW_VERSION and tagged template-v$NEW_VERSION"
-          else
-            echo "⏭️ No version change needed"
+            echo "✅ Tagged template-v$NEW_VERSION"
           fi
 
       - name: Summary

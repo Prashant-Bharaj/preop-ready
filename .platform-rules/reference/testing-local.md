@@ -43,7 +43,7 @@ In beginner mode, RUN these yourself — "Let's test your app before making it l
 ## Hot Reload
 
 - **Vite/React:** built-in — keep `npm run dev` running, edits in `frontend/src/` appear automatically.
-- **Node backend:** add nodemon — `"dev": "nodemon server.js"` script + `nodemon` in devDependencies; `"start": "node server.js"` stays for production.
+- **Node backend:** run `npm run dev` (`tsc --watch`) alongside `node --watch dist/index.js` to restart on rebuild; `npm start` (`node dist/index.js`) for production.
 - **Docker:** mount source and protect node_modules, run the dev script:
 
 ```yaml

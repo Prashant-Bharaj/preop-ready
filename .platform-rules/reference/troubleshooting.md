@@ -22,7 +22,7 @@ Don't explain what they should do — fix it yourself, then explain what you fix
 | Works locally, not deployed | Usual suspects: missing `/health` or wrong port, env vars not set, local-vs-prod path/URL differences — check each |
 | Blank/broken page | Check browser console, `docker-compose ps`, container logs |
 | Deploy failure messages | Use the failures table in `.platform-rules/reference/deployment.md` |
-| CORS errors | Add CORS middleware / proxy — use `snippets/config/cors-proxy.js` |
+| CORS errors | Add CORS middleware / proxy — use `snippets/config/cors-proxy.ts` |
 
 ## Technical Reference
 

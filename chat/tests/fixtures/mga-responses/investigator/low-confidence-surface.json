@@ -1,0 +1,13 @@
+{
+  "assistantKey": "investigator",
+  "scenarioName": "low-confidence-surface",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "<read_harness_state>\n</read_harness_state>\n\n<read_container_logs>\n<service>frontend</service>\n<tail>50</tail>\n</read_container_logs>\n\n<read_container_logs>\n<service>backend</service>\n<tail>50</tail>\n</read_container_logs>\n\n<attempt_completion>\n<result>\n{\n  \"root_cause\": \"Logs are empty across frontend and backend services and no obvious failure signal was found in the source files inspected. The reported 'nothing happens when clicking submit' could be a missing event handler binding, a CORS preflight failure not logged, or a network-level block — none of these have direct evidence in the captured logs. Without a reproducible error trace from the user's browser console, the next step needs more user input.\",\n  \"affected_scopes\": [\"frontend\"],\n  \"confidence\": 0.45,\n  \"recommended_fix\": {\n    \"scope\": \"frontend\",\n    \"description\": \"Ask the user for their browser devtools console output and the Network tab response for the failing form submit. Without that, any change would be speculative.\",\n    \"contract_change\": null\n  },\n  \"files_read\": [\".harness/state.md\", \".harness/contracts.json\", \"frontend/src/App.tsx\"],\n  \"logs_read\": [\"frontend\", \"backend\"]\n}\n</result>\n</attempt_completion>",
+    "usage": { "prompt_tokens": 13988, "completion_tokens": 282, "prompt_tokens_details": { "cached_tokens": 12500 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-investigator-low-confidence-surface-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

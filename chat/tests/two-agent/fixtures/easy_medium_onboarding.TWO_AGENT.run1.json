@@ -1,0 +1,759 @@
+{
+  "prompt": {
+    "id": "easy_medium_onboarding",
+    "label": "Easy/Medium — Slow Employee Onboarding (NON-AI, workflow)",
+    "userMessage": "As we continue hiring across multiple countries, onboarding new employees has become increasingly inconsistent and time-consuming. HR, IT, Legal, and department managers all operate with separate processes, so simple things like equipment access or compliance training often fall through the cracks. New hires sometimes wait more than a week before they can fully contribute, which is hurting productivity and first impressions. We want to create a smoother onboarding experience that feels coordinated and scalable as the company grows."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 8901,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"Thanks — onboarding spans a lot of ground, so I want to make sure we build the right shape of tool. Which of these is closest to what you want?\\n\\nA) Onboarding workflow tracker — each new hire gets a checklist routed across HR, IT, Legal, and their manager; humans do the tasks, the tool coordinates handoffs and surfaces what's stuck (no AI)\\nB) AI-assisted onboarding assistant — new hires chat with an AI that answers policy/setup questions from your internal docs, plus a basic task checklist alongside\\nC) Onboarding dashboard — leadership view showing where every new hire is in their journey, bottlenecks by team, time-to-productive metrics (reporting-first, light task tracking)\\nD) New-hire self-serve portal — new hires log in to a personalized page with their tasks, documents to sign, training links, and status of equipment/access requests\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Thanks — onboarding spans a lot of ground, so I want to make sure we build the right shape of tool. Which of these is closest to what you want?\n\nA) Onboarding workflow tracker — each new hire gets a checklist routed across HR, IT, Legal, and their manager; humans do the tasks, the tool coordinates handoffs and surfaces what's stuck (no AI)\nB) AI-assisted onboarding assistant — new hires chat with an AI that answers policy/setup questions from your internal docs, plus a basic task checklist alongside\nC) Onboarding dashboard — leadership view showing where every new hire is in their journey, bottlenecks by team, time-to-productive metrics (reporting-first, light task tracking)\nD) New-hire self-serve portal — new hires log in to a personalized page with their tasks, documents to sign, training links, and status of equipment/access requests"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 4653,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 2,\n  \"message\": \"Got it — an onboarding workflow tracker that routes tasks across HR, IT, Legal, and managers, and surfaces what's stuck. A few things we can include out of the box — pick any that sound useful:\\n\\nA) Email notifications when a task is assigned, overdue, or blocked\\nB) Admin dashboard with bottleneck analytics and time-to-productive metrics\\nC) Audit log of every task completion and handoff (useful for compliance)\\nD) CSV export of onboarding status for HR reporting\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Got it — an onboarding workflow tracker that routes tasks across HR, IT, Legal, and managers, and surfaces what's stuck. A few things we can include out of the box — pick any that sound useful:\n\nA) Email notifications when a task is assigned, overdue, or blocked\nB) Admin dashboard with bottleneck analytics and time-to-productive metrics\nC) Audit log of every task completion and handoff (useful for compliance)\nD) CSV export of onboarding status for HR reporting"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 14210,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, surfacing handoffs and what's stuck.\",\n    \"archetype\": \"collab-tool\",\n    \"entities\": [\"new_hires\", \"tasks\", \"task_templates\", \"departments\", \"users\"],\n    \"user_roles\": [\"hr\", \"it\", \"legal\", \"managers\", \"admins\"],\n    \"key_workflows\": [\n      \"HR creates a new hire record and triggers an onboarding checklist based on role/country/department template.\",\n      \"Tasks are auto-assigned to the right owner across HR, IT, Legal, and the hiring manager with due dates.\",\n      \"Each owner sees their queue, marks tasks complete, or flags blockers.\",\n      \"The system routes handoffs (e.g., Legal contract signed → IT provisions equipment) and surfaces stuck or overdue tasks.\",\n      \"Admins view bottleneck analytics, time-to-productive metrics, and overall onboarding status.\",\n      \"Email notifications fire when tasks are assigned, overdue, or blocked.\",\n      \"HR can export onboarding status to CSV for reporting.\",\n      \"An audit log records every task completion and handoff for compliance.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"Per-new-hire onboarding checklist routed across HR, IT, Legal, and the hiring manager\",\n      \"Role/country-specific task templates (multi-country hiring)\",\n      \"Handoff routing between departments (e.g., Legal → IT equipment provisioning)\",\n      \"Surface stuck/overdue tasks and blockers\",\n      \"Track equipment access and compliance training completion\",\n      \"Time-to-productive metric per new hire\",\n      \"Bottleneck analytics by team/department\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\"email_notifications\", \"admin_dashboard\", \"audit_logging\", \"csv_export\"],\n      \"declined\": [],\n      \"user_didnt_choose\": []\n    },\n    \"flags\": [\"has-users\", \"has-admin\", \"notifications-email\", \"exports-csv\"],\n    \"notes_for_contract_agent\": \"Multi-country hiring context — task templates likely vary by country and role. Four distinct functional roles (HR, IT, Legal, managers) plus admin oversight; consider role-based task queues. User explicitly chose workflow-coordination tool, NOT AI-assisted — do not include ai-rag or ai-chat. Audit logging delivered via admin scope.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, surfacing handoffs and what's stuck.",
+            "archetype": "collab-tool",
+            "entities": [
+              "new_hires",
+              "tasks",
+              "task_templates",
+              "departments",
+              "users"
+            ],
+            "user_roles": [
+              "hr",
+              "it",
+              "legal",
+              "managers",
+              "admins"
+            ],
+            "key_workflows": [
+              "HR creates a new hire record and triggers an onboarding checklist based on role/country/department template.",
+              "Tasks are auto-assigned to the right owner across HR, IT, Legal, and the hiring manager with due dates.",
+              "Each owner sees their queue, marks tasks complete, or flags blockers.",
+              "The system routes handoffs (e.g., Legal contract signed → IT provisions equipment) and surfaces stuck or overdue tasks.",
+              "Admins view bottleneck analytics, time-to-productive metrics, and overall onboarding status.",
+              "Email notifications fire when tasks are assigned, overdue, or blocked.",
+              "HR can export onboarding status to CSV for reporting.",
+              "An audit log records every task completion and handoff for compliance."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Per-new-hire onboarding checklist routed across HR, IT, Legal, and the hiring manager",
+              "Role/country-specific task templates (multi-country hiring)",
+              "Handoff routing between departments (e.g., Legal → IT equipment provisioning)",
+              "Surface stuck/overdue tasks and blockers",
+              "Track equipment access and compliance training completion",
+              "Time-to-productive metric per new hire",
+              "Bottleneck analytics by team/department"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "email_notifications",
+                "admin_dashboard",
+                "audit_logging",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "Multi-country hiring context — task templates likely vary by country and role. Four distinct functional roles (HR, IT, Legal, managers) plus admin oversight; consider role-based task queues. User explicitly chose workflow-coordination tool, NOT AI-assisted — do not include ai-rag or ai-chat. Audit logging delivered via admin scope."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and department managers for each new hire, surfacing handoffs and what's stuck.",
+      "archetype": "collab-tool",
+      "entities": [
+        "new_hires",
+        "tasks",
+        "task_templates",
+        "departments",
+        "users"
+      ],
+      "user_roles": [
+        "hr",
+        "it",
+        "legal",
+        "managers",
+        "admins"
+      ],
+      "key_workflows": [
+        "HR creates a new hire record and triggers an onboarding checklist based on role/country/department template.",
+        "Tasks are auto-assigned to the right owner across HR, IT, Legal, and the hiring manager with due dates.",
+        "Each owner sees their queue, marks tasks complete, or flags blockers.",
+        "The system routes handoffs (e.g., Legal contract signed → IT provisions equipment) and surfaces stuck or overdue tasks.",
+        "Admins view bottleneck analytics, time-to-productive metrics, and overall onboarding status.",
+        "Email notifications fire when tasks are assigned, overdue, or blocked.",
+        "HR can export onboarding status to CSV for reporting.",
+        "An audit log records every task completion and handoff for compliance."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Per-new-hire onboarding checklist routed across HR, IT, Legal, and the hiring manager",
+        "Role/country-specific task templates (multi-country hiring)",
+        "Handoff routing between departments (e.g., Legal → IT equipment provisioning)",
+        "Surface stuck/overdue tasks and blockers",
+        "Track equipment access and compliance training completion",
+        "Time-to-productive metric per new hire",
+        "Bottleneck analytics by team/department"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "email_notifications",
+          "admin_dashboard",
+          "audit_logging",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "Multi-country hiring context — task templates likely vary by country and role. Four distinct functional roles (HR, IT, Legal, managers) plus admin oversight; consider role-based task queues. User explicitly chose workflow-coordination tool, NOT AI-assisted — do not include ai-rag or ai-chat. Audit logging delivered via admin scope."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\"action\":\"execute\",\"archetype\":\"collab-tool\",\"message\":\"An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and hiring managers for every new hire. HR creates a new hire and the system auto-generates a role/country-specific checklist, assigns each task to the right owner, routes handoffs between departments, and surfaces stuck or overdue work. Each role sees their personal task queue and can complete tasks or flag blockers. Admins get a dashboard with bottleneck analytics, time-to-productive metrics, and a compliance audit log. Email notifications fire on assignment, overdue, and blocked events; HR can export onboarding status to CSV.\",\"flags\":[\"has-users\",\"has-admin\",\"notifications-email\",\"exports-csv\"],\"tasks\":[\n  {\"scope\":\"database\",\"summary\":\"Set up the data store for new hires, their task checklists, reusable templates, departments, users, and the audit trail.\",\"task\":\"Tables: per data_model. Indexes: tasks(assignee_user_id), tasks(new_hire_id), tasks(status,due_date), tasks(blocked), audit_log(new_hire_id,created_at DESC), new_hires(status), users(oidc_sub UNIQUE). Column-level contract: data_model.\",\"dockerfile\":\"Dockerfile.postgres\",\"rules\":[],\"snippets\":[],\"primarySnippet\":\"\"},\n  {\"scope\":\"backend\",\"summary\":\"Build the API that creates new hires, generates checklists from templates, routes handoffs, tracks blockers, sends email, exports CSV, and serves admin analytics.\",\"task\":\"Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; auto-provision users row on first login from OIDC claims. Template instantiation: on new_hire create, expand matching task_template (by role+country+department) into tasks rows with assignee derived from task.owner_role + new_hire.department. Handoff routing: on task complete, if template defines next_task_key, unblock or create successor task. Overdue sweep: scheduled check marks tasks past due_date and emits email. CSV export: streaming text/csv. Audit log: append row on every task status change and handoff. Email: stub SMTP integration logging payloads for local dev. Admin endpoints role-gated to role='admin'.\",\"dockerfile\":\"Dockerfile.node\",\"rules\":[],\"snippets\":[],\"primarySnippet\":\"backend/express-server-template.ts\"},\n  {\"scope\":\"frontend\",\"summary\":\"Build the UI: a personal task queue per role, new-hire detail with full checklist and handoff map, HR new-hire intake, admin analytics dashboard, and template management.\",\"task\":\"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Role-aware nav (hr/it/legal/manager/admin) driven by GET /whoami. Task queue filters by status (open/blocked/overdue/done). Block action prompts for reason. Admin dashboard shows bottleneck chart (avg days per task type), time-to-productive per hire, overall status counts. CSV export button calls GET /export/onboarding.csv. Responsive.\",\"dockerfile\":\"Dockerfile.react\",\"rules\":[],\"snippets\":[],\"primarySnippet\":\"frontend/AppScaffold.tsx\"},\n  {\"scope\":\"integration\",\"summary\":\"Wire database, backend, and frontend together so the whole app runs as one stack locally and in deployment.\",\"task\":\"Wire database, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=onboarding, DATABASE_USER=onboarding_user, DATABASE_PASSWORD=localdev123. nginx.local.conf proxy /api→backend:3000. depends_on chain frontend→backend→database. Healthchecks on all services. Volumes per service.\",\"rules\":[],\"snippets\":[],\"primarySnippet\":\"integration/docker-compose-fullstack.yml\"}\n],\n\"data_model\":{\"tables\":[\n  {\"name\":\"users\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"oidc_sub\",\"type\":\"TEXT UNIQUE NOT NULL\"},\n    {\"name\":\"email\",\"type\":\"VARCHAR(255) NOT NULL\"},\n    {\"name\":\"name\",\"type\":\"VARCHAR(255)\"},\n    {\"name\":\"role\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'hr'\"},\n    {\"name\":\"department_id\",\"type\":\"INTEGER REFERENCES departments(id)\"},\n    {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n  ]},\n  {\"name\":\"departments\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"name\",\"type\":\"VARCHAR(128) NOT NULL UNIQUE\"}\n  ]},\n  {\"name\":\"task_templates\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"name\",\"type\":\"VARCHAR(255) NOT NULL\"},\n    {\"name\":\"role_match\",\"type\":\"VARCHAR(128)\"},\n    {\"name\":\"country_match\",\"type\":\"VARCHAR(64)\"},\n    {\"name\":\"department_id\",\"type\":\"INTEGER REFERENCES departments(id)\"},\n    {\"name\":\"items\",\"type\":\"JSONB NOT NULL\"},\n    {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n  ]},\n  {\"name\":\"new_hires\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"full_name\",\"type\":\"VARCHAR(255) NOT NULL\"},\n    {\"name\":\"email\",\"type\":\"VARCHAR(255) NOT NULL\"},\n    {\"name\":\"role_title\",\"type\":\"VARCHAR(128) NOT NULL\"},\n    {\"name\":\"country\",\"type\":\"VARCHAR(64) NOT NULL\"},\n    {\"name\":\"department_id\",\"type\":\"INTEGER REFERENCES departments(id)\"},\n    {\"name\":\"manager_user_id\",\"type\":\"INTEGER REFERENCES users(id)\"},\n    {\"name\":\"start_date\",\"type\":\"DATE NOT NULL\"},\n    {\"name\":\"productive_at\",\"type\":\"TIMESTAMPTZ\"},\n    {\"name\":\"status\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'in_progress'\"},\n    {\"name\":\"created_by_user_id\",\"type\":\"INTEGER REFERENCES users(id)\"},\n    {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n  ]},\n  {\"name\":\"tasks\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"new_hire_id\",\"type\":\"INTEGER NOT NULL REFERENCES new_hires(id) ON DELETE CASCADE\"},\n    {\"name\":\"title\",\"type\":\"VARCHAR(255) NOT NULL\"},\n    {\"name\":\"task_key\",\"type\":\"VARCHAR(64) NOT NULL\"},\n    {\"name\":\"owner_role\",\"type\":\"VARCHAR(32) NOT NULL\"},\n    {\"name\":\"assignee_user_id\",\"type\":\"INTEGER REFERENCES users(id)\"},\n    {\"name\":\"category\",\"type\":\"VARCHAR(64)\"},\n    {\"name\":\"depends_on_task_key\",\"type\":\"VARCHAR(64)\"},\n    {\"name\":\"due_date\",\"type\":\"DATE\"},\n    {\"name\":\"status\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'open'\"},\n    {\"name\":\"blocked\",\"type\":\"BOOLEAN NOT NULL DEFAULT FALSE\"},\n    {\"name\":\"blocker_reason\",\"type\":\"TEXT\"},\n    {\"name\":\"completed_at\",\"type\":\"TIMESTAMPTZ\"},\n    {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n  ]},\n  {\"name\":\"audit_log\",\"columns\":[\n    {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n    {\"name\":\"new_hire_id\",\"type\":\"INTEGER REFERENCES new_hires(id) ON DELETE SET NULL\"},\n    {\"name\":\"task_id\",\"type\":\"INTEGER REFERENCES tasks(id) ON DELETE SET NULL\"},\n    {\"name\":\"actor_user_id\",\"type\":\"INTEGER REFERENCES users(id)\"},\n    {\"name\":\"event_type\",\"type\":\"VARCHAR(64) NOT NULL\"},\n    {\"name\":\"detail\",\"type\":\"JSONB\"},\n    {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n  ]}\n]},\n\"api_contract\":{\"version\":1,\"endpoints\":[\n  {\"method\":\"GET\",\"path\":\"/whoami\",\"response\":{\"status\":200,\"body\":\"{ id, email, name, role, department_id }\"}},\n  {\"method\":\"GET\",\"path\":\"/departments\",\"response\":{\"status\":200,\"body\":\"[{ id, name }]\"}},\n  {\"method\":\"POST\",\"path\":\"/departments\",\"request\":{\"name\":\"string required\"},\"response\":{\"status\":201,\"body\":\"{ id, name }\"}},\n  {\"method\":\"GET\",\"path\":\"/users\",\"response\":{\"status\":200,\"body\":\"[{ id, email, name, role, department_id }]\"}},\n  {\"method\":\"PATCH\",\"path\":\"/users/:id/role\",\"request\":{\"role\":\"string required\"},\"response\":{\"status\":200,\"body\":\"{ id, role }\"}},\n  {\"method\":\"GET\",\"path\":\"/task-templates\",\"response\":{\"status\":200,\"body\":\"[{ id, name, role_match, country_match, department_id, items }]\"}},\n  {\"method\":\"POST\",\"path\":\"/task-templates\",\"request\":{\"name\":\"string required\",\"role_match\":\"string\",\"country_match\":\"string\",\"department_id\":\"integer\",\"items\":\"array required\"},\"response\":{\"status\":201,\"body\":\"{ id }\"}},\n  {\"method\":\"PUT\",\"path\":\"/task-templates/:id\",\"request\":{\"name\":\"string\",\"role_match\":\"string\",\"country_match\":\"string\",\"department_id\":\"integer\",\"items\":\"array\"},\"response\":{\"status\":200,\"body\":\"{ id }\"}},\n  {\"method\":\"DELETE\",\"path\":\"/task-templates/:id\",\"response\":{\"status\":204,\"body\":\"\"}},\n  {\"method\":\"GET\",\"path\":\"/new-hires\",\"request\":{\"status\":\"string optional\",\"limit\":\"integer optional default 50\",\"offset\":\"integer optional default 0\"},\"response\":{\"status\":200,\"body\":\"[{ id, full_name, role_title, country, department_id, start_date, status, open_tasks, blocked_tasks, overdue_tasks }]\"}},\n  {\"method\":\"POST\",\"path\":\"/new-hires\",\"request\":{\"full_name\":\"string required\",\"email\":\"string required\",\"role_title\":\"string required\",\"country\":\"string required\",\"department_id\":\"integer required\",\"manager_user_id\":\"integer required\",\"start_date\":\"date required\",\"template_id\":\"integer optional\"},\"response\":{\"status\":201,\"body\":\"{ id, generated_task_count }\"}},\n  {\"method\":\"GET\",\"path\":\"/new-hires/:id\",\"response\":{\"status\":200,\"body\":\"{ id, full_name, email, role_title, country, department_id, manager_user_id, start_date, status, productive_at, tasks:[{ id, title, owner_role, assignee_user_id, due_date, status, blocked, blocker_reason, depends_on_task_key }] }\"}},\n  {\"method\":\"PATCH\",\"path\":\"/new-hires/:id\",\"request\":{\"status\":\"string optional\",\"productive_at\":\"datetime optional\"},\"response\":{\"status\":200,\"body\":\"{ id }\"}},\n  {\"method\":\"GET\",\"path\":\"/tasks/mine\",\"request\":{\"status\":\"string optional\"},\"response\":{\"status\":200,\"body\":\"[{ id, new_hire_id, new_hire_name, title, due_date, status, blocked, blocker_reason }]\"}},\n  {\"method\":\"PATCH\",\"path\":\"/tasks/:id\",\"request\":{\"status\":\"string optional\",\"blocked\":\"boolean optional\",\"blocker_reason\":\"string optional\"},\"response\":{\"status\":200,\"body\":\"{ id, status, blocked, next_unblocked_task_id }\"}},\n  {\"method\":\"GET\",\"path\":\"/admin/analytics/bottlenecks\",\"response\":{\"status\":200,\"body\":\"{ by_task:[{ task_key, avg_days, overdue_count }], by_department:[{ department_id, avg_days }] }\"}},\n  {\"method\":\"GET\",\"path\":\"/admin/analytics/time-to-productive\",\"response\":{\"status\":200,\"body\":\"[{ new_hire_id, full_name, days_to_productive }]\"}},\n  {\"method\":\"GET\",\"path\":\"/admin/audit-log\",\"request\":{\"new_hire_id\":\"integer optional\",\"limit\":\"integer optional default 50\",\"offset\":\"integer optional default 0\"},\"response\":{\"status\":200,\"body\":\"[{ id, new_hire_id, task_id, actor_user_id, event_type, detail, created_at }]\"}},\n  {\"method\":\"GET\",\"path\":\"/export/onboarding.csv\",\"response\":{\"status\":200,\"body\":\"text/csv stream\"}}\n]},\n\"ui_contract\":{\n  \"primary_view\":\"my task queue across all new hires I'm responsible for\",\n  \"primary_action\":\"mark a task complete or flag it as blocked\",\n  \"secondary_views\":[\"new hire intake form\",\"new hire detail with full checklist and handoff map\",\"all new hires list\",\"task templates manager\",\"admin analytics dashboard\",\"admin audit log\"],\n  \"components\":[\n    {\"name\":\"RoleAwareNav\",\"role\":\"top nav adapting to user role (hr/it/legal/manager/admin)\"},\n    {\"name\":\"MyTaskQueue\",\"role\":\"primary view: current user's assigned tasks with status filters\"},\n    {\"name\":\"TaskRow\",\"role\":\"single task with complete/block actions and due-date badge\"},\n    {\"name\":\"BlockerDialog\",\"role\":\"modal to flag a task blocked with reason\"},\n    {\"name\":\"NewHireIntakeForm\",\"role\":\"HR form to create a new hire and pick a template\"},\n    {\"name\":\"NewHireList\",\"role\":\"sortable/filterable list of all new hires with progress indicators\"},\n    {\"name\":\"NewHireDetail\",\"role\":\"single new hire with full checklist grouped by owner role\"},\n    {\"name\":\"HandoffMap\",\"role\":\"visual chain of task dependencies showing what's unblocked next\"},\n    {\"name\":\"TemplateManager\",\"role\":\"create/edit/delete task templates by role+country+department\"},\n    {\"name\":\"AdminDashboard\",\"role\":\"bottleneck charts, time-to-productive metric, status counts\"},\n    {\"name\":\"AuditLogView\",\"role\":\"chronological compliance log with filter by new hire\"},\n    {\"name\":\"ExportCsvButton\",\"role\":\"download onboarding status as CSV\"}\n  ]\n},\n\"business_logic_contract\":{\n  \"triggers\":[\n    {\"event\":\"user_first_login\",\"action\":\"create users row from OIDC claims with default role='hr'\"},\n    {\"event\":\"new_hire_created\",\"action\":\"select matching task_template by role_title+country+department, expand items into tasks rows, set assignee_user_id by owner_role+department, set due_date relative to start_date, emit 'new_hire_created' audit event\"},\n    {\"event\":\"task_assigned\",\"action\":\"send email notification to assignee\"},\n    {\"event\":\"task_completed\",\"action\":\"set completed_at, append audit_log entry, check for dependent tasks with depends_on_task_key matching this task_key and unblock them, notify their assignees\"},\n    {\"event\":\"task_blocked\",\"action\":\"set blocked=true with blocker_reason, append audit_log entry, send email to HR and admins\"},\n    {\"event\":\"overdue_sweep\",\"action\":\"scheduled job marks tasks past due_date as overdue and emails assignees; also notifies HR for tasks overdue >3 days\"},\n    {\"event\":\"all_tasks_complete_for_hire\",\"action\":\"set new_hires.status='complete' and productive_at=NOW(), append audit event\"}\n  ],\n  \"rules\":[\n    \"Only users with role='hr' or 'admin' can create new_hires and edit task_templates\",\n    \"A task can only be transitioned by its assignee, the hiring manager of that new_hire, or an admin\",\n    \"Tasks with an unmet depends_on_task_key cannot be marked complete (return 400)\",\n    \"/admin/* endpoints require role='admin'\",\n    \"CSV export is restricted to role IN ('hr','admin')\",\n    \"audit_log is append-only; no update or delete endpoints exposed\"\n  ],\n  \"side_effects\":[\n    \"audit log on every task status change, blocker flag, handoff, and new hire creation\",\n    \"email notifications on task assignment, overdue, blocked, and handoff unblock events\"\n  ]\n},\n\"mga_assistants\":[]}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "collab-tool",
+      "message": "An onboarding workflow tracker that coordinates tasks across HR, IT, Legal, and hiring managers for every new hire. HR creates a new hire and the system auto-generates a role/country-specific checklist, assigns each task to the right owner, routes handoffs between departments, and surfaces stuck or overdue work. Each role sees their personal task queue and can complete tasks or flag blockers. Admins get a dashboard with bottleneck analytics, time-to-productive metrics, and a compliance audit log. Email notifications fire on assignment, overdue, and blocked events; HR can export onboarding status to CSV.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up the data store for new hires, their task checklists, reusable templates, departments, users, and the audit trail.",
+          "task": "Tables: per data_model. Indexes: tasks(assignee_user_id), tasks(new_hire_id), tasks(status,due_date), tasks(blocked), audit_log(new_hire_id,created_at DESC), new_hires(status), users(oidc_sub UNIQUE). Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "backend",
+          "summary": "Build the API that creates new hires, generates checklists from templates, routes handoffs, tracks blockers, sends email, exports CSV, and serves admin analytics.",
+          "task": "Data: pg Pool from env. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; auto-provision users row on first login from OIDC claims. Template instantiation: on new_hire create, expand matching task_template (by role+country+department) into tasks rows with assignee derived from task.owner_role + new_hire.department. Handoff routing: on task complete, if template defines next_task_key, unblock or create successor task. Overdue sweep: scheduled check marks tasks past due_date and emits email. CSV export: streaming text/csv. Audit log: append row on every task status change and handoff. Email: stub SMTP integration logging payloads for local dev. Admin endpoints role-gated to role='admin'.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the UI: a personal task queue per role, new-hire detail with full checklist and handoff map, HR new-hire intake, admin analytics dashboard, and template management.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner, empty CTA, toast on 4xx/5xx, 404 page, disabled submit during POST. Role-aware nav (hr/it/legal/manager/admin) driven by GET /whoami. Task queue filters by status (open/blocked/overdue/done). Block action prompts for reason. Admin dashboard shows bottleneck chart (avg days per task type), time-to-productive per hire, overall status counts. CSV export button calls GET /export/onboarding.csv. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire database, backend, and frontend together so the whole app runs as one stack locally and in deployment.",
+          "task": "Wire database, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=onboarding, DATABASE_USER=onboarding_user, DATABASE_PASSWORD=localdev123. nginx.local.conf proxy /api→backend:3000. depends_on chain frontend→backend→database. Healthchecks on all services. Volumes per service.",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'hr'"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "departments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(128) NOT NULL UNIQUE"
+              }
+            ]
+          },
+          {
+            "name": "task_templates",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role_match",
+                "type": "VARCHAR(128)"
+              },
+              {
+                "name": "country_match",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "items",
+                "type": "JSONB NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "new_hires",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "full_name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role_title",
+                "type": "VARCHAR(128) NOT NULL"
+              },
+              {
+                "name": "country",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "department_id",
+                "type": "INTEGER REFERENCES departments(id)"
+              },
+              {
+                "name": "manager_user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "start_date",
+                "type": "DATE NOT NULL"
+              },
+              {
+                "name": "productive_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'in_progress'"
+              },
+              {
+                "name": "created_by_user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "tasks",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "new_hire_id",
+                "type": "INTEGER NOT NULL REFERENCES new_hires(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "task_key",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "owner_role",
+                "type": "VARCHAR(32) NOT NULL"
+              },
+              {
+                "name": "assignee_user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "category",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "depends_on_task_key",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "due_date",
+                "type": "DATE"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'open'"
+              },
+              {
+                "name": "blocked",
+                "type": "BOOLEAN NOT NULL DEFAULT FALSE"
+              },
+              {
+                "name": "blocker_reason",
+                "type": "TEXT"
+              },
+              {
+                "name": "completed_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "new_hire_id",
+                "type": "INTEGER REFERENCES new_hires(id) ON DELETE SET NULL"
+              },
+              {
+                "name": "task_id",
+                "type": "INTEGER REFERENCES tasks(id) ON DELETE SET NULL"
+              },
+              {
+                "name": "actor_user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "event_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "detail",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, name, role, department_id }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/departments",
+            "response": {
+              "status": 200,
+              "body": "[{ id, name }]"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/departments",
+            "request": {
+              "name": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/users",
+            "response": {
+              "status": 200,
+              "body": "[{ id, email, name, role, department_id }]"
+            }
+          },
+          {
+            "method": "PATCH",
+            "path": "/users/:id/role",
+            "request": {
+              "role": "string required"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id, role }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/task-templates",
+            "response": {
+              "status": 200,
+              "body": "[{ id, name, role_match, country_match, department_id, items }]"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/task-templates",
+            "request": {
+              "name": "string required",
+              "role_match": "string",
+              "country_match": "string",
+              "department_id": "integer",
+              "items": "array required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id }"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/task-templates/:id",
+            "request": {
+              "name": "string",
+              "role_match": "string",
+              "country_match": "string",
+              "department_id": "integer",
+              "items": "array"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/task-templates/:id",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/new-hires",
+            "request": {
+              "status": "string optional",
+              "limit": "integer optional default 50",
+              "offset": "integer optional default 0"
+            },
+            "response": {
+              "status": 200,
+              "body": "[{ id, full_name, role_title, country, department_id, start_date, status, open_tasks, blocked_tasks, overdue_tasks }]"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/new-hires",
+            "request": {
+              "full_name": "string required",
+              "email": "string required",
+              "role_title": "string required",
+              "country": "string required",
+              "department_id": "integer required",
+              "manager_user_id": "integer required",
+              "start_date": "date required",
+              "template_id": "integer optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, generated_task_count }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/new-hires/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, full_name, email, role_title, country, department_id, manager_user_id, start_date, status, productive_at, tasks:[{ id, title, owner_role, assignee_user_id, due_date, status, blocked, blocker_reason, depends_on_task_key }] }"
+            }
+          },
+          {
+            "method": "PATCH",
+            "path": "/new-hires/:id",
+            "request": {
+              "status": "string optional",
+              "productive_at": "datetime optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/tasks/mine",
+            "request": {
+              "status": "string optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "[{ id, new_hire_id, new_hire_name, title, due_date, status, blocked, blocker_reason }]"
+            }
+          },
+          {
+            "method": "PATCH",
+            "path": "/tasks/:id",
+            "request": {
+              "status": "string optional",
+              "blocked": "boolean optional",
+              "blocker_reason": "string optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id, status, blocked, next_unblocked_task_id }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/bottlenecks",
+            "response": {
+              "status": 200,
+              "body": "{ by_task:[{ task_key, avg_days, overdue_count }], by_department:[{ department_id, avg_days }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/time-to-productive",
+            "response": {
+              "status": 200,
+              "body": "[{ new_hire_id, full_name, days_to_productive }]"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-log",
+            "request": {
+              "new_hire_id": "integer optional",
+              "limit": "integer optional default 50",
+              "offset": "integer optional default 0"
+            },
+            "response": {
+              "status": 200,
+              "body": "[{ id, new_hire_id, task_id, actor_user_id, event_type, detail, created_at }]"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/export/onboarding.csv",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "my task queue across all new hires I'm responsible for",
+        "primary_action": "mark a task complete or flag it as blocked",
+        "secondary_views": [
+          "new hire intake form",
+          "new hire detail with full checklist and handoff map",
+          "all new hires list",
+          "task templates manager",
+          "admin analytics dashboard",
+          "admin audit log"
+        ],
+        "components": [
+          {
+            "name": "RoleAwareNav",
+            "role": "top nav adapting to user role (hr/it/legal/manager/admin)"
+          },
+          {
+            "name": "MyTaskQueue",
+            "role": "primary view: current user's assigned tasks with status filters"
+          },
+          {
+            "name": "TaskRow",
+            "role": "single task with complete/block actions and due-date badge"
+          },
+          {
+            "name": "BlockerDialog",
+            "role": "modal to flag a task blocked with reason"
+          },
+          {
+            "name": "NewHireIntakeForm",
+            "role": "HR form to create a new hire and pick a template"
+          },
+          {
+            "name": "NewHireList",
+            "role": "sortable/filterable list of all new hires with progress indicators"
+          },
+          {
+            "name": "NewHireDetail",
+            "role": "single new hire with full checklist grouped by owner role"
+          },
+          {
+            "name": "HandoffMap",
+            "role": "visual chain of task dependencies showing what's unblocked next"
+          },
+          {
+            "name": "TemplateManager",
+            "role": "create/edit/delete task templates by role+country+department"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "bottleneck charts, time-to-productive metric, status counts"
+          },
+          {
+            "name": "AuditLogView",
+            "role": "chronological compliance log with filter by new hire"
+          },
+          {
+            "name": "ExportCsvButton",
+            "role": "download onboarding status as CSV"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims with default role='hr'"
+          },
+          {
+            "event": "new_hire_created",
+            "action": "select matching task_template by role_title+country+department, expand items into tasks rows, set assignee_user_id by owner_role+department, set due_date relative to start_date, emit 'new_hire_created' audit event"
+          },
+          {
+            "event": "task_assigned",
+            "action": "send email notification to assignee"
+          },
+          {
+            "event": "task_completed",
+            "action": "set completed_at, append audit_log entry, check for dependent tasks with depends_on_task_key matching this task_key and unblock them, notify their assignees"
+          },
+          {
+            "event": "task_blocked",
+            "action": "set blocked=true with blocker_reason, append audit_log entry, send email to HR and admins"
+          },
+          {
+            "event": "overdue_sweep",
+            "action": "scheduled job marks tasks past due_date as overdue and emails assignees; also notifies HR for tasks overdue >3 days"
+          },
+          {
+            "event": "all_tasks_complete_for_hire",
+            "action": "set new_hires.status='complete' and productive_at=NOW(), append audit event"
+          }
+        ],
+        "rules": [
+          "Only users with role='hr' or 'admin' can create new_hires and edit task_templates",
+          "A task can only be transitioned by its assignee, the hiring manager of that new_hire, or an admin",
+          "Tasks with an unmet depends_on_task_key cannot be marked complete (return 400)",
+          "/admin/* endpoints require role='admin'",
+          "CSV export is restricted to role IN ('hr','admin')",
+          "audit_log is append-only; no update or delete endpoints exposed"
+        ],
+        "side_effects": [
+          "audit log on every task status change, blocker flag, handoff, and new hire creation",
+          "email notifications on task assignment, overdue, blocked, and handoff unblock events"
+        ]
+      },
+      "mga_assistants": []
+    },
+    "ms": 64990
+  }
+}

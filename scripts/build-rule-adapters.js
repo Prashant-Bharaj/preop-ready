@@ -252,7 +252,10 @@ function main() {
       const abs = path.join(ROOT, dir);
       if (!fs.existsSync(abs)) continue;
       for (const f of walk(abs)) {
-        const rel = path.relative(ROOT, f);
+        // Normalize to forward slashes: the `outputs` keys use '/', but
+        // path.relative() yields '\' on Windows, which would falsely orphan
+        // every adapter.
+        const rel = path.relative(ROOT, f).split(path.sep).join('/');
         if (!outputs.has(rel)) {
           console.error(`ORPHAN: ${rel} (no matching .platform-rules source)`);
           drift = true;

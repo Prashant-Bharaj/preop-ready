@@ -56,14 +56,14 @@ services:
   database:
     build: ./database
     environment:
-      POSTGRES_DB: ${DATABASE_NAME}     # MySQL instead: MYSQL_DATABASE/_USER/_PASSWORD/_ROOT_PASSWORD
+      POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes: [db-data:/data]
   # Optional vector DB (independent service):
   # vectordb:
   #   build: ./vectordb
-  #   environment:                      # pgvector only; Chroma/Qdrant need no env vars
+  #   environment:                      # pgvector
   #     POSTGRES_DB: vectors
   #     POSTGRES_USER: vectordb_user
   #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -95,7 +95,7 @@ For frontend-only, `nginx.local.conf` must have NO proxy blocks — `cp frontend
 ## Cross-Service Consistency Rules
 
 - `DATABASE_HOST` (and `VECTORDB_HOST`) must equal the compose **service name** exactly.
-- Port matches DB type: 5432 postgres/pgvector · 3306 mysql · 8000 chroma · 6333 qdrant.
+- DB port is 5432 (postgres/pgvector).
 - Env var names in backend code = names in the compose `environment:` block.
 - The `nginx.local.conf` volume mount is **REQUIRED** whenever a backend exists — without it, local `/api` calls hit the proxy-less production `nginx.conf` and 404.
 - `depends_on` chain: frontend → backend → database.

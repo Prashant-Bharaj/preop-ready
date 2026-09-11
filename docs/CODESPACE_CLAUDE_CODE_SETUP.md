@@ -155,3 +155,49 @@ sidebar if you want.
 
 - The myGenAssist key lives only in `~/.claude-code-router/config.json` (in `$HOME`, outside the
   repo). Never commit it. If a key is ever exposed, rotate it in myGenAssist.
+
+## Running the harness (chat UI) in a Codespace
+
+The post-start hook installs `chat/` dependencies, builds the UI and **starts
+the harness in the background** (log: `/tmp/harness.log`), so after opening or
+restarting a Codespace the harness is already running. Start it by hand only if
+it is not (`cd chat && npm start`). If you only use the editor (Claude Code,
+Copilot, Cline), the running harness costs a single idle node process and
+nothing else — it starts no containers until a build runs — and a notification
+for port 5050 is all you see. To disable the auto-start entirely, set the
+Codespaces secret `HARNESS_AUTOSTART` to `0`.
+
+Port **5050** is pre-forwarded; open it from the Ports tab or the notification
+(the built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
+reload) is only needed when editing the chat UI itself; if you use it, add the
+port by hand in the Ports tab after Vite is listening — a forward created
+earlier can leave the proxy's 404 page cached in your browser.
+
+After a Codespace restart everything persists (workspace, `.harness/`, Docker
+images and volumes). When the codespace idles out, the harness tab shows
+"Your workspace went to sleep" with a **Wake it up** link: it opens the editor,
+which starts the codespace, the start hook starts the harness, and the tab
+reconnects by itself. If the app should be up afterwards, click **Start app**. The idle timeout can be raised to 4 hours in
+GitHub Settings → Codespaces → Default idle timeout (applies to new codespaces).
+
+### Ports and Codespace restarts
+
+The harness (5050) and the generated app (8080, backend 3000) are pre-forwarded
+in the devcontainer on purpose: GitHub registers a port on its proxy only when
+it is listed there or when an editor auto-detects a listening process, and the
+vibe portal starts codespaces through the API with no editor attached. A listed
+port can go stale after an editor-driven restart (browser shows "page can't be
+found" while the Ports tab and `gh codespace ports` still list it); the remedy
+is right-click the port in the Ports tab, **Stop Forwarding Port**, then
+**Add Port** again. `cd chat && npm start` is otherwise all it takes in a
+codespace opened from the editor.
+
+### Launched from the Vibe portal
+
+The portal injects your myGenAssist key into the codespace as the secret
+`MYGENASSIST_API_KEY`; the harness picks it up (platform endpoint, default
+model), so there is no setup screen. Your own choices in the harness settings
+(`.chat/secrets.json`) still take precedence. When the codespace also carries
+`VIBE_PORTAL_URL`, the "workspace went to sleep" card sends you back to the
+portal, whose **Start Vibe Coding** wakes the workspace and reopens the harness.
+

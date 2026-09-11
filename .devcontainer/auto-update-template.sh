@@ -55,11 +55,30 @@ case "$RESULT" in
     LATEST=$(echo "$RESULT" | cut -d'|' -f3)
     echo "📦 Update available: $LOCAL → $LATEST"
     echo "   Applying updates..."
-    if ! bash scripts/apply-updates.sh; then
+    ENGINE_OUT=$(mktemp)
+    if bash scripts/apply-updates.sh 2>&1 | tee "$ENGINE_OUT"; then
+      # A MAJOR release is not applied without opt-in (the AI rules, snippets
+      # and harness would change under a project in flight); the additive
+      # security/platform files were synced. Tell the user once, briefly after.
+      if grep -q "^MAJOR_HELD|" "$ENGINE_OUT"; then
+        HELD_TO=$(grep "^MAJOR_HELD|" "$ENGINE_OUT" | head -1 | cut -d'|' -f3)
+        echo ""
+        echo "🛑 Template v$HELD_TO is a MAJOR release — held back; your project stays on $LOCAL."
+        echo "   Platform security updates were applied. New AI rules/snippets/harness were NOT."
+        if grep -q "^MIGRATION_NEEDED|" "$ENGINE_OUT"; then
+          echo "   This project uses a retired stack ($(grep "^MIGRATION_NEEDED|" "$ENGINE_OUT" | head -1 | cut -d'|' -f2))."
+          echo "   Ask your AI assistant: 'migrate to the supported stack' (see .template-migration-needed)."
+        else
+          echo "   When ready: ask your AI assistant to 'accept the major template update', or run"
+          echo "       TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
+        fi
+      fi
+    else
       echo "❌ The update engine failed — see the output above."
       echo "   This repo is still on $LOCAL and is NOT receiving platform security fixes."
       echo "   Ask your AI assistant: 'the template update failed, can you fix it?'"
     fi
+    rm -f "$ENGINE_OUT"
     ;;
   *)
     case "$REASON" in

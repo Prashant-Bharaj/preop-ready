@@ -1,0 +1,220 @@
+{
+  "ranAt": 1784055121064,
+  "results": [
+    {
+      "scenario": "crud-logbook",
+      "marker": "bmrky3007",
+      "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+      "startedAt": 1784051303623,
+      "driveError": "timeout (1800s) waiting for app_ready",
+      "actions": [],
+      "expectationIncidents": [],
+      "incidents": [
+        "drive error: timeout (1800s) waiting for app_ready"
+      ],
+      "pass": false,
+      "silentFailure": false,
+      "telemetry": {
+        "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+        "intent": "Stores equipment, maintenance events, and users with their roles.",
+        "action": "execute",
+        "startedAt": 1784051384741,
+        "endedAt": 1784052230494,
+        "totalMs": 845753,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 737524,
+          "completion": 32023,
+          "cached": 489885,
+          "total": 769547
+        },
+        "costUsd": null,
+        "mgaCalls": 47,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 1,
+          "mismatch": 0,
+          "legitimate": 16,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "integration",
+            "phase": "SUBAGENT",
+            "snippetPath": "integration/docker-compose-fullstack.yml",
+            "fetchedAt": 1784051389631,
+            "sizeBytes": 1731,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784051390291,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784051390295,
+            "sizeBytes": 689,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784051390328,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/parameterized-queries.ts",
+            "fetchedAt": 1784051390330,
+            "sizeBytes": 4625,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d6580ece-34fc-40b9-a7fb-a5915301432b",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/input-validation.ts",
+            "fetchedAt": 1784051390332,
+            "sizeBytes": 4664,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": null,
+        "uiSanity": null,
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 1882983
+    },
+    {
+      "scenario": "deviation-tracker",
+      "marker": "bmrkz7cxa",
+      "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+      "startedAt": 1784053186606,
+      "driveError": "timeout (1800s) waiting for app_ready",
+      "actions": [],
+      "expectationIncidents": [],
+      "incidents": [
+        "drive error: timeout (1800s) waiting for app_ready"
+      ],
+      "pass": false,
+      "silentFailure": false,
+      "telemetry": {
+        "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+        "intent": "Store deviations, comments, plant areas, equipment, root cause categories, severity levels, audit logs, and users with full relational integrity.",
+        "action": "execute",
+        "startedAt": 1784053320087,
+        "endedAt": 1784054301506,
+        "totalMs": 981419,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 915825,
+          "completion": 66982,
+          "cached": 560241,
+          "total": 982807
+        },
+        "costUsd": null,
+        "mgaCalls": 43,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 2,
+          "mismatch": 0,
+          "legitimate": 43,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784053326050,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/csv-exporter.ts",
+            "fetchedAt": 1784053326051,
+            "sizeBytes": 4093,
+            "source": "disk"
+          },
+          {
+            "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "file-handling/upload-handler.ts",
+            "fetchedAt": 1784053326052,
+            "sizeBytes": 3437,
+            "source": "disk"
+          },
+          {
+            "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784053327212,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "f6b63bc6-4bcc-4857-9cba-b53dc2ec4c9d",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784053327213,
+            "sizeBytes": 689,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": null,
+        "uiSanity": null,
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 1934456
+    }
+  ]
+}

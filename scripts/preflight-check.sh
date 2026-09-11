@@ -413,12 +413,17 @@ $MISPLACED_MIGRATIONS" \
 
     # Migration files exist but no runner wired = they also never run
     if compgen -G "backend/migrations/*.sql" > /dev/null; then
-        if grep -rqE "runMigrations|run_migrations" backend --include="*.js" --include="*.py" \
-             --exclude-dir=node_modules --exclude-dir=migrations 2>/dev/null; then
+        if grep -rqE "runMigrations|run_migrations" backend --include="*.ts" --include="*.js" --include="*.py" \
+             --exclude-dir=node_modules --exclude-dir=migrations --exclude-dir=dist 2>/dev/null; then
             pass "Migration runner is wired into the backend"
         else
             fail "backend/migrations/ has .sql files but no runner is wired into the backend code" \
-                 "Copy snippets/config/db-migrations.js to backend/db/migrations.js and call runMigrations(pool) at startup"
+                 "Node: backend/src/lib/migrate.ts is staged by the harness (or copy snippets/database/migration-runner.ts) — call 'await runMigrations(pool)' before app.listen. Python: copy snippets/config/db-migrations.js logic into a run_migrations() called at startup."
+        fi
+        if [[ -f "backend/Dockerfile" ]] && grep -q "^FROM .* AS builder" backend/Dockerfile \
+             && ! grep -qE "COPY --from=builder .*/migrations" backend/Dockerfile; then
+            fail "backend/Dockerfile is multi-stage but never copies migrations/ into the runtime image — the runner finds nothing" \
+                 "Add: COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations (see backend/Dockerfile.node)"
         fi
     fi
 

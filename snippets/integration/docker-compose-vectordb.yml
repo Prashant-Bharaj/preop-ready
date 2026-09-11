@@ -1,0 +1,22 @@
+# scopes: [integration]
+# flags: [ai-rag]
+# description: docker-compose adding a pgvector service for RAG.
+
+# Vector DB addition — add this service block to docker-compose.yml
+# pgvector: POSTGRES_DB/USER/PASSWORD, port 5432
+
+  vectordb:
+    build: ./vectordb
+    environment:
+      POSTGRES_DB: vectors
+      POSTGRES_USER: vectordb_user
+      POSTGRES_PASSWORD: localdev123
+    volumes:
+      - vectordb-data:/data
+
+# Add to backend environment:
+      - VECTORDB_HOST=vectordb
+      - VECTORDB_PORT=5432
+
+# Add to volumes:
+  vectordb-data:

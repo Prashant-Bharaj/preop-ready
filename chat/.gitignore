@@ -1,0 +1,5 @@
+# Per-scenario / per-phase persistent run logs (Step 7c).
+# Logs land at chat/server/agent/run-logs/<scenarioId>/<runTimestamp>/<phase>/.
+# Persistent across reboots (unlike /tmp/llm-calls.log) but never tracked
+# in git — they're local debugging artifacts.
+server/agent/run-logs/

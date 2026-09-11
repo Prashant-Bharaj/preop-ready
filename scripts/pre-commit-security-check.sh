@@ -82,10 +82,10 @@ while IFS= read -r file; do
             ;;
     esac
 
-    # Image files outside frontend/
+    # Image files outside frontend/ (chat/ is the harness's own app subtree)
     case "$basename" in
         *.png|*.jpg|*.jpeg|*.gif|*.bmp|*.ico|*.svg|*.webp|*.tiff|*.tif)
-            if [[ "$file" != frontend/* ]]; then
+            if [[ "$file" != frontend/* && "$file" != chat/frontend/* && "$file" != chat/public/* ]]; then
                 BLOCKED_FILES+=("$file|Image file outside frontend/ — only frontend app assets are allowed in git.")
             fi
             continue
@@ -164,12 +164,20 @@ while IFS= read -r file; do
         BLOCKED_FILES+=("$file|Contains what looks like a hardcoded password. Use environment variables instead.")
     fi
 
-    # Docker-compose / YAML inline credentials (e.g. MYSQL_PASSWORD=realvalue, POSTGRES_PASSWORD=realvalue)
-    case "$basename" in
-        docker-compose*.yml|docker-compose*.yaml|compose*.yml|compose*.yaml)
-            if echo "$content" | grep -qiE '_PASSWORD[=:][[:space:]]*[^$\{]'; then
-                WARNED_FILES+=("$file|Contains inline password values. Use env_file to reference a gitignored .env file instead of hardcoding credentials in docker-compose.")
-            fi
+    # Docker-compose / YAML inline credentials (e.g. MYSQL_PASSWORD=realvalue, POSTGRES_PASSWORD=realvalue).
+    # Harness test fixtures/snapshots under chat/ AND the template compose SNIPPETS under
+    # snippets/ are example/template apps with the standard fake local-dev password — exempt
+    # them from this warning (hard blocks still apply).
+    case "$file" in
+        chat/*fixtures/*|chat/*snapshots/*|snippets/*) ;;
+        *)
+            case "$basename" in
+                docker-compose*.yml|docker-compose*.yaml|compose*.yml|compose*.yaml)
+                    if echo "$content" | grep -qiE '_PASSWORD[=:][[:space:]]*[^$\{]'; then
+                        WARNED_FILES+=("$file|Contains inline password values. Use env_file to reference a gitignored .env file instead of hardcoding credentials in docker-compose.")
+                    fi
+                    ;;
+            esac
             ;;
     esac
 

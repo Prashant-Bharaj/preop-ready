@@ -1,0 +1,13 @@
+{
+  "snapshotKey": "tasktracker-basic",
+  "scenarioId": "t-iterate-cosmetic-single-scope",
+  "scenarioPrompt": "Build a small REST API for a personal task tracker. Backend: Node + Express with CRUD endpoints on a \"tasks\" resource (id, title, completed, created_at). Persist to a Postgres database. Provide a minimal React frontend that lists tasks and lets the user add a new one. Include docker-compose for local dev. No AI features, no vector database.",
+  "expectedScopes": [
+    "backend",
+    "database",
+    "frontend",
+    "integration"
+  ],
+  "capturedAt": "2026-05-25T18:08:28.897Z",
+  "gitSha": "a75bdc7db367d71e115478ff2415b8335a4872e1"
+}

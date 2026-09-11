@@ -1,0 +1,53 @@
+{
+  "description": "Mixed battery: AI-knowledge prompts + non-AI business prompts to verify v4 handles both classes. Non-AI prompts test that the disambiguation step doesn't force AI features when no AI signals exist.",
+  "prompts": [
+    {
+      "id": "easy_policy_discovery",
+      "label": "Easy — Policy and Procedure Discovery (AI-knowledge)",
+      "difficulty": "easy",
+      "expectation": "Strong AI-RAG / SharePoint signal.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "Our employees frequently struggle to find the latest version of internal policies, operational procedures, and compliance guidance across SharePoint sites and shared drives. Teams often rely on asking colleagues directly because search results are inconsistent and documents are duplicated across departments. This creates delays, especially for newer employees and regional offices that may not know where authoritative information is stored. Leadership wants a more reliable way for employees to quickly locate accurate business information without needing to understand the underlying systems."
+    },
+    {
+      "id": "medium_contract_analysis",
+      "label": "Medium — Contract and Document Analysis (AI-document)",
+      "difficulty": "medium",
+      "expectation": "AI-RAG + structured-extraction over PDFs.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "Our procurement and legal teams review hundreds of vendor agreements every quarter, and identifying unusual clauses or inconsistent commercial terms has become increasingly difficult. Important obligations around renewals, pricing adjustments, or compliance requirements are often buried deep within lengthy documents. The current review process is heavily manual and depends on institutional knowledge from a small number of experienced employees. We are looking for a more scalable way to analyze large volumes of business documents and surface key risks or inconsistencies earlier in the process."
+    },
+    {
+      "id": "medium_hard_km_global",
+      "label": "Medium/Hard — Knowledge Management Across Business Units (AI-knowledge)",
+      "difficulty": "medium-hard",
+      "expectation": "Enterprise AI-RAG over multiple sources.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "As the organization has expanded globally, valuable operational knowledge has become fragmented across regional teams, SharePoint repositories, internal wikis, and archived project documents. Employees frequently recreate work because they cannot easily identify whether similar initiatives, lessons learned, or client deliverables already exist elsewhere in the company. Leadership believes there is significant untapped institutional knowledge, but accessing it today requires knowing exactly where to look or who to ask. We need a more effective way to connect employees with relevant business knowledge across the enterprise."
+    },
+    {
+      "id": "hard_risk_compliance_oversight",
+      "label": "Hard — Enterprise Risk and Compliance Oversight (AI-knowledge)",
+      "difficulty": "hard",
+      "expectation": "AI-RAG + audit trails.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "Our compliance and risk management teams are struggling to maintain visibility across thousands of documents, audit reports, policies, and operational records distributed across multiple business systems. Regulatory reviews often trigger urgent cross-functional efforts to gather evidence manually, and there is limited confidence that all relevant information has been identified consistently. Executives are concerned about the growing operational risk associated with fragmented documentation and inconsistent governance practices across regions. The business needs a more intelligent and scalable approach to monitoring, analyzing, and retrieving critical compliance information before issues escalate."
+    },
+    {
+      "id": "easy_sales_reporting",
+      "label": "Easy — Sales Reporting Confusion (NON-AI, CRUD/dashboard)",
+      "difficulty": "easy",
+      "expectation": "No explicit AI signals — should result in a dashboard or CRUD-app archetype, NOT ai-tool. Tests that the agent doesn't force AI features when none are requested.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "Our regional sales managers are all bringing different numbers into the weekly executive meeting, and we spend more time debating which spreadsheet is correct than discussing the business itself. Finance, Sales, and Operations all seem to define 'active customer' differently, which is creating tension between teams. Leadership wants one trusted view of pipeline performance and renewals without forcing people to manually reconcile reports every Friday. We need a way to make reporting more consistent and easier to trust across departments."
+    },
+    {
+      "id": "easy_medium_onboarding",
+      "label": "Easy/Medium — Slow Employee Onboarding (NON-AI, workflow)",
+      "difficulty": "easy-medium",
+      "expectation": "No explicit AI signals — workflow-style app (collab-tool or crud-app archetype). Tests that the agent picks workflow over AI when no AI signals exist.",
+      "projectContext": { "environment": "Local", "phase": "empty", "structure": "none (fresh project)" },
+      "userMessage": "As we continue hiring across multiple countries, onboarding new employees has become increasingly inconsistent and time-consuming. HR, IT, Legal, and department managers all operate with separate processes, so simple things like equipment access or compliance training often fall through the cracks. New hires sometimes wait more than a week before they can fully contribute, which is hurting productivity and first impressions. We want to create a smoother onboarding experience that feels coordinated and scalable as the company grows."
+    }
+  ]
+}

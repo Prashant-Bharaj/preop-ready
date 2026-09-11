@@ -1,0 +1,13 @@
+{
+  "assistantKey": "router",
+  "scenarioName": "clarify-vague-build",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "{\"action\":\"clarify\",\"message\":\"What kind of app are you building? — A) Backend API only B) Frontend + Backend C) Full-stack with database D) AI chat assistant\\nWho are the users? — A) Anonymous public users B) Authenticated users (OIDC) C) Internal team only\"}",
+    "usage": { "prompt_tokens": 18432, "completion_tokens": 96, "prompt_tokens_details": { "cached_tokens": 17000 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-router-clarify-vague-build-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

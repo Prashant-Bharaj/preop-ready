@@ -109,7 +109,7 @@ If `vectordb/Dockerfile` exists:
 | Variable | Description |
 |----------|-------------|
 | `VECTORDB_HOST` | Internal hostname (e.g., `myapp-vectordb.vibe.local`) |
-| `VECTORDB_PORT` | 5432 pgvector, 6333 Qdrant, 8000 Chroma |
+| `VECTORDB_PORT` | 5432 (pgvector) |
 | `VECTORDB_NAME` / `VECTORDB_USER` / `VECTORDB_PASSWORD` | pgvector only |
 
 DB config should prefer `DATABASE_URL`, then individual vars, then local defaults (`host: 'db'`, port 5432, etc.).
@@ -143,7 +143,7 @@ gh run list --workflow=deploy.yml --status=success --limit=1 --json conclusion -
 # 0 → do NOT offer; tell the user to deploy first
 ```
 
-**Provides:** per-project key for `https://api.vibe.intranet.cnb/{repo-name}/api/{path}`, isolated per project, rate limited 50 req/sec (burst 100) / 100,000 req/day, Bayer network (VPN) only. Same backend as the browser URL; API Gateway validates the key, then Traefik strips `/api` as usual.
+**Provides:** per-project key (format `vibe-{project}-{32-char-random}`) for `https://api.vibe.intranet.cnb/{repo-name}/api/{path}`, isolated per project, rate limited 50 req/sec (burst 100) / 100,000 req/day, Bayer network (VPN) only. Same backend as the browser URL; API Gateway validates the key, then Traefik strips `/api` as usual.
 
 ## Create / Revoke / Rotate
 

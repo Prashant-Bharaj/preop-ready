@@ -1,0 +1,64 @@
+# ============================================================================
+# Node.js Backend (Express/Fastify/etc) — multi-stage, SECURE, TypeScript
+# ============================================================================
+# Stage 1 (builder): install full deps, run `tsc` to emit dist/.
+# Stage 2 (runtime): copy only dist/ + node_modules + package.json, run as
+# non-root. Final image stays slim — the TS compiler lives only in the
+# build layer.
+#
+# Base: node:22-slim (minimal, public) for both stages — no fat shared base to
+# pre-build or keep in sync. The builder installs + compiles; the runtime ships
+# only dist/ + pruned prod deps.
+#
+# Required package.json scripts (see snippets/backend/express-server-template.ts):
+#   "build":     "tsc"
+#   "start":     "node dist/index.js"
+#   "typecheck": "tsc --noEmit"
+# ============================================================================
+
+# -------------------------------- BUILD STAGE -------------------------------
+FROM node:22-slim AS builder
+WORKDIR /app
+
+# Install ALL deps (incl. dev) so tsc + @types/* are available for the build.
+COPY package*.json tsconfig.json ./
+RUN npm install --no-audit --no-fund
+
+# Copy sources and emit JS to dist/.
+COPY . .
+RUN npm run build
+
+# Prune dev deps so the runtime stage copies a production-only node_modules.
+RUN npm prune --omit=dev
+
+# ------------------------------ RUNTIME STAGE -------------------------------
+# Minimal runtime base (security): ships only the built dist/ + pruned prod
+# deps — none of the builder's TS toolchain or warm caches. curl is REQUIRED
+# for the `curl -f .../health` healthcheck — used both by the local
+# docker-compose `service_healthy` gate AND by the ECS Fargate container health
+# check in production (see .platform-rules/security.md). Mirrors the frontend
+# runtime (nginx:alpine + apk add curl), which installs curl for the same reason.
+FROM node:22-slim
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# SECURITY: non-root user (Debian syntax).
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/sh appuser
+
+WORKDIR /app
+
+# Let the non-root appuser OWN its workdir so the app can create runtime
+# directories under /app (uploads, cache, sqlite, …) without an EACCES crash
+# on boot. Security hardening is intact — the process still runs as appuser.
+RUN chown appuser:appgroup /app
+
+# Copy only what's needed at runtime, owned by the appuser.
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/package.json ./package.json
+
+USER appuser
+
+EXPOSE 3000
+CMD ["node", "dist/index.js"]

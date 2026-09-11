@@ -1,0 +1,331 @@
+{
+  "ranAt": 1784028652922,
+  "results": [
+    {
+      "scenario": "crud-logbook",
+      "marker": "bmrkjd2ux",
+      "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+      "startedAt": 1784026579642,
+      "buildMs": 978774,
+      "reportStatus": "built",
+      "probe": {
+        "probed": 8,
+        "fixed": 0,
+        "stillBroken": [],
+        "crashed": [],
+        "rounds": 1
+      },
+      "visual": null,
+      "appReadyText": "Your app is running — all 8 API endpoints verified. A few sample rows were created while verifying. Want to open it?",
+      "actions": [
+        {
+          "name": "create equipment",
+          "ok": false,
+          "detail": "HTTP 400 body={\"error\":\"VALIDATION_ERROR\",\"fields\":{\"formErrors\":[],\"fieldErrors\":{\"status\":[\"Invalid enum value. Expected 'in service"
+        },
+        {
+          "name": "log maintenance event",
+          "ok": false,
+          "detail": "HTTP -1 no created id to log against"
+        },
+        {
+          "name": "search finds it",
+          "ok": false,
+          "detail": "HTTP 200 found=false"
+        }
+      ],
+      "expectationIncidents": [],
+      "incidents": [
+        "action failed: create equipment (HTTP 400 body={\"error\":\"VALIDATION_ERROR\",\"fields\":{\"formErrors\":[],\"fieldErrors\":{\"status\":[\"Invalid enum value. Expected 'in service)",
+        "action failed: log maintenance event (HTTP -1 no created id to log against)",
+        "action failed: search finds it (HTTP 200 found=false)"
+      ],
+      "pass": false,
+      "silentFailure": true,
+      "telemetry": {
+        "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+        "intent": "Stores equipment records, maintenance events, and user accounts with role-based access.",
+        "action": "execute",
+        "startedAt": 1784026681550,
+        "endedAt": 1784027572720,
+        "totalMs": 891170,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 738181,
+          "completion": 27121,
+          "cached": 519299,
+          "total": 765302
+        },
+        "costUsd": null,
+        "mgaCalls": 35,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 1,
+          "mismatch": 0,
+          "legitimate": 15,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784026686270,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/input-validation.ts",
+            "fetchedAt": 1784026686271,
+            "sizeBytes": 4664,
+            "source": "disk"
+          },
+          {
+            "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "auth/user-identity.ts",
+            "fetchedAt": 1784026686272,
+            "sizeBytes": 4050,
+            "source": "disk"
+          },
+          {
+            "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784026686829,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "176e3a24-a54d-402e-9908-369e740e167a",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784026686830,
+            "sizeBytes": 689,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": {
+          "probed": 8,
+          "initialFailed": 0,
+          "fixed": 0,
+          "stillBroken": [],
+          "rounds": 1
+        },
+        "uiSanity": null,
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 993883
+    },
+    {
+      "scenario": "deviation-tracker",
+      "marker": "bmrkjydqt",
+      "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+      "startedAt": 1784027573525,
+      "buildMs": 1010670,
+      "reportStatus": "partial",
+      "probe": {
+        "probed": 24,
+        "fixed": 0,
+        "stillBroken": [
+          "GET /audit-logs/export"
+        ],
+        "crashed": [],
+        "rounds": 3
+      },
+      "visual": {
+        "sane": true,
+        "defects": []
+      },
+      "appReadyText": "App is running but 1 of 24 endpoints are still failing (details above). Open anyway?",
+      "actions": [
+        {
+          "name": "operator reports deviation",
+          "ok": false,
+          "detail": "HTTP 400 {\"error\":\"VALIDATION_ERROR\",\"fields\":{\"formErrors\":[],\"fieldErrors\":{\"severity\":[\"Invalid enum value. Expected 'Low' | '"
+        },
+        {
+          "name": "qa_lead closes it",
+          "ok": false,
+          "detail": "HTTP -1 no status-transition endpoint in contract"
+        },
+        {
+          "name": "CSV export contains the audit trail",
+          "ok": false,
+          "detail": "HTTP 200 markerInCsv=false bytes=71"
+        },
+        {
+          "name": "role gate: operator blocked from admin surface",
+          "ok": true,
+          "detail": "HTTP 403 (expected 401/403)"
+        }
+      ],
+      "expectationIncidents": [],
+      "incidents": [
+        "action failed: operator reports deviation (HTTP 400 {\"error\":\"VALIDATION_ERROR\",\"fields\":{\"formErrors\":[],\"fieldErrors\":{\"severity\":[\"Invalid enum value. Expected 'Low' | ')",
+        "action failed: qa_lead closes it (HTTP -1 no status-transition endpoint in contract)",
+        "action failed: CSV export contains the audit trail (HTTP 200 markerInCsv=false bytes=71)"
+      ],
+      "pass": false,
+      "silentFailure": false,
+      "telemetry": {
+        "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+        "intent": "Set up tables for users, deviations with photo attachments, comments, audit logs, and admin-managed reference data.",
+        "action": "execute",
+        "startedAt": 1784027740778,
+        "endedAt": 1784028652820,
+        "totalMs": 912042,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 1221441,
+          "completion": 82168,
+          "cached": 726119,
+          "total": 1303609
+        },
+        "costUsd": null,
+        "mgaCalls": 37,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 2,
+          "mismatch": 0,
+          "legitimate": 37,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "integration",
+            "phase": "SUBAGENT",
+            "snippetPath": "integration/docker-compose-fullstack.yml",
+            "fetchedAt": 1784027745987,
+            "sizeBytes": 1731,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784027747156,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/csv-exporter.ts",
+            "fetchedAt": 1784027747157,
+            "sizeBytes": 4093,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "file-handling/upload-handler.ts",
+            "fetchedAt": 1784027747157,
+            "sizeBytes": 3437,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/parameterized-queries.ts",
+            "fetchedAt": 1784027747169,
+            "sizeBytes": 4625,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784027751671,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "989c1195-1fff-4470-ac9c-2f0f8527ff31",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784027751672,
+            "sizeBytes": 689,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [
+          {
+            "scope": "backend",
+            "attemptN": 1,
+            "triggeredBy": "smoke",
+            "failureSummary": "1 endpoint(s) failing live probe",
+            "fixedAt": null,
+            "exhausted": false,
+            "ts": 1784028200965
+          },
+          {
+            "scope": "backend",
+            "attemptN": 2,
+            "triggeredBy": "smoke",
+            "failureSummary": "1 endpoint(s) failing live probe",
+            "fixedAt": null,
+            "exhausted": false,
+            "ts": 1784028570178
+          }
+        ],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": {
+          "probed": 24,
+          "initialFailed": 1,
+          "fixed": 0,
+          "stillBroken": [
+            "GET /audit-logs/export"
+          ],
+          "rounds": 3
+        },
+        "uiSanity": {
+          "sane": true,
+          "defects": []
+        },
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 1079395
+    }
+  ]
+}

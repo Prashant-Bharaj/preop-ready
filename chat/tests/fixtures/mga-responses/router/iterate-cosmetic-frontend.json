@@ -1,0 +1,13 @@
+{
+  "assistantKey": "router",
+  "scenarioName": "iterate-cosmetic-frontend",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "{\"action\":\"iterate\",\"summary\":\"Make the submit button larger and more prominent.\",\"contract_diffs\":{},\"affected_scopes\":[\"frontend\"],\"tasks\":[{\"scope\":\"frontend\",\"summary\":\"Enlarge submit button\",\"task\":\"Update the submit button in the primary form so it renders larger (font-size, padding, hover styling). Keep current click behaviour intact. Only modify the existing component file — do not introduce a new variant prop.\",\"rules\":[],\"snippets\":[],\"primarySnippet\":\"frontend/AppScaffold.tsx\"}]}",
+    "usage": { "prompt_tokens": 21205, "completion_tokens": 132, "prompt_tokens_details": { "cached_tokens": 19500 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-router-iterate-cosmetic-frontend-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-retrieval",
+  "scenarioName": "healthcare-scheduling-retrieval",
+  "schemaVersion": 1,
+  "module": "retrieval",
+  "response": {
+    "completionText": "{\"contextData\":[{\"topic\":\"Patient scheduling constraints\",\"summary\":\"Healthcare scheduling must account for provider availability, room/equipment allocation, patient preferences, and insurance-driven visit-type rules. Double-booking prevention and no-show handling are first-class requirements.\",\"relevance\":\"high\"},{\"topic\":\"Regulatory context\",\"summary\":\"HIPAA requires all PHI (name, DOB, diagnosis codes, appointment reason) to be encrypted at rest and in transit. Audit logs of every access to appointment records are mandatory.\",\"relevance\":\"high\"},{\"topic\":\"Interoperability standards\",\"summary\":\"HL7 FHIR R4 is the dominant standard for exchanging appointment and patient data with EHR systems (Epic, Cerner). An HL7 facade may be needed to bridge the platform API to downstream systems.\",\"relevance\":\"medium\"},{\"topic\":\"Cancellation and rebooking flows\",\"summary\":\"Clinics typically need 24-48h cancellation windows, automated reminders via SMS/email, and a waitlist system to fill cancelled slots. These are high-value features that reduce no-show rates by 20-30%.\",\"relevance\":\"high\"},{\"topic\":\"Accessibility requirements\",\"summary\":\"ADA Section 508 compliance applies to patient-facing interfaces. WCAG 2.1 AA is the baseline. Screen-reader support and keyboard navigation are non-optional.\",\"relevance\":\"medium\"}]}",
+    "usage": { "prompt_tokens": 3200, "completion_tokens": 380, "prompt_tokens_details": { "cached_tokens": 0 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-retrieval-healthcare-scheduling-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:00:00Z"
+}

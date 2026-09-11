@@ -48,8 +48,8 @@ Copy the middleware for the backend's language into the project and wire it in:
 
 | Stack | Snippet |
 |-------|---------|
-| Node.js/Express | `snippets/auth/user-identity.js` |
-| Python (FastAPI/Flask) | `snippets/auth/user-identity.py` |
+| Node.js/Express | `snippets/auth/user-identity.ts` |
+| Python (FastAPI) | `snippets/auth/user-identity.py` |
 | Rust (Actix-web) | `snippets/auth/user-identity.rs` |
 
 After the middleware, handlers read `req.user` (JS) / injected `user` dict (Python) with `userId`, `email`, `name`, `givenName`, `familyName`.
@@ -79,7 +79,7 @@ For user-specific tables, use the ready schema: `snippets/auth/user-identity-sch
 
 ALB OIDC sessions expire after **1 hour** (absolute, not idle). Symptoms: app works, then buttons/data silently stop after ~1 hour; `fetch()` calls fail with no prompt (browsers can't follow the ALB's cross-origin 302 to EntraID). Full page loads re-authenticate fine.
 
-**Rule: wrap ALL API fetches with `apiFetch()`** — copy `snippets/auth/token-refresh.js`. It sends `redirect: 'manual'` and reloads the page on `opaqueredirect`/302/401 so the ALB re-authenticates. Replace every `fetch('/api/...')` with `apiFetch('/api/...')`.
+**Rule: wrap ALL API fetches with `apiFetch()`** — copy `snippets/auth/token-refresh.ts`. It sends `redirect: 'manual'` and reloads the page on `opaqueredirect`/302/401 so the ALB re-authenticates. Replace every `fetch('/api/...')` with `apiFetch('/api/...')`.
 
 **WebSocket/Socket.IO:** connections drop on expiry. Reconnect with reload fallback:
 
@@ -108,9 +108,9 @@ Don't build RBAC from scratch — copy:
 
 | Need | Snippet |
 |------|---------|
-| Role-based access (user/expert/admin) + approval workflow, JS | `snippets/auth/user-roles.js` + `snippets/auth/user-roles-schema.sql` |
+| Role-based access (user/expert/admin) + approval workflow, JS | `snippets/auth/user-roles.ts` + `snippets/auth/user-roles-schema.sql` |
 | Same for FastAPI | `snippets/auth/user-roles.py` (same SQL schema) |
-| Admin page to approve/deny users, manage roles | `snippets/auth/UserManagement.jsx` |
+| Admin page to approve/deny users, manage roles | `snippets/auth/UserManagement.tsx` |
 
 ## How to Communicate
 

@@ -1,0 +1,13 @@
+{
+  "assistantKey": "investigator",
+  "scenarioName": "high-confidence-fix",
+  "schemaVersion": 1,
+  "response": {
+    "completionText": "<read_harness_state>\n</read_harness_state>\n\n<read_file>\n<path>backend/src/chat.ts</path>\n</read_file>\n\n<read_container_logs>\n<service>backend</service>\n<tail>50</tail>\n</read_container_logs>\n\n<attempt_completion>\n<result>\n{\n  \"root_cause\": \"The POST /chat handler in backend/src/chat.ts inserts into a typo'd table `mesages` (missing one `s`). The actual table per contracts.json is `messages`. Postgres returns 'relation \\\"mesages\\\" does not exist' which the handler doesn't catch, so Express converts it to a 500.\",\n  \"affected_scopes\": [\"backend\"],\n  \"confidence\": 0.92,\n  \"recommended_fix\": {\n    \"scope\": \"backend\",\n    \"description\": \"In backend/src/chat.ts, change the INSERT statement from `INSERT INTO mesages` to `INSERT INTO messages`. No contract change needed — the contract already has the table spelled correctly.\",\n    \"contract_change\": null\n  },\n  \"files_read\": [\"backend/src/chat.ts\", \".harness/state.md\", \".harness/contracts.json\"],\n  \"logs_read\": [\"backend\"]\n}\n</result>\n</attempt_completion>",
+    "usage": { "prompt_tokens": 14823, "completion_tokens": 348, "prompt_tokens_details": { "cached_tokens": 13000 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-investigator-high-confidence-fix-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-05-17T15:00:00Z"
+}

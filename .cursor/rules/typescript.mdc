@@ -1,0 +1,9 @@
+---
+description: Convert an existing JavaScript project (Express backend and/or React frontend) to the TypeScript template layout — opt-in only, with a backup branch and a verified build
+alwaysApply: false
+---
+
+@.platform-rules/scope-typescript.md
+
+Follow `.platform-rules/scope-typescript.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

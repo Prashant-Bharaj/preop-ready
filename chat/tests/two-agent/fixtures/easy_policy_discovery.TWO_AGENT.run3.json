@@ -1,0 +1,652 @@
+{
+  "prompt": {
+    "id": "easy_policy_discovery",
+    "label": "Easy — Policy and Procedure Discovery",
+    "userMessage": "Our employees frequently struggle to find the latest version of internal policies, operational procedures, and compliance guidance across SharePoint sites and shared drives. Teams often rely on asking colleagues directly because search results are inconsistent and documents are duplicated across departments. This creates delays, especially for newer employees and regional offices that may not know where authoritative information is stored. Leadership wants a more reliable way for employees to quickly locate accurate business information without needing to understand the underlying systems."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 10277,
+        "content": "{\"action\":\"clarify\",\"round\":1,\"message\":\"Got it — you want a tool that helps employees quickly find authoritative versions of internal policies, procedures, and compliance guidance that today live scattered across SharePoint and shared drives, without them needing to know where things are stored.\\n\\nA few things we can wire up out of the box for this kind of tool — pick any that sound useful:\\n\\n A) AI assistant that answers questions in plain English using your policy docs, with citations back to the source\\n B) Pull documents directly from your SharePoint sites and Teams libraries\\n C) Admin dashboard for content owners to see top searches, gaps, and which docs are being used\\n D) Audit log of every search and answer (useful for compliance review)\\n\\nAlso — one quick question: should every employee see all content, or should results be filtered by who they are?\\n A) Everyone sees everything\\n B) Filtered by the user's department or region\\n C) Filtered by role/group membership (e.g., HR-only docs)\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Got it — you want a tool that helps employees quickly find authoritative versions of internal policies, procedures, and compliance guidance that today live scattered across SharePoint and shared drives, without them needing to know where things are stored.\n\nA few things we can wire up out of the box for this kind of tool — pick any that sound useful:\n\n A) AI assistant that answers questions in plain English using your policy docs, with citations back to the source\n B) Pull documents directly from your SharePoint sites and Teams libraries\n C) Admin dashboard for content owners to see top searches, gaps, and which docs are being used\n D) Audit log of every search and answer (useful for compliance review)\n\nAlso — one quick question: should every employee see all content, or should results be filtered by who they are?\n A) Everyone sees everything\n B) Filtered by the user's department or region\n C) Filtered by role/group membership (e.g., HR-only docs)"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 11332,
+        "content": "{\"action\":\"ready\",\"brief\":{\"ready\":true,\"intent\":\"A search and Q&A tool that lets employees quickly find authoritative internal policies, procedures, and compliance guidance sourced from SharePoint, with plain-English AI answers and citations.\",\"archetype\":\"ai-tool\",\"entities\":[\"documents\",\"sources\",\"queries\"],\"user_roles\":[\"employees\",\"admins\"],\"key_workflows\":[\"Employee asks a question in plain English and gets an AI-generated answer with citations to source policy documents\",\"Employee searches or browses indexed policies, procedures, and compliance guidance\",\"Documents are ingested and kept in sync from configured SharePoint sites and Teams libraries\",\"Admins view a dashboard of top searches, content gaps, and document usage\",\"Every search and answer is recorded in an audit log for compliance review\"],\"stack_signals\":{\"backend_language\":\"node\",\"explicit_user_choice\":false},\"explicit_features\":[\"Find latest authoritative version of internal policies, procedures, and compliance guidance\",\"Pull content from SharePoint sites and shared drives\",\"Plain-English answers with citations\",\"Admin analytics dashboard\",\"Audit log of searches\",\"Global access — everyone sees everything\"],\"capabilities_offered\":{\"accepted\":[\"ai_rag_over_documents\",\"sharepoint_integration\",\"admin_dashboard\",\"audit_logging\"],\"declined\":[],\"user_didnt_choose\":[\"user_management\",\"ai_chat\",\"file_uploads\",\"email_notifications\",\"realtime_updates\",\"ai_text_classification_extraction\",\"csv_export\",\"in_app_search\",\"app_settings_page\"]},\"flags\":[\"has-users\",\"has-admin\",\"ai-rag\",\"sharepoint\",\"search-ui\"],\"notes_for_contract_agent\":\"All employees have global access to all indexed content — no department/role filtering in v1. Primary interface is AI Q&A with citations over a SharePoint-sourced corpus. Admin dashboard surfaces top searches, content gaps, and usage analytics. Audit log captures every query and answer for compliance review.\"}}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "A search and Q&A tool that lets employees quickly find authoritative internal policies, procedures, and compliance guidance sourced from SharePoint, with plain-English AI answers and citations.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "sources",
+              "queries"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Employee asks a question in plain English and gets an AI-generated answer with citations to source policy documents",
+              "Employee searches or browses indexed policies, procedures, and compliance guidance",
+              "Documents are ingested and kept in sync from configured SharePoint sites and Teams libraries",
+              "Admins view a dashboard of top searches, content gaps, and document usage",
+              "Every search and answer is recorded in an audit log for compliance review"
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Find latest authoritative version of internal policies, procedures, and compliance guidance",
+              "Pull content from SharePoint sites and shared drives",
+              "Plain-English answers with citations",
+              "Admin analytics dashboard",
+              "Audit log of searches",
+              "Global access — everyone sees everything"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "ai_rag_over_documents",
+                "sharepoint_integration",
+                "admin_dashboard",
+                "audit_logging"
+              ],
+              "declined": [],
+              "user_didnt_choose": [
+                "user_management",
+                "ai_chat",
+                "file_uploads",
+                "email_notifications",
+                "realtime_updates",
+                "ai_text_classification_extraction",
+                "csv_export",
+                "in_app_search",
+                "app_settings_page"
+              ]
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "sharepoint",
+              "search-ui"
+            ],
+            "notes_for_contract_agent": "All employees have global access to all indexed content — no department/role filtering in v1. Primary interface is AI Q&A with citations over a SharePoint-sourced corpus. Admin dashboard surfaces top searches, content gaps, and usage analytics. Audit log captures every query and answer for compliance review."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "A search and Q&A tool that lets employees quickly find authoritative internal policies, procedures, and compliance guidance sourced from SharePoint, with plain-English AI answers and citations.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "sources",
+        "queries"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Employee asks a question in plain English and gets an AI-generated answer with citations to source policy documents",
+        "Employee searches or browses indexed policies, procedures, and compliance guidance",
+        "Documents are ingested and kept in sync from configured SharePoint sites and Teams libraries",
+        "Admins view a dashboard of top searches, content gaps, and document usage",
+        "Every search and answer is recorded in an audit log for compliance review"
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Find latest authoritative version of internal policies, procedures, and compliance guidance",
+        "Pull content from SharePoint sites and shared drives",
+        "Plain-English answers with citations",
+        "Admin analytics dashboard",
+        "Audit log of searches",
+        "Global access — everyone sees everything"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "ai_rag_over_documents",
+          "sharepoint_integration",
+          "admin_dashboard",
+          "audit_logging"
+        ],
+        "declined": [],
+        "user_didnt_choose": [
+          "user_management",
+          "ai_chat",
+          "file_uploads",
+          "email_notifications",
+          "realtime_updates",
+          "ai_text_classification_extraction",
+          "csv_export",
+          "in_app_search",
+          "app_settings_page"
+        ]
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "search-ui"
+      ],
+      "notes_for_contract_agent": "All employees have global access to all indexed content — no department/role filtering in v1. Primary interface is AI Q&A with citations over a SharePoint-sourced corpus. Admin dashboard surfaces top searches, content gaps, and usage analytics. Audit log captures every query and answer for compliance review."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an internal policy search and Q&A tool: employees ask plain-English questions and get AI-generated answers with citations to SharePoint-sourced policy documents. Includes browse/search, automatic SharePoint ingestion, an admin analytics dashboard (top searches, content gaps, usage), and a compliance audit log of every query and answer.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"sharepoint\", \"search-ui\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Set up storage for users, indexed policy documents, SharePoint source configs, and a compliance audit log of every query.\",\n      \"task\": \"Tables: users, sources, documents, queries, audit_log. Indexes: documents(source_id), documents(updated_at DESC), queries(user_id), queries(created_at DESC), audit_log(created_at DESC), users(oidc_sub). Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"\"\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Set up the vector store that powers semantic search and AI answers over policy document chunks.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER, content TEXT, embedding vector(3072), metadata JSONB, created_at TIMESTAMPTZ DEFAULT now()). Index: HNSW on embedding (vector_cosine_ops). Index on document_id. Embedding model: text-embedding-3-large via MGA /embeddings.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Build the API that answers employee questions with citations, lists/searches policies, syncs from SharePoint, powers the admin dashboard, and writes the audit log.\",\n      \"task\": \"Data: pg Pool from env; pgvector connection on :5433. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT (sub, email); auto-provision users row on first request. Role: 'admin' inferred from configured allowlist env ADMIN_EMAILS; default 'employee'. RAG: embed query via MGA text-embedding-3-large, top-k cosine search on doc_chunks, pass chunks + question to MGA assistant 'default' (claude-opus-4.7), return answer + citations referencing source documents. SharePoint sync: scheduled job per source pulls docs, chunks, embeds, upserts. Every /ask and /search writes to audit_log and queries.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Build the employee Q&A and search interface plus the admin analytics dashboard.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during ask/search, empty-state CTA on no results, toast on 4xx/5xx, 404 page, disabled submit during POST, streaming-style loader on /ask. Citations render as clickable links to document detail. Admin route gated by /whoami role==='admin'. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wire all services together for local development with a single docker compose up.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=policyqa, DATABASE_USER=policyqa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, MGA_API_KEY, MGA_BASE_URL, ADMIN_EMAILS. nginx.local.conf proxy /api→backend:3000. depends_on chain: frontend→backend→{database,vectordb}. Healthchecks on db services. Volumes per service.\",\n      \"dockerfile\": \"\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"sources\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"name\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"kind\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'sharepoint'\"},\n          {\"name\": \"site_url\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"library\", \"type\": \"VARCHAR(255)\"},\n          {\"name\": \"last_synced_at\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"status\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'active'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"documents\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"source_id\", \"type\": \"INTEGER NOT NULL REFERENCES sources(id)\"},\n          {\"name\": \"external_id\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"title\", \"type\": \"VARCHAR(512) NOT NULL\"},\n          {\"name\": \"url\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"author\", \"type\": \"VARCHAR(255)\"},\n          {\"name\": \"content_text\", \"type\": \"TEXT\"},\n          {\"name\": \"version\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"updated_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"},\n          {\"name\": \"indexed_at\", \"type\": \"TIMESTAMPTZ\"}\n        ]\n      },\n      {\n        \"name\": \"queries\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"kind\", \"type\": \"VARCHAR(16) NOT NULL\"},\n          {\"name\": \"question\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"answer\", \"type\": \"TEXT\"},\n          {\"name\": \"citations\", \"type\": \"JSONB\"},\n          {\"name\": \"result_count\", \"type\": \"INTEGER\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      },\n      {\n        \"name\": \"audit_log\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"user_email\", \"type\": \"VARCHAR(255)\"},\n          {\"name\": \"event_type\", \"type\": \"VARCHAR(64) NOT NULL\"},\n          {\"name\": \"payload\", \"type\": \"JSONB\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT now()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\n        \"method\": \"GET\",\n        \"path\": \"/whoami\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/ask\",\n        \"request\": {\"question\": \"string required\"},\n        \"response\": {\"status\": 200, \"body\": \"{ id, question, answer, citations: [{ document_id, title, url, snippet }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/search\",\n        \"request\": {\"q\": \"string required\", \"limit\": \"number optional default 50\", \"offset\": \"number optional default 0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ results: [{ document_id, title, url, snippet, score }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/documents\",\n        \"request\": {\"limit\": \"number optional default 50\", \"offset\": \"number optional default 0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, title, url, source_name, updated_at }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/documents/:id\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, title, url, author, version, updated_at, source_name, content_text }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/sources\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, name, site_url, library, status, last_synced_at }] }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources\",\n        \"request\": {\"name\": \"string required\", \"site_url\": \"string required\", \"library\": \"string optional\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, name, site_url, library, status }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources/:id/sync\",\n        \"response\": {\"status\": 202, \"body\": \"{ id, status: 'syncing' }\"}\n      },\n      {\n        \"method\": \"DELETE\",\n        \"path\": \"/admin/sources/:id\",\n        \"response\": {\"status\": 204, \"body\": \"\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/top-searches\",\n        \"request\": {\"limit\": \"number optional default 20\", \"days\": \"number optional default 30\"},\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ question, count, last_asked_at }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/content-gaps\",\n        \"request\": {\"limit\": \"number optional default 20\", \"days\": \"number optional default 30\"},\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ question, count, avg_result_count }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/document-usage\",\n        \"request\": {\"limit\": \"number optional default 20\", \"days\": \"number optional default 30\"},\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ document_id, title, citation_count }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/audit-log\",\n        \"request\": {\"limit\": \"number optional default 50\", \"offset\": \"number optional default 0\"},\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, user_email, event_type, payload, created_at }], total }\"}\n      }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"AI Q&A page where employees ask policy questions and get cited answers\",\n    \"primary_action\": \"ask a plain-English policy question\",\n    \"secondary_views\": [\n      \"search results page\",\n      \"policy browse list\",\n      \"policy detail page\",\n      \"admin dashboard with analytics\",\n      \"admin source library management\",\n      \"admin audit log viewer\"\n    ],\n    \"components\": [\n      {\"name\": \"AskBar\", \"role\": \"primary plain-English question input\"},\n      {\"name\": \"AnswerCard\", \"role\": \"AI-generated answer with inline citation chips\"},\n      {\"name\": \"CitationList\", \"role\": \"list of source documents cited in the answer\"},\n      {\"name\": \"SearchBar\", \"role\": \"keyword search input for browsing policies\"},\n      {\"name\": \"ResultList\", \"role\": \"ranked search results with snippets\"},\n      {\"name\": \"DocumentDetail\", \"role\": \"full policy document view with metadata\"},\n      {\"name\": \"DocumentBrowser\", \"role\": \"paginated list of all indexed policies\"},\n      {\"name\": \"AdminDashboard\", \"role\": \"analytics overview: top searches, content gaps, document usage\"},\n      {\"name\": \"TopSearchesPanel\", \"role\": \"ranked list of most frequent questions\"},\n      {\"name\": \"ContentGapsPanel\", \"role\": \"questions with poor or no results\"},\n      {\"name\": \"DocumentUsagePanel\", \"role\": \"most-cited documents\"},\n      {\"name\": \"SourceManager\", \"role\": \"admin CRUD for SharePoint sources and sync triggers\"},\n      {\"name\": \"AuditLogViewer\", \"role\": \"compliance log of every query and answer\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_request\", \"action\": \"create users row from OIDC claims (sub, email); role='admin' if email in ADMIN_EMAILS else 'employee'\"},\n      {\"event\": \"question_asked\", \"action\": \"embed question, retrieve top-k chunks from vectordb, call MGA assistant for answer, return answer with citations, persist to queries, write audit_log entry\"},\n      {\"event\": \"search_performed\", \"action\": \"run keyword + vector search over documents, persist to queries, write audit_log entry\"},\n      {\"event\": \"source_added_or_sync_triggered\", \"action\": \"fetch documents from SharePoint, upsert documents rows, chunk and embed via MGA, upsert doc_chunks, update sources.last_synced_at\"},\n      {\"event\": \"scheduled_sync\", \"action\": \"periodically resync all active sources to keep indexed content current\"}\n    ],\n    \"rules\": [\n      \"all authenticated employees can read all documents, run /ask, /search, /documents (global access, no department filtering in v1)\",\n      \"/admin/* endpoints require users.role='admin' — return 403 otherwise\",\n      \"users are auto-provisioned from x-amzn-oidc-data JWT (sub, email) on first request\",\n      \"every /ask and /search call must write a queries row and an audit_log row before responding\",\n      \"answers must include citations referencing real document ids retrieved from the vector store\"\n    ],\n    \"side_effects\": [\n      \"audit_log entry written on every /ask, /search, source mutation, and source sync\",\n      \"queries row written on every /ask and /search for analytics aggregation\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Policy Q&A Assistant\",\n      \"description\": \"Answers employee questions about internal policies, procedures, and compliance guidance using indexed SharePoint documents. Always grounds answers in retrieved content and returns citations.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"What is our policy on remote work?\",\n        \"How do I submit an expense report?\",\n        \"What are the compliance requirements for handling customer data?\"\n      ]\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an internal policy search and Q&A tool: employees ask plain-English questions and get AI-generated answers with citations to SharePoint-sourced policy documents. Includes browse/search, automatic SharePoint ingestion, an admin analytics dashboard (top searches, content gaps, usage), and a compliance audit log of every query and answer.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "search-ui"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Set up storage for users, indexed policy documents, SharePoint source configs, and a compliance audit log of every query.",
+          "task": "Tables: users, sources, documents, queries, audit_log. Indexes: documents(source_id), documents(updated_at DESC), queries(user_id), queries(created_at DESC), audit_log(created_at DESC), users(oidc_sub). Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Set up the vector store that powers semantic search and AI answers over policy document chunks.",
+          "task": "pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER NOT NULL, chunk_index INTEGER, content TEXT, embedding vector(3072), metadata JSONB, created_at TIMESTAMPTZ DEFAULT now()). Index: HNSW on embedding (vector_cosine_ops). Index on document_id. Embedding model: text-embedding-3-large via MGA /embeddings.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Build the API that answers employee questions with citations, lists/searches policies, syncs from SharePoint, powers the admin dashboard, and writes the audit log.",
+          "task": "Data: pg Pool from env; pgvector connection on :5433. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT (sub, email); auto-provision users row on first request. Role: 'admin' inferred from configured allowlist env ADMIN_EMAILS; default 'employee'. RAG: embed query via MGA text-embedding-3-large, top-k cosine search on doc_chunks, pass chunks + question to MGA assistant 'default' (claude-opus-4.7), return answer + citations referencing source documents. SharePoint sync: scheduled job per source pulls docs, chunks, embeds, upserts. Every /ask and /search writes to audit_log and queries.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Build the employee Q&A and search interface plus the admin analytics dashboard.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). States: spinner during ask/search, empty-state CTA on no results, toast on 4xx/5xx, 404 page, disabled submit during POST, streaming-style loader on /ask. Citations render as clickable links to document detail. Admin route gated by /whoami role==='admin'. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wire all services together for local development with a single docker compose up.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=policyqa, DATABASE_USER=policyqa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, MGA_API_KEY, MGA_BASE_URL, ADMIN_EMAILS. nginx.local.conf proxy /api→backend:3000. depends_on chain: frontend→backend→{database,vectordb}. Healthchecks on db services. Volumes per service.",
+          "dockerfile": "",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "sources",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "kind",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'sharepoint'"
+              },
+              {
+                "name": "site_url",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "library",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "last_synced_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'active'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "source_id",
+                "type": "INTEGER NOT NULL REFERENCES sources(id)"
+              },
+              {
+                "name": "external_id",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(512) NOT NULL"
+              },
+              {
+                "name": "url",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "author",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "content_text",
+                "type": "TEXT"
+              },
+              {
+                "name": "version",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "updated_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              },
+              {
+                "name": "indexed_at",
+                "type": "TIMESTAMPTZ"
+              }
+            ]
+          },
+          {
+            "name": "queries",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "kind",
+                "type": "VARCHAR(16) NOT NULL"
+              },
+              {
+                "name": "question",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "answer",
+                "type": "TEXT"
+              },
+              {
+                "name": "citations",
+                "type": "JSONB"
+              },
+              {
+                "name": "result_count",
+                "type": "INTEGER"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "user_email",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "event_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "payload",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/ask",
+            "request": {
+              "question": "string required"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id, question, answer, citations: [{ document_id, title, url, snippet }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/search",
+            "request": {
+              "q": "string required",
+              "limit": "number optional default 50",
+              "offset": "number optional default 0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ results: [{ document_id, title, url, snippet, score }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents",
+            "request": {
+              "limit": "number optional default 50",
+              "offset": "number optional default 0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, title, url, source_name, updated_at }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, title, url, author, version, updated_at, source_name, content_text }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/sources",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, name, site_url, library, status, last_synced_at }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources",
+            "request": {
+              "name": "string required",
+              "site_url": "string required",
+              "library": "string optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name, site_url, library, status }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources/:id/sync",
+            "response": {
+              "status": 202,
+              "body": "{ id, status: 'syncing' }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/admin/sources/:id",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/top-searches",
+            "request": {
+              "limit": "number optional default 20",
+              "days": "number optional default 30"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ question, count, last_asked_at }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/content-gaps",
+            "request": {
+              "limit": "number optional default 20",
+              "days": "number optional default 30"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ question, count, avg_result_count }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/document-usage",
+            "request": {
+              "limit": "number optional default 20",
+              "days": "number optional default 30"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ document_id, title, citation_count }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-log",
+            "request": {
+              "limit": "number optional default 50",
+              "offset": "number optional default 0"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, user_email, event_type, payload, created_at }], total }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "AI Q&A page where employees ask policy questions and get cited answers",
+        "primary_action": "ask a plain-English policy question",
+        "secondary_views": [
+          "search results page",
+          "policy browse list",
+          "policy detail page",
+          "admin dashboard with analytics",
+          "admin source library management",
+          "admin audit log viewer"
+        ],
+        "components": [
+          {
+            "name": "AskBar",
+            "role": "primary plain-English question input"
+          },
+          {
+            "name": "AnswerCard",
+            "role": "AI-generated answer with inline citation chips"
+          },
+          {
+            "name": "CitationList",
+            "role": "list of source documents cited in the answer"
+          },
+          {
+            "name": "SearchBar",
+            "role": "keyword search input for browsing policies"
+          },
+          {
+            "name": "ResultList",
+            "role": "ranked search results with snippets"
+          },
+          {
+            "name": "DocumentDetail",
+            "role": "full policy document view with metadata"
+          },
+          {
+            "name": "DocumentBrowser",
+            "role": "paginated list of all indexed policies"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "analytics overview: top searches, content gaps, document usage"
+          },
+          {
+            "name": "TopSearchesPanel",
+            "role": "ranked list of most frequent questions"
+          },
+          {
+            "name": "ContentGapsPanel",
+            "role": "questions with poor or no results"
+          },
+          {
+            "name": "DocumentUsagePanel",
+            "role": "most-cited documents"
+          },
+          {
+            "name": "SourceManager",
+            "role": "admin CRUD for SharePoint sources and sync triggers"
+          },
+          {
+            "name": "AuditLogViewer",
+            "role": "compliance log of every query and answer"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_request",
+            "action": "create users row from OIDC claims (sub, email); role='admin' if email in ADMIN_EMAILS else 'employee'"
+          },
+          {
+            "event": "question_asked",
+            "action": "embed question, retrieve top-k chunks from vectordb, call MGA assistant for answer, return answer with citations, persist to queries, write audit_log entry"
+          },
+          {
+            "event": "search_performed",
+            "action": "run keyword + vector search over documents, persist to queries, write audit_log entry"
+          },
+          {
+            "event": "source_added_or_sync_triggered",
+            "action": "fetch documents from SharePoint, upsert documents rows, chunk and embed via MGA, upsert doc_chunks, update sources.last_synced_at"
+          },
+          {
+            "event": "scheduled_sync",
+            "action": "periodically resync all active sources to keep indexed content current"
+          }
+        ],
+        "rules": [
+          "all authenticated employees can read all documents, run /ask, /search, /documents (global access, no department filtering in v1)",
+          "/admin/* endpoints require users.role='admin' — return 403 otherwise",
+          "users are auto-provisioned from x-amzn-oidc-data JWT (sub, email) on first request",
+          "every /ask and /search call must write a queries row and an audit_log row before responding",
+          "answers must include citations referencing real document ids retrieved from the vector store"
+        ],
+        "side_effects": [
+          "audit_log entry written on every /ask, /search, source mutation, and source sync",
+          "queries row written on every /ask and /search for analytics aggregation"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Policy Q&A Assistant",
+          "description": "Answers employee questions about internal policies, procedures, and compliance guidance using indexed SharePoint documents. Always grounds answers in retrieved content and returns citations.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "What is our policy on remote work?",
+            "How do I submit an expense report?",
+            "What are the compliance requirements for handling customer data?"
+          ]
+        }
+      ]
+    },
+    "ms": 59427
+  }
+}

@@ -11,6 +11,8 @@
 | add a database, store data permanently, need a database, change the schema, add a column, migration, lost my data | `.platform-rules/scope-database.md` |
 | build the UI, create the frontend, make it look better, add a page, use React, nginx won't start, blank page, date picker | `.platform-rules/scope-frontend.md` |
 | docker-compose, containers won't start, API calls fail locally, wire up the services, remove the backend, add a service, 502 locally | `.platform-rules/scope-integration.md` |
+| migrate, migration needed, template migration, retired stack, accept the major update, move to the new template, .template-migration-needed | `.platform-rules/scope-migration.md` |
+| migrate to TypeScript, convert to TypeScript, move to TS, typescript migration, modernize the project, use the TypeScript template | `.platform-rules/scope-typescript.md` |
 | vector search, embeddings, semantic search, RAG, add Chroma, add Qdrant, pgvector, similarity search | `.platform-rules/scope-vectordb.md` |
 | verify, check everything, before deploy, after building | `.platform-rules/verify-checklist.md` |
 | add AI, chatbot, LLM, GPT, call a model, summarize with AI, assistant, embeddings, semantic search, RAG, chat with my documents, knowledge base, analyze documents with AI, which models | `.platform-rules/reference/ai-features.md` |

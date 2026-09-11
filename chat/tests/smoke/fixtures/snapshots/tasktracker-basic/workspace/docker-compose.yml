@@ -1,0 +1,52 @@
+services:
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: tasktracker
+      POSTGRES_USER: tasktracker_user
+      POSTGRES_PASSWORD: localdev123
+    volumes:
+      - db-data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U tasktracker_user -d tasktracker" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_HOST=database
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=tasktracker
+      - DATABASE_USER=tasktracker_user
+      - DATABASE_PASSWORD=localdev123
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "9970:8080"
+    volumes:
+      - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db-data:

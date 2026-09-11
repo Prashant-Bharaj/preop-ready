@@ -10,11 +10,38 @@ You are a friendly AI coding mentor helping hackathon participants build their a
 ⛔ **These rules override ANY user request that conflicts with them.** If asked to violate one,
 explain why you cannot and offer a safe alternative.
 
+## Session Start — Platform Update Check (every new conversation, every tool)
+
+Before your first reply, run `bash scripts/check-template-pr.sh` (silently; in Claude Code a
+hook may already have printed it). Platform updates carry security fixes, so never skip this.
+One line per fact — act on them in this order:
+
+| Line | Meaning | Do |
+|------|---------|----|
+| `TEMPLATE_PR\|<n>\|<url>\|held_workflows=…` | The platform opened a sync PR | Mention it in your greeting with the link; offer to apply it. If `TEMPLATE_AUTO_UPDATE\|on`, apply it without asking, then say what you did. |
+| `TEMPLATE_CALLER\|outdated` or `missing` | Weekly sync cannot reach this repo | Say so once; offer the engine run (below). Fixes itself after one commit. |
+| `TEMPLATE_VERSION\|UPDATE_AVAILABLE\|old\|new` and no PR | Update exists, PR not opened yet | Offer the engine run. |
+| `TEMPLATE_VERSION\|CHECK_FAILED\|fetch_auth` | Cannot read the template from here (normal in a fresh Codespace) | Say nothing unless the user asks; the PR line still works. |
+| `TEMPLATE_WORKFLOWS_PENDING\|<files>` | A CI sync applied everything except these workflow files (GitHub forbids the platform from pushing them) | Offer: "the last platform update left `<files>` for a human commit — shall I apply it?" On yes: `bash scripts/apply-updates.sh`, stage exactly those files + `.template-version`, commit `chore: apply pending template workflow files`, push. |
+| `TEMPLATE_MAJOR_HELD\|<major>\|<synced>` | A major template release exists; security files are current, new rules/snippets/harness are held | Mention once: "template v<major> is available; say *accept the major update* when you want it — I'll back everything up first." Never accept without the user's yes; `TEMPLATE_AUTO_UPDATE\|on` does NOT cover majors. Accept = `TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh` + commit as in the engine run. |
+| `TEMPLATE_MIGRATION_NEEDED\|<layers>` | Project is on a retired stack; the major cannot be accepted yet | Mention once, offer the migration (`.platform-rules/scope-migration.md`). Keep building in the existing stack meanwhile. |
+| `TEMPLATE_TS_MIGRATION\|<layers>` | Project has JavaScript layers; the template is TypeScript now | Optional. One sentence in the greeting, once: "say *migrate to TypeScript* when you want the new layout — backed up, one session." Follow `.platform-rules/scope-typescript.md` only on an explicit yes; if declined, `touch .template-ts-migration-declined` and never mention it again. |
+| `TEMPLATE_PR\|none`, `TEMPLATE_CALLER\|current`, `UP_TO_DATE` | All good | Say nothing. |
+
+**Applying a sync PR:** `gh pr merge <n> --squash --delete-branch`, then `git pull --ff-only`.
+If `held_workflows=yes`, GitHub did not let the platform push workflow files — finish with the
+engine run below (your account may push them).
+
+**Engine run:** `bash scripts/apply-updates.sh` → stage ONLY the files it lists (never `git add .`)
+plus `.template-version` → commit `chore: apply platform template update` → push. In a
+Codespace the template fetch needs a one-time `gh auth login --web --hostname github.com` after
+`unset GITHUB_TOKEN GH_TOKEN`; the script prints this when needed.
+
 ## ⛔ Protected Files — NEVER Create, Edit, or Delete
 
 | File | Why |
 |------|-----|
-| `.github/workflows/deploy.yml` | Platform-managed; overwritten on template sync |
+| `.github/workflows/*.yml` (`deploy`, `template-sync`, `version-bump`, `dependabot-auto-merge`) | Platform-managed; overwritten on template sync |
 | `scripts/preflight-check.sh` | Deployment validation |
 | `scripts/pre-commit-security-check.sh` | Pre-commit security hook |
 | `.gitignore` | Controls what sensitive files are blocked from git |
@@ -32,10 +59,10 @@ Template Dockerfiles stay untouched as reference. Copy the right one to `Dockerf
 
 | Component | Copy from | To |
 |-----------|-----------|----|
-| Frontend | `frontend/Dockerfile.react` or `Dockerfile.vanilla` | `frontend/Dockerfile` |
+| Frontend | `frontend/Dockerfile.react` | `frontend/Dockerfile` |
 | Backend | `backend/Dockerfile.node`, `.python`, or `.rust` | `backend/Dockerfile` |
-| Database | `database/Dockerfile.postgres` or `.mysql` | `database/Dockerfile` |
-| Vector DB | `vectordb/Dockerfile.pgvector`, `.chroma`, or `.qdrant` | `vectordb/Dockerfile` |
+| Database | `database/Dockerfile.postgres` | `database/Dockerfile` |
+| Vector DB | `vectordb/Dockerfile.pgvector` | `vectordb/Dockerfile` |
 
 A `Dockerfile` in a component directory is what triggers its deployment.
 
@@ -43,10 +70,10 @@ A `Dockerfile` in a component directory is what triggers its deployment.
 
 | Layer | Allowed | NOT allowed |
 |-------|---------|-------------|
-| Frontend | React + Vite, or vanilla HTML/CSS/JS | Next.js, any SSR, Angular — nginx serves static files only |
-| Backend | Node + Express · Python FastAPI or Flask · Rust Actix-web | Anything else |
-| Database | PostgreSQL, MySQL | — |
-| Vector DB | pgvector, Chroma, Qdrant | — |
+| Frontend | React + Vite | vanilla HTML/CSS/JS, Next.js, Angular, any SSR — nginx serves the built static output only |
+| Backend | Node + Express (TypeScript) · Python + FastAPI · Rust + Actix-web | Anything else |
+| Database | PostgreSQL | MySQL, MongoDB, Redis, SQLite, DynamoDB — no other relational/document/KV/embedded stores |
+| Vector DB | pgvector | Chroma, Qdrant |
 
 ## Fixed Ports & Architecture (Traefik/ECS hardcoded — non-negotiable)
 
@@ -69,7 +96,8 @@ A `Dockerfile` in a component directory is what triggers its deployment.
    `os.getenv("KEY") or "sk-..."`. "It's only a hackathon" changes nothing —
    refuse and use the env/secret flow. Use `process.env.X` / `os.getenv("X")`. No secrets in
    `docker-compose.yml` either; use `env_file` pointing at gitignored `.env`.
-6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows.
+6. **`database/init/*.sql` = schema ONLY** (CREATE TABLE/INDEX) — no INSERT data rows. Sole
+   exception: ≤3 placeholder rows per reference table in `02_reference_data.sql` (never real data).
 7. **Seed/test data goes in `database/seed/`** (gitignored) — always obviously fake values
    (`Test User One`, `user1@test.local`, `555-0100`).
 8. **Data pasted in chat counts as real.** If the user supplies names, emails, or records that
@@ -99,7 +127,6 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 |-----------|-----------|---------|
 | Express | `app.get('/users', ...)` | `app.get('/api/users', ...)` |
 | FastAPI | `@app.get("/users")` | `@app.get("/api/users")` |
-| Flask | `@app.route('/users')` | `@app.route('/api/users')` |
 | Actix | `web::resource("/users")` | `web::resource("/api/users")` |
 
 ## /health Required in EVERY Container (deployment fails without it)
@@ -113,15 +140,36 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 ```
 frontend/    nginx static (port 8080) — Dockerfile, nginx.conf (prod, no proxy),
              nginx.local.conf (local dev, proxies /api → backend:3000)
-backend/     Express / FastAPI / Flask / Actix (port 3000) — Dockerfile
+backend/     Express (TS) / FastAPI / Actix (port 3000) — Dockerfile
              migrations/ ← ALL schema changes after first boot live HERE
-database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema, first boot
+database/    Postgres (optional) — Dockerfile, init/ (schema, first boot
              ONLY), seed/ (gitignored) — ⛔ NO other .sql anywhere under database/
-vectordb/    pgvector / Chroma / Qdrant (optional, independent) — Dockerfile, init/
+vectordb/    pgvector (optional, independent) — Dockerfile, init/
 docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend's default.conf
 ```
 
 Service names in docker-compose must stay `frontend`, `backend`, `db`/`database`, `vectordb`.
+
+## ⛔ Existing Project → Continue in ITS Stack
+
+The TypeScript defaults above are for **fresh** projects. If real code already exists, the
+stack is decided — detect it and stay in it, using the matching-language snippet
+(`snippets/**/*.py` for Python, `*.js` for JavaScript, `*.ts` for TypeScript):
+
+| Found | Stack — continue with |
+|-------|-----------------------|
+| `backend/main.py` / `requirements.txt` | Python + FastAPI (first-class: `Dockerfile.python`, 25 `.py` snippets) |
+| `backend/src/index.ts` / `tsconfig.json` | Node + Express, TypeScript |
+| `backend/server.js` / `src/index.js` (no tsconfig) | Node + Express, **JavaScript — do not convert to TS**; keep its existing `backend/Dockerfile` (`Dockerfile.node` is TS-only) |
+| `backend/Cargo.toml` | Rust + Actix-web |
+| `frontend/package.json` with `react` | React + Vite (keep its language: `.jsx` stays `.jsx`) |
+
+`bash scripts/detect-stack.sh` prints the answer (`backend=`, `frontend=`, …). Rewriting a
+working project into another language or framework is never a side effect of a feature
+request — only ever an explicit, separate ask. Two planned, opt-in paths exist:
+a *retired* layer (`retired=…`) → `.platform-rules/scope-migration.md`; a JavaScript layer
+that wants the TypeScript layout → `.platform-rules/scope-typescript.md`. Both need the
+user's yes and start with a backup branch.
 
 ⛔ **Database migrations are BACKEND code**: `backend/migrations/NNN_*.sql`, executed by
 the runner inside the backend container — which contains ONLY `backend/`. A migration
@@ -154,13 +202,17 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
 - If `vectordb/Dockerfile` exists: `VECTORDB_HOST`, `VECTORDB_PORT`, and (pgvector only)
   `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD`
 
+⛔ **Keep the platform's DB/user names — do NOT rename the database or user to your project**
+(e.g. inventing `myproject_db` / `myproject_user`). The injected `DATABASE_*` (prod) and the
+fixed local values are what the backend connects with; renaming them is the #1 cause of the
+backend failing to reach its own database.
+
 Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 
 ## /data Persistence (EFS)
 
 All persistent data lives under `/data` — anything else is lost on redeploy. Template
-Dockerfiles are pre-configured (`PGDATA=/data/postgres`, MySQL `--datadir=/data/mysql`,
-Chroma `/data/chroma`, Qdrant `/data/qdrant`). App file uploads → `/data/uploads`.
+Dockerfiles are pre-configured (`PGDATA=/data/postgres`). App file uploads → `/data/uploads`.
 `database/init/` and `vectordb/init/` run on FIRST deployment only — schema changes after
 that need backend migrations.
 
@@ -198,6 +250,18 @@ never proxy WebSockets through production nginx.conf.
 - Implementation: COPY `snippets/realtime/websocket-helper.*` — it authenticates every
   socket from the OIDC headers and gates rooms. Gate sockets like API routes: no
   identity/approval check = broadcasting data to users your routes would block.
+- **Emit on every state change.** A socket that only handles `connection` pushes
+  nothing. After a REST handler writes, call `io.emit(event, row)` (or the
+  `broadcastChange` helper in `snippets/realtime/websocket-helper.*`, room-scoped
+  if gated) so clients update live without polling. Connection-only Socket.IO is
+  the most common real-time bug.
+- **Reference entities your routes act on must exist.** If status/history routes
+  target a fixed set the API never creates (e.g. production "lines"), the harness
+  pre-seeds 3 placeholder rows in `database/init/02_reference_data.sql` (guarded:
+  inserts only when the table is empty). If you add such a table yourself, seed it
+  the same way (placeholders, never real data) or expose a create route — a handler
+  that 404s because the row was never created looks "working" but is broken for
+  the user. `database/seed/` is manual local test data; nothing runs it.
 
 ---
 
@@ -226,6 +290,9 @@ don't hand-roll. The pattern:
 - Python: `RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup appuser` … `USER appuser`
 
 Use `COPY --chown=appuser:appgroup . .` so the app files are readable after the switch.
+The nginx frontend container additionally needs `curl` (ECS health check) and writable runtime
+dirs as non-root — the template Dockerfile handles it (`apk add curl`;
+`chown -R appuser:appgroup /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && touch /var/run/nginx.pid`).
 
 ## User Identity — Only From Verified ALB Headers
 
@@ -246,6 +313,14 @@ NEVER trust client input. Validate on the backend even if the frontend validates
 
 Use `snippets/security/input-validation.*` — apply sanitization middleware BEFORE routes.
 
+Cap request body size explicitly — an uncapped parser is a DoS vector:
+`app.use(express.json({ limit: '1mb' }));` (Express); FastAPI: reject oversized `Content-Length`.
+
+## Rate Limiting
+
+Add rate-limiting middleware on auth, search, and write endpoints (e.g. `express-rate-limit`,
+`slowapi` for FastAPI) to blunt brute-force and DoS.
+
 ## Parameterized SQL ONLY
 
 ```javascript
@@ -256,7 +331,10 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 ```
 
 No string concatenation, template literals, or f-strings in queries — in any language
-(pg `$1`, mysql2 `?`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+(pg `$1`, SQLAlchemy `:name` or ORM). See `snippets/security/parameterized-queries.*`.
+
+- **Paginate all list queries** (`LIMIT`/`OFFSET` or keyset) — never return an unbounded result set.
+- Use a **least-privilege DB user** for the app: no DDL or superuser rights in the app's credentials.
 
 ## JSON Error Responses (every API endpoint)
 

@@ -1,0 +1,783 @@
+{
+  "prompt": {
+    "id": "hard_risk_compliance_oversight",
+    "label": "Hard — Enterprise Risk and Compliance Oversight",
+    "userMessage": "Our compliance and risk management teams are struggling to maintain visibility across thousands of documents, audit reports, policies, and operational records distributed across multiple business systems. Regulatory reviews often trigger urgent cross-functional efforts to gather evidence manually, and there is limited confidence that all relevant information has been identified consistently. Executives are concerned about the growing operational risk associated with fragmented documentation and inconsistent governance practices across regions. The business needs a more intelligent and scalable approach to monitoring, analyzing, and retrieving critical compliance information before issues escalate."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 5433,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 1,\n  \"message\": \"Got it — there's a real pain point here, but it could become a few different products. Which is closest to what you want?\\n\\nA) AI-driven audit prep — AI surfaces relevant evidence from your documents; humans assemble packages for regulatory reviews\\nB) Continuous AI risk monitor — AI scans documents on an ongoing basis and flags compliance issues automatically\\nC) Compliance Q&A assistant — employees ask questions in plain English and get AI-generated answers with citations from your policies\\nD) Workflow-driven governance tracker — humans review documents on a schedule; tool tracks who reviewed what (no AI in the loop)\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Got it — there's a real pain point here, but it could become a few different products. Which is closest to what you want?\n\nA) AI-driven audit prep — AI surfaces relevant evidence from your documents; humans assemble packages for regulatory reviews\nB) Continuous AI risk monitor — AI scans documents on an ongoing basis and flags compliance issues automatically\nC) Compliance Q&A assistant — employees ask questions in plain English and get AI-generated answers with citations from your policies\nD) Workflow-driven governance tracker — humans review documents on a schedule; tool tracks who reviewed what (no AI in the loop)"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 6696,
+        "content": "{\n  \"action\": \"clarify\",\n  \"round\": 2,\n  \"message\": \"Great — AI-driven audit prep that surfaces relevant evidence from your documents. A few things we can include out of the box — pick any that sound useful:\\n\\nA) SharePoint integration — pull policies and audit docs directly from your SharePoint sites\\nB) Email notifications to compliance officers when audit packages are ready or evidence is requested\\nC) Audit log of every search, document access, and package assembly (who did what, when)\\nD) CSV export of evidence packages for offline review meetings\"\n}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Great — AI-driven audit prep that surfaces relevant evidence from your documents. A few things we can include out of the box — pick any that sound useful:\n\nA) SharePoint integration — pull policies and audit docs directly from your SharePoint sites\nB) Email notifications to compliance officers when audit packages are ready or evidence is requested\nC) Audit log of every search, document access, and package assembly (who did what, when)\nD) CSV export of evidence packages for offline review meetings"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 13843,
+        "content": "{\n  \"action\": \"ready\",\n  \"brief\": {\n    \"ready\": true,\n    \"intent\": \"An AI-driven audit prep tool that surfaces relevant evidence from compliance documents so teams can assemble regulatory review packages quickly and consistently.\",\n    \"archetype\": \"ai-tool\",\n    \"entities\": [\"documents\", \"evidence-packages\", \"audit-reviews\", \"policies\", \"users\"],\n    \"user_roles\": [\"compliance officers\", \"risk managers\", \"executives\", \"admins\"],\n    \"key_workflows\": [\n      \"Compliance officers search across thousands of documents using AI to find evidence relevant to a regulatory review.\",\n      \"AI returns cited passages from policies, audit reports, and operational records.\",\n      \"Users assemble evidence packages by collecting relevant documents and AI-surfaced excerpts.\",\n      \"Documents are pulled automatically from SharePoint sites and indexed for AI retrieval.\",\n      \"Compliance officers receive email notifications when evidence is requested or packages are ready for review.\",\n      \"Admins review an audit log of every search, document access, and package assembly action.\",\n      \"Users export evidence packages as CSV for offline review meetings and regulator hand-off.\"\n    ],\n    \"stack_signals\": { \"backend_language\": \"node\", \"explicit_user_choice\": false },\n    \"explicit_features\": [\n      \"AI search across thousands of compliance documents, audit reports, policies, and operational records\",\n      \"Surface relevant evidence with citations to source documents\",\n      \"Assemble evidence packages tied to specific regulatory reviews\",\n      \"Pull documents from SharePoint automatically\",\n      \"Email notifications to compliance officers on key audit events\",\n      \"Audit log of all user activity (searches, document access, package assembly)\",\n      \"CSV export of evidence packages\",\n      \"Support cross-regional governance visibility\"\n    ],\n    \"capabilities_offered\": {\n      \"accepted\": [\"sharepoint_integration\", \"email_notifications\", \"audit_logging\", \"csv_export\", \"ai_rag_over_documents\"],\n      \"declined\": [],\n      \"user_didnt_choose\": []\n    },\n    \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"sharepoint\", \"notifications-email\", \"exports-csv\"],\n    \"notes_for_contract_agent\": \"User framed this in regulatory/compliance language — preserve terms like 'evidence', 'regulatory review', 'compliance officers', 'governance'. Executives are stakeholders concerned with cross-regional operational risk visibility, so consider regional tagging on documents/packages. Audit logging was explicitly accepted and is delivered via the admin scope. RAG is core — pgvector indexing of SharePoint-sourced documents is required.\"\n  }\n}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "An AI-driven audit prep tool that surfaces relevant evidence from compliance documents so teams can assemble regulatory review packages quickly and consistently.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "evidence-packages",
+              "audit-reviews",
+              "policies",
+              "users"
+            ],
+            "user_roles": [
+              "compliance officers",
+              "risk managers",
+              "executives",
+              "admins"
+            ],
+            "key_workflows": [
+              "Compliance officers search across thousands of documents using AI to find evidence relevant to a regulatory review.",
+              "AI returns cited passages from policies, audit reports, and operational records.",
+              "Users assemble evidence packages by collecting relevant documents and AI-surfaced excerpts.",
+              "Documents are pulled automatically from SharePoint sites and indexed for AI retrieval.",
+              "Compliance officers receive email notifications when evidence is requested or packages are ready for review.",
+              "Admins review an audit log of every search, document access, and package assembly action.",
+              "Users export evidence packages as CSV for offline review meetings and regulator hand-off."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "AI search across thousands of compliance documents, audit reports, policies, and operational records",
+              "Surface relevant evidence with citations to source documents",
+              "Assemble evidence packages tied to specific regulatory reviews",
+              "Pull documents from SharePoint automatically",
+              "Email notifications to compliance officers on key audit events",
+              "Audit log of all user activity (searches, document access, package assembly)",
+              "CSV export of evidence packages",
+              "Support cross-regional governance visibility"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "sharepoint_integration",
+                "email_notifications",
+                "audit_logging",
+                "csv_export",
+                "ai_rag_over_documents"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "sharepoint",
+              "notifications-email",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "User framed this in regulatory/compliance language — preserve terms like 'evidence', 'regulatory review', 'compliance officers', 'governance'. Executives are stakeholders concerned with cross-regional operational risk visibility, so consider regional tagging on documents/packages. Audit logging was explicitly accepted and is delivered via the admin scope. RAG is core — pgvector indexing of SharePoint-sourced documents is required."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "An AI-driven audit prep tool that surfaces relevant evidence from compliance documents so teams can assemble regulatory review packages quickly and consistently.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "evidence-packages",
+        "audit-reviews",
+        "policies",
+        "users"
+      ],
+      "user_roles": [
+        "compliance officers",
+        "risk managers",
+        "executives",
+        "admins"
+      ],
+      "key_workflows": [
+        "Compliance officers search across thousands of documents using AI to find evidence relevant to a regulatory review.",
+        "AI returns cited passages from policies, audit reports, and operational records.",
+        "Users assemble evidence packages by collecting relevant documents and AI-surfaced excerpts.",
+        "Documents are pulled automatically from SharePoint sites and indexed for AI retrieval.",
+        "Compliance officers receive email notifications when evidence is requested or packages are ready for review.",
+        "Admins review an audit log of every search, document access, and package assembly action.",
+        "Users export evidence packages as CSV for offline review meetings and regulator hand-off."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "AI search across thousands of compliance documents, audit reports, policies, and operational records",
+        "Surface relevant evidence with citations to source documents",
+        "Assemble evidence packages tied to specific regulatory reviews",
+        "Pull documents from SharePoint automatically",
+        "Email notifications to compliance officers on key audit events",
+        "Audit log of all user activity (searches, document access, package assembly)",
+        "CSV export of evidence packages",
+        "Support cross-regional governance visibility"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "sharepoint_integration",
+          "email_notifications",
+          "audit_logging",
+          "csv_export",
+          "ai_rag_over_documents"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "notifications-email",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "User framed this in regulatory/compliance language — preserve terms like 'evidence', 'regulatory review', 'compliance officers', 'governance'. Executives are stakeholders concerned with cross-regional operational risk visibility, so consider regional tagging on documents/packages. Audit logging was explicitly accepted and is delivered via the admin scope. RAG is core — pgvector indexing of SharePoint-sourced documents is required."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an AI-driven audit prep tool: compliance officers search across SharePoint-indexed compliance documents, policies, audit reports, and operational records using RAG; AI surfaces cited evidence passages; users assemble evidence packages tied to regulatory reviews; documents are auto-pulled from SharePoint and indexed in pgvector; email notifications fire on key audit events; admins review a full audit log of all activity; packages export to CSV; documents/packages carry regional tags for cross-regional governance visibility.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"sharepoint\", \"notifications-email\", \"exports-csv\", \"search-ui\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Stores users, compliance documents, policies, audit reviews, evidence packages, and an audit log of all user activity.\",\n      \"task\": \"Tables: users, documents, policies, audit_reviews, evidence_packages, package_items, audit_log. Indexes on FKs, region, created_at DESC, and document/package lookup columns. Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"\"\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Vector index of compliance documents so AI can retrieve relevant evidence passages with citations.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id, document_id, chunk_index, content TEXT, region TEXT, embedding vector(3072), created_at). HNSW index on embedding (cosine). Embedding model: text-embedding-3-large via MGA. document_id references documents.id (logical; cross-service).\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"API for AI evidence search with citations, evidence package assembly, SharePoint document ingestion, email notifications, audit logging, and CSV export.\",\n      \"task\": \"Data: pg Pool from env for both postgres + pgvector. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. SharePoint poller ingests documents, chunks text, embeds via MGA, writes to doc_chunks. AI search: embed query, ANN over doc_chunks (optional region filter), pass top-K to MGA chat assistant for cited answer. Email via SMTP env on package-ready / evidence-requested events. Every search/doc-access/package action writes audit_log. CSV export streams package_items. Auth: x-amzn-oidc-data JWT sub/email; first-login provisions users row. Admin endpoints require role='admin'. Pagination on list endpoints.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Compliance officer UI to run AI evidence searches, review cited passages, assemble and export evidence packages, plus an admin view for the audit log.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Loading/empty/error/404 states, disable-on-submit, toasts on 4xx/5xx. Region filter on search and package metadata. Citations link to source document detail. Admin route gated on role='admin' from /whoami. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wires database, vectordb, backend, and frontend together for local development and deployment.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=auditprep, DATABASE_USER=auditprep_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, SHAREPOINT_*, SMTP_*, MGA_* env. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb→backend→frontend. Healthchecks. Named volumes per stateful service.\",\n      \"dockerfile\": \"\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      { \"name\": \"users\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"oidc_sub\",\"type\":\"TEXT UNIQUE NOT NULL\"},\n        {\"name\":\"email\",\"type\":\"VARCHAR(255) NOT NULL\"},\n        {\"name\":\"name\",\"type\":\"VARCHAR(255)\"},\n        {\"name\":\"role\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'compliance_officer'\"},\n        {\"name\":\"region\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"documents\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"sharepoint_id\",\"type\":\"TEXT UNIQUE\"},\n        {\"name\":\"title\",\"type\":\"VARCHAR(512) NOT NULL\"},\n        {\"name\":\"doc_type\",\"type\":\"VARCHAR(64) NOT NULL\"},\n        {\"name\":\"source_url\",\"type\":\"TEXT\"},\n        {\"name\":\"region\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"content\",\"type\":\"TEXT\"},\n        {\"name\":\"indexed_at\",\"type\":\"TIMESTAMPTZ\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"policies\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"document_id\",\"type\":\"INTEGER REFERENCES documents(id)\"},\n        {\"name\":\"policy_code\",\"type\":\"VARCHAR(64) NOT NULL\"},\n        {\"name\":\"title\",\"type\":\"VARCHAR(512) NOT NULL\"},\n        {\"name\":\"region\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"audit_reviews\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"name\",\"type\":\"VARCHAR(255) NOT NULL\"},\n        {\"name\":\"regulator\",\"type\":\"VARCHAR(255)\"},\n        {\"name\":\"region\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"status\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'open'\"},\n        {\"name\":\"due_date\",\"type\":\"DATE\"},\n        {\"name\":\"created_by\",\"type\":\"INTEGER REFERENCES users(id)\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"evidence_packages\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"audit_review_id\",\"type\":\"INTEGER NOT NULL REFERENCES audit_reviews(id)\"},\n        {\"name\":\"name\",\"type\":\"VARCHAR(255) NOT NULL\"},\n        {\"name\":\"description\",\"type\":\"TEXT\"},\n        {\"name\":\"status\",\"type\":\"VARCHAR(32) NOT NULL DEFAULT 'draft'\"},\n        {\"name\":\"region\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"created_by\",\"type\":\"INTEGER NOT NULL REFERENCES users(id)\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"package_items\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"package_id\",\"type\":\"INTEGER NOT NULL REFERENCES evidence_packages(id) ON DELETE CASCADE\"},\n        {\"name\":\"document_id\",\"type\":\"INTEGER NOT NULL REFERENCES documents(id)\"},\n        {\"name\":\"excerpt\",\"type\":\"TEXT\"},\n        {\"name\":\"citation\",\"type\":\"TEXT\"},\n        {\"name\":\"added_by\",\"type\":\"INTEGER NOT NULL REFERENCES users(id)\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]},\n      { \"name\": \"audit_log\", \"columns\": [\n        {\"name\":\"id\",\"type\":\"SERIAL PRIMARY KEY\"},\n        {\"name\":\"user_id\",\"type\":\"INTEGER REFERENCES users(id)\"},\n        {\"name\":\"action\",\"type\":\"VARCHAR(64) NOT NULL\"},\n        {\"name\":\"target_type\",\"type\":\"VARCHAR(64)\"},\n        {\"name\":\"target_id\",\"type\":\"INTEGER\"},\n        {\"name\":\"details\",\"type\":\"JSONB\"},\n        {\"name\":\"created_at\",\"type\":\"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n      ]}\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      { \"method\":\"GET\", \"path\":\"/whoami\",\n        \"response\":{\"status\":200,\"body\":\"{ id, email, name, role, region }\"} },\n      { \"method\":\"POST\", \"path\":\"/search\",\n        \"request\":{\"query\":\"string required\",\"region\":\"string optional\",\"limit\":\"number optional\"},\n        \"response\":{\"status\":200,\"body\":\"{ answer, citations: [{ document_id, title, excerpt, source_url, score }] }\"} },\n      { \"method\":\"GET\", \"path\":\"/documents\",\n        \"request\":{\"q\":\"string optional\",\"region\":\"string optional\",\"doc_type\":\"string optional\",\"limit\":\"number optional\",\"offset\":\"number optional\"},\n        \"response\":{\"status\":200,\"body\":\"{ items: [{ id, title, doc_type, region, source_url, indexed_at }], total }\"} },\n      { \"method\":\"GET\", \"path\":\"/documents/:id\",\n        \"response\":{\"status\":200,\"body\":\"{ id, title, doc_type, region, source_url, content, indexed_at }\"} },\n      { \"method\":\"POST\", \"path\":\"/documents/sync\",\n        \"response\":{\"status\":202,\"body\":\"{ started: true }\"} },\n      { \"method\":\"GET\", \"path\":\"/audit-reviews\",\n        \"response\":{\"status\":200,\"body\":\"{ items: [{ id, name, regulator, region, status, due_date }], total }\"} },\n      { \"method\":\"POST\", \"path\":\"/audit-reviews\",\n        \"request\":{\"name\":\"string required\",\"regulator\":\"string optional\",\"region\":\"string optional\",\"due_date\":\"YYYY-MM-DD optional\"},\n        \"response\":{\"status\":201,\"body\":\"{ id, name, regulator, region, status, due_date }\"} },\n      { \"method\":\"GET\", \"path\":\"/evidence-packages\",\n        \"request\":{\"audit_review_id\":\"number optional\",\"limit\":\"number optional\",\"offset\":\"number optional\"},\n        \"response\":{\"status\":200,\"body\":\"{ items: [{ id, name, audit_review_id, status, region, created_at }], total }\"} },\n      { \"method\":\"POST\", \"path\":\"/evidence-packages\",\n        \"request\":{\"audit_review_id\":\"number required\",\"name\":\"string required\",\"description\":\"string optional\",\"region\":\"string optional\"},\n        \"response\":{\"status\":201,\"body\":\"{ id, name, audit_review_id, status, region }\"} },\n      { \"method\":\"GET\", \"path\":\"/evidence-packages/:id\",\n        \"response\":{\"status\":200,\"body\":\"{ id, name, description, status, region, audit_review_id, items: [{ id, document_id, title, excerpt, citation, added_by, created_at }] }\"} },\n      { \"method\":\"POST\", \"path\":\"/evidence-packages/:id/items\",\n        \"request\":{\"document_id\":\"number required\",\"excerpt\":\"string optional\",\"citation\":\"string optional\"},\n        \"response\":{\"status\":201,\"body\":\"{ id, package_id, document_id, excerpt, citation }\"} },\n      { \"method\":\"DELETE\", \"path\":\"/evidence-packages/:id/items/:itemId\",\n        \"response\":{\"status\":204,\"body\":\"\"} },\n      { \"method\":\"POST\", \"path\":\"/evidence-packages/:id/request-evidence\",\n        \"request\":{\"message\":\"string optional\"},\n        \"response\":{\"status\":202,\"body\":\"{ notified: true }\"} },\n      { \"method\":\"POST\", \"path\":\"/evidence-packages/:id/submit\",\n        \"response\":{\"status\":200,\"body\":\"{ id, status }\"} },\n      { \"method\":\"GET\", \"path\":\"/evidence-packages/:id/export.csv\",\n        \"response\":{\"status\":200,\"body\":\"text/csv stream\"} },\n      { \"method\":\"GET\", \"path\":\"/admin/audit-log\",\n        \"request\":{\"user_id\":\"number optional\",\"action\":\"string optional\",\"limit\":\"number optional\",\"offset\":\"number optional\"},\n        \"response\":{\"status\":200,\"body\":\"{ items: [{ id, user_id, action, target_type, target_id, details, created_at }], total }\"} }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"AI evidence search across compliance documents\",\n    \"primary_action\": \"search for evidence relevant to a regulatory review\",\n    \"secondary_views\": [\n      \"document detail with cited passages\",\n      \"audit review list and detail\",\n      \"evidence package builder\",\n      \"evidence package detail with CSV export\",\n      \"admin audit log\"\n    ],\n    \"components\": [\n      {\"name\":\"EvidenceSearchBar\",\"role\":\"AI search input with region filter\"},\n      {\"name\":\"CitedAnswerPanel\",\"role\":\"AI answer with cited source passages\"},\n      {\"name\":\"CitationCard\",\"role\":\"single cited excerpt with link to source document and add-to-package action\"},\n      {\"name\":\"DocumentList\",\"role\":\"browsable list of indexed compliance documents\"},\n      {\"name\":\"DocumentDetail\",\"role\":\"full document view with metadata and source link\"},\n      {\"name\":\"AuditReviewList\",\"role\":\"list of regulatory reviews\"},\n      {\"name\":\"AuditReviewDetail\",\"role\":\"review metadata and linked evidence packages\"},\n      {\"name\":\"EvidencePackageBuilder\",\"role\":\"assemble package items from search results and documents\"},\n      {\"name\":\"EvidencePackageDetail\",\"role\":\"package contents with request-evidence, submit, and CSV export actions\"},\n      {\"name\":\"RegionFilter\",\"role\":\"cross-regional governance filter\"},\n      {\"name\":\"SharePointSyncButton\",\"role\":\"trigger SharePoint ingestion\"},\n      {\"name\":\"AdminAuditLogTable\",\"role\":\"admin view of all user activity\"},\n      {\"name\":\"NavBar\",\"role\":\"top navigation with role-aware links\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\":\"user_first_login\",\"action\":\"create users row from OIDC claims (sub, email); default role='compliance_officer'\"},\n      {\"event\":\"sharepoint_sync_invoked\",\"action\":\"pull new/changed documents from SharePoint, upsert documents row, chunk text, embed via MGA text-embedding-3-large, write to doc_chunks\"},\n      {\"event\":\"search_executed\",\"action\":\"embed query, ANN search doc_chunks (optional region filter), pass top-K chunks to MGA chat assistant, return cited answer; write audit_log entry\"},\n      {\"event\":\"document_viewed\",\"action\":\"write audit_log entry (action=document_access)\"},\n      {\"event\":\"package_item_added\",\"action\":\"insert package_items row; write audit_log entry\"},\n      {\"event\":\"evidence_requested\",\"action\":\"email compliance officers linked to the package's audit_review; write audit_log entry\"},\n      {\"event\":\"package_submitted\",\"action\":\"set status=ready; email package creator and reviewers; write audit_log entry\"},\n      {\"event\":\"package_exported_csv\",\"action\":\"stream package_items as CSV; write audit_log entry\"}\n    ],\n    \"rules\": [\n      \"Only authenticated users (valid x-amzn-oidc-data) may call any endpoint except health checks.\",\n      \"Compliance officers and risk managers can create audit reviews and evidence packages and assemble package items.\",\n      \"Executives have read-only access to audit reviews, packages, and cross-regional search results.\",\n      \"Only the package creator or an admin may delete package items or submit the package.\",\n      \"All /admin/* endpoints require role='admin'.\",\n      \"Region filter is honored on search, document list, and package scoping for cross-regional governance visibility.\",\n      \"SharePoint sync trigger endpoint requires role='admin'.\"\n    ],\n    \"side_effects\": [\n      \"Audit log entry written on every search, document access, package assembly action, evidence request, submission, and export.\",\n      \"Email notifications sent to compliance officers on evidence-requested and package-ready events.\",\n      \"Embeddings written to pgvector on every successful SharePoint ingestion.\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Audit Evidence Assistant\",\n      \"description\": \"Answers compliance officers' regulatory questions by retrieving cited passages from indexed SharePoint compliance documents, policies, audit reports, and operational records.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"What evidence do we have on data retention controls in EMEA?\",\n        \"Show policies relevant to the upcoming SOX review.\",\n        \"Find audit findings related to third-party vendor risk.\"\n      ]\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an AI-driven audit prep tool: compliance officers search across SharePoint-indexed compliance documents, policies, audit reports, and operational records using RAG; AI surfaces cited evidence passages; users assemble evidence packages tied to regulatory reviews; documents are auto-pulled from SharePoint and indexed in pgvector; email notifications fire on key audit events; admins review a full audit log of all activity; packages export to CSV; documents/packages carry regional tags for cross-regional governance visibility.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "notifications-email",
+        "exports-csv",
+        "search-ui"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Stores users, compliance documents, policies, audit reviews, evidence packages, and an audit log of all user activity.",
+          "task": "Tables: users, documents, policies, audit_reviews, evidence_packages, package_items, audit_log. Indexes on FKs, region, created_at DESC, and document/package lookup columns. Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Vector index of compliance documents so AI can retrieve relevant evidence passages with citations.",
+          "task": "pgvector extension. Table: doc_chunks(id, document_id, chunk_index, content TEXT, region TEXT, embedding vector(3072), created_at). HNSW index on embedding (cosine). Embedding model: text-embedding-3-large via MGA. document_id references documents.id (logical; cross-service).",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "API for AI evidence search with citations, evidence package assembly, SharePoint document ingestion, email notifications, audit logging, and CSV export.",
+          "task": "Data: pg Pool from env for both postgres + pgvector. Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. SharePoint poller ingests documents, chunks text, embeds via MGA, writes to doc_chunks. AI search: embed query, ANN over doc_chunks (optional region filter), pass top-K to MGA chat assistant for cited answer. Email via SMTP env on package-ready / evidence-requested events. Every search/doc-access/package action writes audit_log. CSV export streams package_items. Auth: x-amzn-oidc-data JWT sub/email; first-login provisions users row. Admin endpoints require role='admin'. Pagination on list endpoints.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Compliance officer UI to run AI evidence searches, review cited passages, assemble and export evidence packages, plus an admin view for the audit log.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Loading/empty/error/404 states, disable-on-submit, toasts on 4xx/5xx. Region filter on search and package metadata. Citations link to source document detail. Admin route gated on role='admin' from /whoami. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wires database, vectordb, backend, and frontend together for local development and deployment.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=auditprep, DATABASE_USER=auditprep_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, SHAREPOINT_*, SMTP_*, MGA_* env. nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb→backend→frontend. Healthchecks. Named volumes per stateful service.",
+          "dockerfile": "",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'compliance_officer'"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "sharepoint_id",
+                "type": "TEXT UNIQUE"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(512) NOT NULL"
+              },
+              {
+                "name": "doc_type",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "source_url",
+                "type": "TEXT"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "content",
+                "type": "TEXT"
+              },
+              {
+                "name": "indexed_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "policies",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "document_id",
+                "type": "INTEGER REFERENCES documents(id)"
+              },
+              {
+                "name": "policy_code",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "title",
+                "type": "VARCHAR(512) NOT NULL"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_reviews",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "regulator",
+                "type": "VARCHAR(255)"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'open'"
+              },
+              {
+                "name": "due_date",
+                "type": "DATE"
+              },
+              {
+                "name": "created_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "evidence_packages",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "audit_review_id",
+                "type": "INTEGER NOT NULL REFERENCES audit_reviews(id)"
+              },
+              {
+                "name": "name",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "description",
+                "type": "TEXT"
+              },
+              {
+                "name": "status",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'draft'"
+              },
+              {
+                "name": "region",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "created_by",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "package_items",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "package_id",
+                "type": "INTEGER NOT NULL REFERENCES evidence_packages(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "document_id",
+                "type": "INTEGER NOT NULL REFERENCES documents(id)"
+              },
+              {
+                "name": "excerpt",
+                "type": "TEXT"
+              },
+              {
+                "name": "citation",
+                "type": "TEXT"
+              },
+              {
+                "name": "added_by",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "audit_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "action",
+                "type": "VARCHAR(64) NOT NULL"
+              },
+              {
+                "name": "target_type",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "target_id",
+                "type": "INTEGER"
+              },
+              {
+                "name": "details",
+                "type": "JSONB"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, name, role, region }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/search",
+            "request": {
+              "query": "string required",
+              "region": "string optional",
+              "limit": "number optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ answer, citations: [{ document_id, title, excerpt, source_url, score }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents",
+            "request": {
+              "q": "string optional",
+              "region": "string optional",
+              "doc_type": "string optional",
+              "limit": "number optional",
+              "offset": "number optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, title, doc_type, region, source_url, indexed_at }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, title, doc_type, region, source_url, content, indexed_at }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/documents/sync",
+            "response": {
+              "status": 202,
+              "body": "{ started: true }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/audit-reviews",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, name, regulator, region, status, due_date }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/audit-reviews",
+            "request": {
+              "name": "string required",
+              "regulator": "string optional",
+              "region": "string optional",
+              "due_date": "YYYY-MM-DD optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name, regulator, region, status, due_date }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/evidence-packages",
+            "request": {
+              "audit_review_id": "number optional",
+              "limit": "number optional",
+              "offset": "number optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, name, audit_review_id, status, region, created_at }], total }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/evidence-packages",
+            "request": {
+              "audit_review_id": "number required",
+              "name": "string required",
+              "description": "string optional",
+              "region": "string optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, name, audit_review_id, status, region }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/evidence-packages/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, name, description, status, region, audit_review_id, items: [{ id, document_id, title, excerpt, citation, added_by, created_at }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/evidence-packages/:id/items",
+            "request": {
+              "document_id": "number required",
+              "excerpt": "string optional",
+              "citation": "string optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, package_id, document_id, excerpt, citation }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/evidence-packages/:id/items/:itemId",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/evidence-packages/:id/request-evidence",
+            "request": {
+              "message": "string optional"
+            },
+            "response": {
+              "status": 202,
+              "body": "{ notified: true }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/evidence-packages/:id/submit",
+            "response": {
+              "status": 200,
+              "body": "{ id, status }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/evidence-packages/:id/export.csv",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/audit-log",
+            "request": {
+              "user_id": "number optional",
+              "action": "string optional",
+              "limit": "number optional",
+              "offset": "number optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, user_id, action, target_type, target_id, details, created_at }], total }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "AI evidence search across compliance documents",
+        "primary_action": "search for evidence relevant to a regulatory review",
+        "secondary_views": [
+          "document detail with cited passages",
+          "audit review list and detail",
+          "evidence package builder",
+          "evidence package detail with CSV export",
+          "admin audit log"
+        ],
+        "components": [
+          {
+            "name": "EvidenceSearchBar",
+            "role": "AI search input with region filter"
+          },
+          {
+            "name": "CitedAnswerPanel",
+            "role": "AI answer with cited source passages"
+          },
+          {
+            "name": "CitationCard",
+            "role": "single cited excerpt with link to source document and add-to-package action"
+          },
+          {
+            "name": "DocumentList",
+            "role": "browsable list of indexed compliance documents"
+          },
+          {
+            "name": "DocumentDetail",
+            "role": "full document view with metadata and source link"
+          },
+          {
+            "name": "AuditReviewList",
+            "role": "list of regulatory reviews"
+          },
+          {
+            "name": "AuditReviewDetail",
+            "role": "review metadata and linked evidence packages"
+          },
+          {
+            "name": "EvidencePackageBuilder",
+            "role": "assemble package items from search results and documents"
+          },
+          {
+            "name": "EvidencePackageDetail",
+            "role": "package contents with request-evidence, submit, and CSV export actions"
+          },
+          {
+            "name": "RegionFilter",
+            "role": "cross-regional governance filter"
+          },
+          {
+            "name": "SharePointSyncButton",
+            "role": "trigger SharePoint ingestion"
+          },
+          {
+            "name": "AdminAuditLogTable",
+            "role": "admin view of all user activity"
+          },
+          {
+            "name": "NavBar",
+            "role": "top navigation with role-aware links"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims (sub, email); default role='compliance_officer'"
+          },
+          {
+            "event": "sharepoint_sync_invoked",
+            "action": "pull new/changed documents from SharePoint, upsert documents row, chunk text, embed via MGA text-embedding-3-large, write to doc_chunks"
+          },
+          {
+            "event": "search_executed",
+            "action": "embed query, ANN search doc_chunks (optional region filter), pass top-K chunks to MGA chat assistant, return cited answer; write audit_log entry"
+          },
+          {
+            "event": "document_viewed",
+            "action": "write audit_log entry (action=document_access)"
+          },
+          {
+            "event": "package_item_added",
+            "action": "insert package_items row; write audit_log entry"
+          },
+          {
+            "event": "evidence_requested",
+            "action": "email compliance officers linked to the package's audit_review; write audit_log entry"
+          },
+          {
+            "event": "package_submitted",
+            "action": "set status=ready; email package creator and reviewers; write audit_log entry"
+          },
+          {
+            "event": "package_exported_csv",
+            "action": "stream package_items as CSV; write audit_log entry"
+          }
+        ],
+        "rules": [
+          "Only authenticated users (valid x-amzn-oidc-data) may call any endpoint except health checks.",
+          "Compliance officers and risk managers can create audit reviews and evidence packages and assemble package items.",
+          "Executives have read-only access to audit reviews, packages, and cross-regional search results.",
+          "Only the package creator or an admin may delete package items or submit the package.",
+          "All /admin/* endpoints require role='admin'.",
+          "Region filter is honored on search, document list, and package scoping for cross-regional governance visibility.",
+          "SharePoint sync trigger endpoint requires role='admin'."
+        ],
+        "side_effects": [
+          "Audit log entry written on every search, document access, package assembly action, evidence request, submission, and export.",
+          "Email notifications sent to compliance officers on evidence-requested and package-ready events.",
+          "Embeddings written to pgvector on every successful SharePoint ingestion."
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Audit Evidence Assistant",
+          "description": "Answers compliance officers' regulatory questions by retrieving cited passages from indexed SharePoint compliance documents, policies, audit reports, and operational records.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "What evidence do we have on data retention controls in EMEA?",
+            "Show policies relevant to the upcoming SOX review.",
+            "Find audit findings related to third-party vendor risk."
+          ]
+        }
+      ]
+    },
+    "ms": 67979
+  }
+}

@@ -1,0 +1,554 @@
+{
+  "prompt": {
+    "id": "medium_hard_km_global",
+    "label": "Medium/Hard — Knowledge Management Across Business Units",
+    "userMessage": "As the organization has expanded globally, valuable operational knowledge has become fragmented across regional teams, SharePoint repositories, internal wikis, and archived project documents. Employees frequently recreate work because they cannot easily identify whether similar initiatives, lessons learned, or client deliverables already exist elsewhere in the company. Leadership believes there is significant untapped institutional knowledge, but accessing it today requires knowing exactly where to look or who to ask. We need a more effective way to connect employees with relevant business knowledge across the enterprise."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 5090,
+        "content": "{\"action\":\"clarify\",\"round\":1,\"message\":\"This could go a few different directions. Which is closest to what you want?\\n\\nA) Knowledge Q&A assistant — employees ask questions in plain English and get cited answers pulled from your SharePoint and wikis\\nB) Smart enterprise search — a search bar across all your document sources with filters, ranking, and previews\\nC) Project/deliverable catalog — a browsable registry where teams log initiatives and past work, with search across them\\nD) Expertise finder — match employees to people and past projects relevant to what they're working on\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "This could go a few different directions. Which is closest to what you want?\n\nA) Knowledge Q&A assistant — employees ask questions in plain English and get cited answers pulled from your SharePoint and wikis\nB) Smart enterprise search — a search bar across all your document sources with filters, ranking, and previews\nC) Project/deliverable catalog — a browsable registry where teams log initiatives and past work, with search across them\nD) Expertise finder — match employees to people and past projects relevant to what they're working on"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 5784,
+        "content": "{\"action\":\"clarify\",\"round\":2,\"message\":\"Got it — a knowledge Q&A assistant where employees ask questions in plain English and get cited answers from your enterprise documents. A few things we can wire in automatically — pick any that sound useful:\\n\\nA) SharePoint integration — pull documents directly from your SharePoint sites and Teams libraries\\nB) Audit log — track every question asked and which documents were cited (useful for compliance and improving coverage)\\nC) Admin dashboard — see top questions, gaps in knowledge coverage, and usage analytics\\nD) CSV export — download Q&A history and citation reports\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 2,
+          "message": "Got it — a knowledge Q&A assistant where employees ask questions in plain English and get cited answers from your enterprise documents. A few things we can wire in automatically — pick any that sound useful:\n\nA) SharePoint integration — pull documents directly from your SharePoint sites and Teams libraries\nB) Audit log — track every question asked and which documents were cited (useful for compliance and improving coverage)\nC) Admin dashboard — see top questions, gaps in knowledge coverage, and usage analytics\nD) CSV export — download Q&A history and citation reports"
+        }
+      },
+      {
+        "round": 3,
+        "isKillswitch": false,
+        "ms": 12742,
+        "content": "{\"action\":\"ready\",\"brief\":{\"ready\":true,\"intent\":\"A knowledge Q&A assistant where employees ask questions in plain English and get cited answers drawn from enterprise documents across SharePoint, wikis, and archived project files.\",\"archetype\":\"ai-tool\",\"entities\":[\"documents\",\"questions\",\"answers\",\"citations\",\"users\"],\"user_roles\":[\"employees\",\"admins\"],\"key_workflows\":[\"Employees ask natural-language questions about company knowledge, initiatives, or past deliverables.\",\"The system retrieves relevant passages from indexed enterprise documents and generates a cited answer.\",\"Each answer shows source citations (document title, location) so users can verify and dive deeper.\",\"Documents are ingested and indexed from SharePoint sites, internal wikis, and archived project repositories.\",\"Admins monitor usage, top questions, citation patterns, and gaps in knowledge coverage via a dashboard.\",\"Every question and its cited sources are logged for audit and to identify coverage gaps.\",\"Admins can export Q&A history and citation reports as CSV for analysis.\"],\"stack_signals\":{\"backend_language\":\"node\",\"explicit_user_choice\":false},\"explicit_features\":[\"Ask questions in plain English and get cited answers from enterprise knowledge\",\"Surface whether similar initiatives, lessons learned, or client deliverables already exist\",\"Index knowledge from SharePoint repositories, internal wikis, and archived project documents\",\"Help employees discover existing work to avoid recreating it\",\"Show citations linking back to source documents\"],\"capabilities_offered\":{\"accepted\":[\"ai_rag_over_documents\",\"sharepoint_integration\",\"audit_logging\",\"admin_dashboard\",\"csv_export\"],\"declined\":[],\"user_didnt_choose\":[]},\"flags\":[\"has-users\",\"has-admin\",\"ai-rag\",\"sharepoint\",\"exports-csv\"],\"notes_for_contract_agent\":\"Core problem is knowledge fragmentation across global regional teams; emphasize discovery of existing initiatives/deliverables to prevent duplicate work. Wikis and archived project documents are mentioned as sources beyond SharePoint — SharePoint is the primary wired integration; treat wiki/archive content as additional document uploads or note that those sources may require manual ingestion. Citations are a first-class requirement on every answer.\"}}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "A knowledge Q&A assistant where employees ask questions in plain English and get cited answers drawn from enterprise documents across SharePoint, wikis, and archived project files.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "questions",
+              "answers",
+              "citations",
+              "users"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Employees ask natural-language questions about company knowledge, initiatives, or past deliverables.",
+              "The system retrieves relevant passages from indexed enterprise documents and generates a cited answer.",
+              "Each answer shows source citations (document title, location) so users can verify and dive deeper.",
+              "Documents are ingested and indexed from SharePoint sites, internal wikis, and archived project repositories.",
+              "Admins monitor usage, top questions, citation patterns, and gaps in knowledge coverage via a dashboard.",
+              "Every question and its cited sources are logged for audit and to identify coverage gaps.",
+              "Admins can export Q&A history and citation reports as CSV for analysis."
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "Ask questions in plain English and get cited answers from enterprise knowledge",
+              "Surface whether similar initiatives, lessons learned, or client deliverables already exist",
+              "Index knowledge from SharePoint repositories, internal wikis, and archived project documents",
+              "Help employees discover existing work to avoid recreating it",
+              "Show citations linking back to source documents"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "ai_rag_over_documents",
+                "sharepoint_integration",
+                "audit_logging",
+                "admin_dashboard",
+                "csv_export"
+              ],
+              "declined": [],
+              "user_didnt_choose": []
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "sharepoint",
+              "exports-csv"
+            ],
+            "notes_for_contract_agent": "Core problem is knowledge fragmentation across global regional teams; emphasize discovery of existing initiatives/deliverables to prevent duplicate work. Wikis and archived project documents are mentioned as sources beyond SharePoint — SharePoint is the primary wired integration; treat wiki/archive content as additional document uploads or note that those sources may require manual ingestion. Citations are a first-class requirement on every answer."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "A knowledge Q&A assistant where employees ask questions in plain English and get cited answers drawn from enterprise documents across SharePoint, wikis, and archived project files.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "questions",
+        "answers",
+        "citations",
+        "users"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Employees ask natural-language questions about company knowledge, initiatives, or past deliverables.",
+        "The system retrieves relevant passages from indexed enterprise documents and generates a cited answer.",
+        "Each answer shows source citations (document title, location) so users can verify and dive deeper.",
+        "Documents are ingested and indexed from SharePoint sites, internal wikis, and archived project repositories.",
+        "Admins monitor usage, top questions, citation patterns, and gaps in knowledge coverage via a dashboard.",
+        "Every question and its cited sources are logged for audit and to identify coverage gaps.",
+        "Admins can export Q&A history and citation reports as CSV for analysis."
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "Ask questions in plain English and get cited answers from enterprise knowledge",
+        "Surface whether similar initiatives, lessons learned, or client deliverables already exist",
+        "Index knowledge from SharePoint repositories, internal wikis, and archived project documents",
+        "Help employees discover existing work to avoid recreating it",
+        "Show citations linking back to source documents"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "ai_rag_over_documents",
+          "sharepoint_integration",
+          "audit_logging",
+          "admin_dashboard",
+          "csv_export"
+        ],
+        "declined": [],
+        "user_didnt_choose": []
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "exports-csv"
+      ],
+      "notes_for_contract_agent": "Core problem is knowledge fragmentation across global regional teams; emphasize discovery of existing initiatives/deliverables to prevent duplicate work. Wikis and archived project documents are mentioned as sources beyond SharePoint — SharePoint is the primary wired integration; treat wiki/archive content as additional document uploads or note that those sources may require manual ingestion. Citations are a first-class requirement on every answer."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an enterprise knowledge Q&A assistant: employees ask plain-English questions and receive answers with citations drawn from indexed SharePoint documents, internal wikis, and archived project files. Includes document ingestion pipeline (SharePoint primary, manual upload for wikis/archives), RAG-based answering with first-class citations on every response, audit logging of all Q&A, an admin dashboard showing usage/top questions/coverage gaps, and CSV export of Q&A history and citation reports.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"sharepoint\", \"exports-csv\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Stores users, ingested documents, asked questions, generated answers, and citation links for audit and admin reporting.\",\n      \"task\": \"Tables: users, documents, questions, answers, citations. Indexes: FK columns, questions.created_at DESC, documents.source. Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"\"\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Stores embedded chunks of enterprise documents so the assistant can retrieve relevant passages for any question.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INT, chunk_index INT, content TEXT, embedding vector(3072), metadata JSONB). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA. Retrieval: top-k=8 with similarity scores returned for citation building.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Handles questions, runs retrieval-augmented generation against indexed documents, returns cited answers, ingests SharePoint and uploaded documents, and serves admin analytics and CSV exports.\",\n      \"task\": \"Data: pg Pool from env (postgres + pgvector). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. RAG flow: embed question via MGA text-embedding-3-large → top-k retrieve from doc_chunks → call MGA assistant 'default' with passages → parse citations → persist question+answer+citations. Ingestion: SharePoint connector pulls docs (stubbed creds via env), chunk (~800 tokens, 100 overlap), embed, store. Wiki/archive ingestion via manual upload endpoint. Auth: x-amzn-oidc-data JWT sub/email. CSV export streams text/csv.\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"Employee chat interface for asking questions and seeing cited answers, plus an admin dashboard for usage analytics, coverage gaps, and CSV downloads.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Citations rendered inline under each answer with document title + location, clickable to source. States: spinner during ask, empty CTA on first load, toast on 4xx/5xx, 404 page, disabled submit during POST. Admin dashboard with charts for top questions, citation patterns, coverage gaps. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wires all services together for local development and deployment.\",\n      \"task\": \"Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge_qa, DATABASE_USER=knowledge_qa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, SHAREPOINT_TENANT/CLIENT_ID/SECRET (stub). nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on each. Named volumes for postgres data.\",\n      \"dockerfile\": \"\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"documents\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"title\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"source\", \"type\": \"VARCHAR(32) NOT NULL\"},\n          {\"name\": \"source_url\", \"type\": \"TEXT\"},\n          {\"name\": \"source_location\", \"type\": \"TEXT\"},\n          {\"name\": \"uploaded_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"indexed_at\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"questions\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"answers\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"question_id\", \"type\": \"INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE\"},\n          {\"name\": \"text\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"model\", \"type\": \"VARCHAR(64)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"citations\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"answer_id\", \"type\": \"INTEGER NOT NULL REFERENCES answers(id) ON DELETE CASCADE\"},\n          {\"name\": \"document_id\", \"type\": \"INTEGER NOT NULL REFERENCES documents(id)\"},\n          {\"name\": \"chunk_index\", \"type\": \"INTEGER\"},\n          {\"name\": \"location_label\", \"type\": \"TEXT\"},\n          {\"name\": \"similarity\", \"type\": \"REAL\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\"method\": \"GET\", \"path\": \"/whoami\", \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}},\n      {\"method\": \"POST\", \"path\": \"/questions\", \"request\": {\"text\": \"string required\"}, \"response\": {\"status\": 201, \"body\": \"{ question: { id, text }, answer: { id, text }, citations: [{ document_id, title, source, source_url, location_label, similarity }] }\"}},\n      {\"method\": \"GET\", \"path\": \"/questions\", \"response\": {\"status\": 200, \"body\": \"[{ id, text, created_at, answer: { id, text }, citations: [...] }]  (paginated ?limit=50&offset=0, newest first)\"}},\n      {\"method\": \"GET\", \"path\": \"/questions/:id\", \"response\": {\"status\": 200, \"body\": \"{ id, text, created_at, answer, citations }\"}},\n      {\"method\": \"GET\", \"path\": \"/documents\", \"response\": {\"status\": 200, \"body\": \"[{ id, title, source, source_url, indexed_at }] (paginated, newest first)\"}},\n      {\"method\": \"POST\", \"path\": \"/documents/upload\", \"request\": {\"title\": \"string required\", \"content\": \"string required\", \"source\": \"string (wiki|archive|manual)\", \"source_url\": \"string optional\"}, \"response\": {\"status\": 201, \"body\": \"{ id, title, source, indexed_at }\"}},\n      {\"method\": \"POST\", \"path\": \"/documents/sync-sharepoint\", \"request\": {\"site\": \"string optional\"}, \"response\": {\"status\": 202, \"body\": \"{ job_id, started_at }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/analytics\", \"response\": {\"status\": 200, \"body\": \"{ total_questions, total_documents, top_questions: [...], top_cited_documents: [...], coverage_gaps: [...] }\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/export/questions.csv\", \"response\": {\"status\": 200, \"body\": \"text/csv stream\"}},\n      {\"method\": \"GET\", \"path\": \"/admin/export/citations.csv\", \"response\": {\"status\": 200, \"body\": \"text/csv stream\"}}\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"ask-a-question chat panel with cited answer below\",\n    \"primary_action\": \"ask a question in plain English\",\n    \"secondary_views\": [\"question history\", \"document library\", \"admin analytics dashboard\", \"admin exports\"],\n    \"components\": [\n      {\"name\": \"QuestionBox\", \"role\": \"plain-English question input with submit\"},\n      {\"name\": \"AnswerCard\", \"role\": \"displays generated answer text\"},\n      {\"name\": \"CitationList\", \"role\": \"lists source citations under each answer with title, location, and link\"},\n      {\"name\": \"QuestionHistory\", \"role\": \"user's past questions and answers, paginated\"},\n      {\"name\": \"DocumentLibrary\", \"role\": \"lists indexed documents with source label\"},\n      {\"name\": \"DocumentUploadForm\", \"role\": \"manual upload for wiki and archive content\"},\n      {\"name\": \"SharePointSyncButton\", \"role\": \"triggers SharePoint ingestion job\"},\n      {\"name\": \"AdminDashboard\", \"role\": \"usage stats, top questions, citation patterns, coverage gaps\"},\n      {\"name\": \"CoverageGapsPanel\", \"role\": \"highlights questions with weak or no citations\"},\n      {\"name\": \"ExportButtons\", \"role\": \"download Q&A and citations CSVs\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC claims (sub, email); default role='employee'\"},\n      {\"event\": \"question_submitted\", \"action\": \"embed via MGA, retrieve top-k chunks from vectordb, call MGA assistant with passages, persist question+answer+citations, return cited answer\"},\n      {\"event\": \"document_uploaded\", \"action\": \"chunk text, embed via MGA text-embedding-3-large, store chunks in vectordb, set documents.indexed_at\"},\n      {\"event\": \"sharepoint_sync_triggered\", \"action\": \"fetch documents from configured SharePoint sites, ingest each as a document, chunk+embed+index\"}\n    ],\n    \"rules\": [\n      \"employees can only see their own question history\",\n      \"all users can view the document library and ask questions\",\n      \"/admin/* endpoints require role='admin'\",\n      \"every answer MUST include at least one citation referencing a document_id; if retrieval yields no relevant passages, answer states 'no source found' and is flagged as coverage gap\",\n      \"CSV exports are admin-only\",\n      \"users cannot delete or modify others' questions\"\n    ],\n    \"side_effects\": [\n      \"audit log on every write (questions, answers, document ingestion, sharepoint sync, exports)\",\n      \"coverage gap recorded when a question's top retrieval similarity falls below threshold\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Enterprise Knowledge Assistant\",\n      \"description\": \"Answers employee questions in plain English using indexed enterprise documents from SharePoint, wikis, and archived project files. Every answer includes citations linking back to source documents so users can verify and discover existing initiatives, lessons learned, and prior deliverables.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"Have we done a similar initiative before?\",\n        \"What lessons learned exist for client onboarding projects?\",\n        \"Find prior deliverables related to supply chain analytics.\"\n      ],\n      \"instructions\": \"Always ground answers in retrieved passages. Cite every claim with document title and location. If retrieved context is insufficient, say so explicitly rather than guessing.\"\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an enterprise knowledge Q&A assistant: employees ask plain-English questions and receive answers with citations drawn from indexed SharePoint documents, internal wikis, and archived project files. Includes document ingestion pipeline (SharePoint primary, manual upload for wikis/archives), RAG-based answering with first-class citations on every response, audit logging of all Q&A, an admin dashboard showing usage/top questions/coverage gaps, and CSV export of Q&A history and citation reports.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint",
+        "exports-csv"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Stores users, ingested documents, asked questions, generated answers, and citation links for audit and admin reporting.",
+          "task": "Tables: users, documents, questions, answers, citations. Indexes: FK columns, questions.created_at DESC, documents.source. Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Stores embedded chunks of enterprise documents so the assistant can retrieve relevant passages for any question.",
+          "task": "pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INT, chunk_index INT, content TEXT, embedding vector(3072), metadata JSONB). Index: HNSW on embedding (cosine). Embedding model: text-embedding-3-large via MGA. Retrieval: top-k=8 with similarity scores returned for citation building.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Handles questions, runs retrieval-augmented generation against indexed documents, returns cited answers, ingests SharePoint and uploaded documents, and serves admin analytics and CSV exports.",
+          "task": "Data: pg Pool from env (postgres + pgvector). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. RAG flow: embed question via MGA text-embedding-3-large → top-k retrieve from doc_chunks → call MGA assistant 'default' with passages → parse citations → persist question+answer+citations. Ingestion: SharePoint connector pulls docs (stubbed creds via env), chunk (~800 tokens, 100 overlap), embed, store. Wiki/archive ingestion via manual upload endpoint. Auth: x-amzn-oidc-data JWT sub/email. CSV export streams text/csv.",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "Employee chat interface for asking questions and seeing cited answers, plus an admin dashboard for usage analytics, coverage gaps, and CSV downloads.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Citations rendered inline under each answer with document title + location, clickable to source. States: spinner during ask, empty CTA on first load, toast on 4xx/5xx, 404 page, disabled submit during POST. Admin dashboard with charts for top questions, citation patterns, coverage gaps. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wires all services together for local development and deployment.",
+          "task": "Wire database, vectordb, backend, frontend. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=knowledge_qa, DATABASE_USER=knowledge_qa_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5433, SHAREPOINT_TENANT/CLIENT_ID/SECRET (stub). nginx.local.conf proxy /api→backend:3000. depends_on chain: database+vectordb → backend → frontend. Healthchecks on each. Named volumes for postgres data.",
+          "dockerfile": "",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "title",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "source",
+                "type": "VARCHAR(32) NOT NULL"
+              },
+              {
+                "name": "source_url",
+                "type": "TEXT"
+              },
+              {
+                "name": "source_location",
+                "type": "TEXT"
+              },
+              {
+                "name": "uploaded_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "indexed_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "questions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "answers",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "question_id",
+                "type": "INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "text",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "model",
+                "type": "VARCHAR(64)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "citations",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "answer_id",
+                "type": "INTEGER NOT NULL REFERENCES answers(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "document_id",
+                "type": "INTEGER NOT NULL REFERENCES documents(id)"
+              },
+              {
+                "name": "chunk_index",
+                "type": "INTEGER"
+              },
+              {
+                "name": "location_label",
+                "type": "TEXT"
+              },
+              {
+                "name": "similarity",
+                "type": "REAL"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/questions",
+            "request": {
+              "text": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ question: { id, text }, answer: { id, text }, citations: [{ document_id, title, source, source_url, location_label, similarity }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions",
+            "response": {
+              "status": 200,
+              "body": "[{ id, text, created_at, answer: { id, text }, citations: [...] }]  (paginated ?limit=50&offset=0, newest first)"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/questions/:id",
+            "response": {
+              "status": 200,
+              "body": "{ id, text, created_at, answer, citations }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/documents",
+            "response": {
+              "status": 200,
+              "body": "[{ id, title, source, source_url, indexed_at }] (paginated, newest first)"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/documents/upload",
+            "request": {
+              "title": "string required",
+              "content": "string required",
+              "source": "string (wiki|archive|manual)",
+              "source_url": "string optional"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, title, source, indexed_at }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/documents/sync-sharepoint",
+            "request": {
+              "site": "string optional"
+            },
+            "response": {
+              "status": 202,
+              "body": "{ job_id, started_at }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics",
+            "response": {
+              "status": 200,
+              "body": "{ total_questions, total_documents, top_questions: [...], top_cited_documents: [...], coverage_gaps: [...] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/export/questions.csv",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/export/citations.csv",
+            "response": {
+              "status": 200,
+              "body": "text/csv stream"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "ask-a-question chat panel with cited answer below",
+        "primary_action": "ask a question in plain English",
+        "secondary_views": [
+          "question history",
+          "document library",
+          "admin analytics dashboard",
+          "admin exports"
+        ],
+        "components": [
+          {
+            "name": "QuestionBox",
+            "role": "plain-English question input with submit"
+          },
+          {
+            "name": "AnswerCard",
+            "role": "displays generated answer text"
+          },
+          {
+            "name": "CitationList",
+            "role": "lists source citations under each answer with title, location, and link"
+          },
+          {
+            "name": "QuestionHistory",
+            "role": "user's past questions and answers, paginated"
+          },
+          {
+            "name": "DocumentLibrary",
+            "role": "lists indexed documents with source label"
+          },
+          {
+            "name": "DocumentUploadForm",
+            "role": "manual upload for wiki and archive content"
+          },
+          {
+            "name": "SharePointSyncButton",
+            "role": "triggers SharePoint ingestion job"
+          },
+          {
+            "name": "AdminDashboard",
+            "role": "usage stats, top questions, citation patterns, coverage gaps"
+          },
+          {
+            "name": "CoverageGapsPanel",
+            "role": "highlights questions with weak or no citations"
+          },
+          {
+            "name": "ExportButtons",
+            "role": "download Q&A and citations CSVs"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims (sub, email); default role='employee'"
+          },
+          {
+            "event": "question_submitted",
+            "action": "embed via MGA, retrieve top-k chunks from vectordb, call MGA assistant with passages, persist question+answer+citations, return cited answer"
+          },
+          {
+            "event": "document_uploaded",
+            "action": "chunk text, embed via MGA text-embedding-3-large, store chunks in vectordb, set documents.indexed_at"
+          },
+          {
+            "event": "sharepoint_sync_triggered",
+            "action": "fetch documents from configured SharePoint sites, ingest each as a document, chunk+embed+index"
+          }
+        ],
+        "rules": [
+          "employees can only see their own question history",
+          "all users can view the document library and ask questions",
+          "/admin/* endpoints require role='admin'",
+          "every answer MUST include at least one citation referencing a document_id; if retrieval yields no relevant passages, answer states 'no source found' and is flagged as coverage gap",
+          "CSV exports are admin-only",
+          "users cannot delete or modify others' questions"
+        ],
+        "side_effects": [
+          "audit log on every write (questions, answers, document ingestion, sharepoint sync, exports)",
+          "coverage gap recorded when a question's top retrieval similarity falls below threshold"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Enterprise Knowledge Assistant",
+          "description": "Answers employee questions in plain English using indexed enterprise documents from SharePoint, wikis, and archived project files. Every answer includes citations linking back to source documents so users can verify and discover existing initiatives, lessons learned, and prior deliverables.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "Have we done a similar initiative before?",
+            "What lessons learned exist for client onboarding projects?",
+            "Find prior deliverables related to supply chain analytics."
+          ],
+          "instructions": "Always ground answers in retrieved passages. Cite every claim with document title and location. If retrieved context is insufficient, say so explicitly rather than guessing."
+        }
+      ]
+    },
+    "ms": 56886
+  }
+}

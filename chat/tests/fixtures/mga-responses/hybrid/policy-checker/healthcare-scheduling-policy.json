@@ -1,0 +1,14 @@
+{
+  "assistantKey": "hybrid-policy-checker",
+  "scenarioName": "healthcare-scheduling-policy",
+  "schemaVersion": 1,
+  "module": "policy-checker",
+  "response": {
+    "completionText": "{\"flags\":[{\"category\":\"Patient personal data\",\"regulation\":\"HIPAA\",\"note\":\"Appointment records containing patient name, DOB, and reason-for-visit are PHI; encryption at rest and in transit is required.\"},{\"category\":\"Audit logging\",\"regulation\":\"HIPAA\",\"note\":\"All reads and writes to appointment and patient records must be logged with user identity and timestamp.\"},{\"category\":\"Patient-facing interface\",\"regulation\":\"ADA Section 508\",\"note\":\"WCAG 2.1 AA compliance required for the online booking interface used by patients.\"}]}",
+    "usage": { "prompt_tokens": 2100, "completion_tokens": 210, "prompt_tokens_details": { "cached_tokens": 0 } },
+    "model": "claude-opus-4.7",
+    "conversationId": "fixture-hybrid-policy-healthcare-scheduling-0001"
+  },
+  "capturedFrom": "manual",
+  "capturedAt": "2026-06-18T09:30:00Z"
+}

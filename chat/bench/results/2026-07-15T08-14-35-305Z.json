@@ -1,0 +1,189 @@
+{
+  "ranAt": 1784103275305,
+  "results": [
+    {
+      "scenario": "crud-logbook",
+      "marker": "bmrlruzya",
+      "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+      "startedAt": 1784101318786,
+      "buildMs": 1825550,
+      "clarifyRounds": 1,
+      "reportStatus": "built",
+      "probe": {
+        "probed": 10,
+        "fixed": 0,
+        "stillBroken": [
+          "POST /equipment",
+          "GET /equipment",
+          "GET /equipment/:id",
+          "PUT /maintenance/:id",
+          "DELETE /maintenance/:id"
+        ],
+        "crashed": [],
+        "rounds": 4
+      },
+      "visual": {
+        "sane": true,
+        "defects": []
+      },
+      "appReadyText": "App is running but 5 of 10 endpoints are still failing (details above). Open anyway?",
+      "actions": [
+        {
+          "name": "create equipment",
+          "ok": false,
+          "detail": "HTTP 504 body=<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><c"
+        },
+        {
+          "name": "log maintenance event",
+          "ok": false,
+          "detail": "HTTP -1 no created id to log against"
+        },
+        {
+          "name": "search finds it",
+          "ok": false,
+          "detail": "HTTP 504 found=false"
+        }
+      ],
+      "expectationIncidents": [],
+      "incidents": [
+        "action failed: create equipment (HTTP 504 body=<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><c)",
+        "action failed: log maintenance event (HTTP -1 no created id to log against)",
+        "action failed: search finds it (HTTP 504 found=false)"
+      ],
+      "pass": false,
+      "silentFailure": false,
+      "telemetry": {
+        "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+        "intent": "Stores equipment records, maintenance events, and user accounts with role-based access.",
+        "action": "execute",
+        "startedAt": 1784101386205,
+        "endedAt": 1784103153393,
+        "totalMs": 1767188,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 1040044,
+          "completion": 30318,
+          "cached": 637112,
+          "total": 1070362
+        },
+        "costUsd": null,
+        "mgaCalls": 50,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 1,
+          "mismatch": 0,
+          "legitimate": 17,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "integration",
+            "phase": "SUBAGENT",
+            "snippetPath": "integration/docker-compose-fullstack.yml",
+            "fetchedAt": 1784101390942,
+            "sizeBytes": 1731,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784101391190,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784101391190,
+            "sizeBytes": 689,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784101403499,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/parameterized-queries.ts",
+            "fetchedAt": 1784101403500,
+            "sizeBytes": 4625,
+            "source": "disk"
+          },
+          {
+            "sessionId": "d73a6c2e-3345-493a-bf20-4aa91bddd509",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/input-validation.ts",
+            "fetchedAt": 1784101403500,
+            "sizeBytes": 4664,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [
+          {
+            "scope": "backend",
+            "attemptN": 1,
+            "triggeredBy": "smoke",
+            "failureSummary": "5 endpoint(s) failing live probe",
+            "fixedAt": null,
+            "exhausted": false,
+            "ts": 1784102493987
+          },
+          {
+            "scope": "backend",
+            "attemptN": 2,
+            "triggeredBy": "smoke",
+            "failureSummary": "5 endpoint(s) failing live probe",
+            "fixedAt": null,
+            "exhausted": false,
+            "ts": 1784102803203
+          }
+        ],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": {
+          "probed": 10,
+          "initialFailed": 5,
+          "fixed": 0,
+          "stillBroken": [
+            "POST /equipment",
+            "GET /equipment",
+            "GET /equipment/:id",
+            "PUT /maintenance/:id",
+            "DELETE /maintenance/:id"
+          ],
+          "rounds": 4
+        },
+        "uiSanity": {
+          "sane": true,
+          "defects": []
+        },
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 1956518
+    }
+  ]
+}

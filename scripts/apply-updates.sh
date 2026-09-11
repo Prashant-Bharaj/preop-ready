@@ -28,11 +28,16 @@
 #      the template's copy. Every child always runs the CURRENT engine
 #      against the CURRENT manifest, no matter how old the child is.
 #   3. Read the manifest FROM THE TEMPLATE REF (not the local copy).
-#   4. Apply `migrations:` blocks for every version > local, ascending.
-#   5. Sync every `auto_update` entry: directories are removed and
-#      re-materialized from the template (renames/deletions propagate);
-#      files are overwritten. User-modified platform files are backed up
-#      to .template-backup/<old-version>/ (gitignored) first.
+#   3b. Major-version gate: a new MAJOR is applied only on opt-in
+#      (--accept-major); until then only `auto_update:` (additive) syncs and
+#      the recorded version stays put. Retired stacks get a migration marker.
+#   4. Apply `migrations:` blocks for every version > local, ascending
+#      (blocks of a held major are deferred).
+#   5. Sync every `auto_update` entry (+ `auto_update_major` unless held):
+#      directories converge to the template (renames/deletions propagate,
+#      git-ignored files are preserved); files are overwritten. User-modified
+#      platform files are backed up to .template-backup/<old-version>/
+#      (gitignored) first — on a major crossing, every replaced file is.
 #   6. Apply `cleanup:` entries (file / directory / gitignore_entry).
 #   7. Append missing .gitignore patterns from the template.
 #
@@ -64,12 +69,17 @@ extract_version() {
 }
 
 MODE="silent"
-case "${1:-}" in
-  --ci)      MODE="ci" ;;
-  --dry-run) MODE="dry-run" ;;
-  --silent|"") MODE="silent" ;;
-  *) echo "UPDATE_FAILED|Unknown option: $1"; exit 1 ;;
-esac
+for ARG in "$@"; do
+  case "$ARG" in
+    --ci)           MODE="ci" ;;
+    --dry-run)      MODE="dry-run" ;;
+    --silent)       MODE="silent" ;;
+    # Opt in to a MAJOR template release (see "Major-version gate" below).
+    # Env form (TEMPLATE_ACCEPT_MAJOR=1) survives the self-upgrade exec.
+    --accept-major) export TEMPLATE_ACCEPT_MAJOR=1 ;;
+    *) echo "UPDATE_FAILED|Unknown option: $ARG"; exit 1 ;;
+  esac
+done
 
 fail() {
     echo "UPDATE_FAILED|$1"
@@ -195,9 +205,15 @@ if [ -f .template-version ]; then
     # Absent on repos last updated by a pre-engine script — treated as 0.0.0,
     # which replays all migration blocks (they are idempotent by contract).
     MIG_BASELINE=$(grep "^migrations_applied:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
+    # Workflow files a CI sync could not push (GitHub never lets a workflow's
+    # token write .github/workflows/*). The platform records them here so the
+    # version can advance truthfully while these keep being re-applied until
+    # a human run (Codespace / local) commits them.
+    PENDING_WF=$(grep "^pending_workflows:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
 fi
 [ -n "${LOCAL_VERSION:-}" ] || LOCAL_VERSION="0.0.0"
 [ -n "${MIG_BASELINE:-}" ] || MIG_BASELINE="0.0.0"
+PENDING_WF="${PENDING_WF:-}"
 
 # ver_gt A B  ->  true when A > B (semver compare via sort -V)
 ver_gt() {
@@ -227,20 +243,108 @@ if [ -n "$LATEST_MIGRATION" ] && ver_gt "$LATEST_MIGRATION" "$MIG_BASELINE"; the
     PENDING_MIGRATIONS=true
 fi
 
-if ! ver_gt "$LATEST_VERSION" "$LOCAL_VERSION" && [ "$PENDING_MIGRATIONS" = "false" ]; then
+if ! ver_gt "$LATEST_VERSION" "$LOCAL_VERSION" && [ "$PENDING_MIGRATIONS" = "false" ] && [ -z "$PENDING_WF" ]; then
     echo "UP_TO_DATE|$LOCAL_VERSION"
     exit 0
 fi
+if [ -n "$PENDING_WF" ]; then
+    echo "Workflow file(s) still pending from a CI sync (need a human commit): $PENDING_WF"
+fi
 
-if ver_gt "$LATEST_VERSION" "$LOCAL_VERSION"; then
+# ------------------------------------------------------------------------------
+# 3b. Major-version gate
+#
+# A MAJOR template release (1.x -> 2.x) replaces the AI rules, snippets and
+# generated adapters wholesale — the files a project in progress is actively
+# working against. Those live in the manifest's `auto_update_major:` section
+# and are applied ONLY when the child is already on the new major or opts in:
+#
+#     TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh      (or TEMPLATE_ACCEPT_MAJOR=1)
+#
+# Everything in plain `auto_update:` (Dockerfile templates, nginx, security
+# scripts, workflows, this engine) keeps flowing to every child regardless —
+# those are additive, and they are how security fixes reach the fleet.
+#
+# The split is STRUCTURAL on purpose: pre-engine children (1.2.x/1.3.x) copy
+# `auto_update:` themselves and stop at the next top-level key, so they never
+# see the gated section either. A per-entry flag would not protect them.
+#
+# While held, `.template-version` keeps the child's current version (so the
+# engine keeps checking and the additive set keeps syncing) and records
+# `held_major` + `additive_synced` for the session-start notice.
+#
+# Retired stacks: a project on a stack the new major no longer supports
+# (detected by scripts/detect-stack.sh from the template ref) gets a
+# `.template-migration-needed` marker and cannot accept the major until the
+# migration skill (.platform-rules/scope-migration.md) has run and removed the
+# marker — TEMPLATE_FORCE_MAJOR=1 overrides for the brave.
+# ------------------------------------------------------------------------------
+LOCAL_MAJOR="${LOCAL_VERSION%%.*}"
+LATEST_MAJOR="${LATEST_VERSION%%.*}"
+MAJOR_HELD=false
+MAJOR_CROSSING=false
+MIGRATION_NEEDED=false
+RETIRED_STACK=""
+if [ "${LATEST_MAJOR:-0}" -gt "${LOCAL_MAJOR:-0}" ] 2>/dev/null; then
+    MAJOR_CROSSING=true
+    if git cat-file -e "${TEMPLATE_REF}:scripts/detect-stack.sh" 2>/dev/null; then
+        STACK=$(git show "${TEMPLATE_REF}:scripts/detect-stack.sh" | bash 2>/dev/null || true)
+        RETIRED_STACK=$(echo "$STACK" | sed -n 's/^retired=//p' | head -1)
+        [ "$RETIRED_STACK" = "none" ] && RETIRED_STACK=""
+    fi
+    if [ -n "$RETIRED_STACK" ]; then
+        MIGRATION_NEEDED=true
+        if [ ! -f .template-migration-needed ] && [ "$MODE" != "dry-run" ]; then
+            cat > .template-migration-needed << EOF
+# This project uses a stack the platform template no longer ships (v${LATEST_VERSION}+):
+#   ${RETIRED_STACK}
+# Platform security updates keep arriving, but the v${LATEST_MAJOR} AI rules are held back
+# until the project is migrated. Ask your AI assistant to "migrate to the supported stack"
+# (it follows .platform-rules/scope-migration.md), or read that file. Retired stacks are
+# supported until 2026-12-31.
+retired: "${RETIRED_STACK}"
+detected: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
+sunset: "2026-12-31"
+EOF
+            echo "Wrote .template-migration-needed (retired stack: ${RETIRED_STACK})."
+        fi
+    elif [ -f .template-migration-needed ] && [ "$MODE" != "dry-run" ]; then
+        rm -f .template-migration-needed
+        echo "Removed .template-migration-needed — no retired stack detected any more."
+    fi
+
+    if [ -n "${TEMPLATE_ACCEPT_MAJOR:-}" ] && [ "${TEMPLATE_ACCEPT_MAJOR}" != "0" ]; then
+        if [ "$MIGRATION_NEEDED" = "true" ] && [ "${TEMPLATE_FORCE_MAJOR:-0}" != "1" ]; then
+            echo "This project is on a retired stack (${RETIRED_STACK}); the v${LATEST_MAJOR} rules would"
+            echo "steer the AI away from the code that exists. Run the migration first (see"
+            echo ".template-migration-needed), or set TEMPLATE_FORCE_MAJOR=1 to override."
+            fail "Major update refused: migration needed (${RETIRED_STACK})"
+        fi
+        echo "Accepting major update v${LOCAL_MAJOR} -> v${LATEST_MAJOR}: all replaced platform files will be backed up."
+    else
+        MAJOR_HELD=true
+    fi
+fi
+
+if [ "$MAJOR_HELD" = "true" ]; then
+    echo "Template v${LATEST_VERSION} is a MAJOR release; this project is on v${LOCAL_VERSION}."
+    echo "Applying additive updates only (Dockerfile/nginx templates, security scripts, workflows)."
+    echo "The v${LATEST_MAJOR} AI rules, snippets and harness are held until you opt in:"
+    echo "    TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
+    echo ""
+elif ver_gt "$LATEST_VERSION" "$LOCAL_VERSION"; then
     echo "Updating $LOCAL_VERSION -> $LATEST_VERSION (mode: $MODE)..."
 else
-    echo "Version current ($LOCAL_VERSION) but migrations pending — converging (mode: $MODE)..."
+    echo "Version current ($LOCAL_VERSION) but migrations or workflow files pending — converging (mode: $MODE)..."
 fi
 echo ""
 
 BACKUP_DIR="${BACKUP_ROOT}/${LOCAL_VERSION}"
 BACKED_UP=()
+CHANGED=0
+# Set while syncing the gated section during a major crossing: every replaced
+# file is backed up, modified or not — a wholesale rules swap must be reversible.
+FORCE_BACKUP=false
 
 # Baseline for "did the user modify this platform file": the version they had.
 BASELINE_TAG="template-v${LOCAL_VERSION}"
@@ -259,7 +363,9 @@ fi
 backup_file() {
     local path="$1"
     [ -f "$path" ] || return 0
-    if $HAS_BASELINE; then
+    if [ "$FORCE_BACKUP" = "true" ]; then
+        :  # major crossing: keep a copy no matter what
+    elif $HAS_BASELINE; then
         if git show "${BASELINE_TAG}:${path}" 2>/dev/null | cmp -s - "$path"; then
             return 0  # untouched since it was shipped
         fi
@@ -298,12 +404,24 @@ sync_file() {
         return 0
     fi
     backup_file "$path"
-    write_from_template "$path" && echo "  Updated: $path"
+    write_from_template "$path" && { echo "  Updated: $path"; CHANGED=$((CHANGED + 1)); }
+}
+
+# local_dir_files <dir> — files under <dir> that the engine may touch: every
+# file EXCEPT git-ignored ones (node_modules/, build output, runtime data).
+# Those are by definition not template content; deleting them on every sync
+# would force a reinstall of the harness's dependencies each time.
+local_dir_files() {
+    local dir="$1" all
+    [ -d "$dir" ] || return 0
+    all=$(find "$dir" -type f | sort)
+    [ -n "$all" ] || return 0
+    comm -23 <(echo "$all") <(echo "$all" | git check-ignore --stdin 2>/dev/null | sort)
 }
 
 # sync_directory <dir> — full state convergence: back up user-modified files,
-# remove the local copy, re-materialize every file from the template
-# (recursive; stale/renamed files disappear).
+# remove the local (non-ignored) copy, re-materialize every file from the
+# template (recursive; stale/renamed files disappear).
 sync_directory() {
     local dir="${1%/}"
     local files
@@ -321,24 +439,36 @@ sync_directory() {
                 echo "  Would update: $f"
             fi
         done <<< "$files"
-        if [ -d "$dir" ]; then
-            while IFS= read -r existing; do
-                echo "$files" | grep -Fxq "$existing" || echo "  Would remove: $existing"
-            done < <(find "$dir" -type f)
-        fi
+        while IFS= read -r existing; do
+            [ -n "$existing" ] || continue
+            echo "$files" | grep -Fxq "$existing" || echo "  Would remove: $existing"
+        done < <(local_dir_files "$dir")
         return 0
     fi
 
-    if [ -d "$dir" ]; then
-        while IFS= read -r existing; do
-            backup_file "$existing"
-        done < <(find "$dir" -type f)
-        rm -rf "$dir"
-    fi
+    # Anything already identical is left alone (keeps mtimes, keeps the
+    # change count honest); only differing/stale/missing files count.
+    local n=0
+    while IFS= read -r existing; do
+        [ -n "$existing" ] || continue
+        if echo "$files" | grep -Fxq "$existing" \
+           && git show "${TEMPLATE_REF}:${existing}" 2>/dev/null | cmp -s - "$existing"; then
+            continue
+        fi
+        backup_file "$existing"
+        rm -f "$existing"
+        n=$((n + 1))
+    done < <(local_dir_files "$dir")
     while IFS= read -r f; do
+        [ -f "$f" ] && continue
         write_from_template "$f" >/dev/null || true
+        n=$((n + 1))
     done <<< "$files"
-    echo "  Updated: $dir/ ($(echo "$files" | wc -l | tr -d ' ') files)"
+    find "$dir" -type d -empty -delete 2>/dev/null || true
+    if [ "$n" -gt 0 ]; then
+        echo "  Updated: $dir/ ($n file(s) changed of $(echo "$files" | wc -l | tr -d ' '))"
+        CHANGED=$((CHANGED + n))
+    fi
 }
 
 # remove_gitignore_line <pattern> — drop exact-match lines (portable: no sed -i)
@@ -436,7 +566,13 @@ apply_migration_step() {
 echo "Checking migrations..."
 for MV in $MIGRATION_VERSIONS; do
     if ver_gt "$MV" "$MIG_BASELINE" && ! ver_gt "$MV" "$LATEST_VERSION"; then
+        # A migration belonging to a held major is part of that major.
+        if [ "$MAJOR_HELD" = "true" ] && [ "${MV%%.*}" -gt "${LOCAL_MAJOR:-0}" ] 2>/dev/null; then
+            echo "  Deferred (major v${MV%%.*} held): migration $MV"
+            continue
+        fi
         echo "Applying migration $MV..."
+        CHANGED=$((CHANGED + 1))
         while IFS=$'\t' read -r OP ARG; do
             [ -n "$OP" ] && apply_migration_step "$OP" "$ARG"
         done < <(echo "$MANIFEST" | awk -v ver="$MV" '
@@ -458,20 +594,14 @@ for MV in $MIGRATION_VERSIONS; do
 done
 
 # ------------------------------------------------------------------------------
-# 5. Sync auto_update entries
+# 5. Sync auto_update entries (+ auto_update_major unless held)
 # ------------------------------------------------------------------------------
-echo ""
-echo "Syncing platform files..."
-while IFS=$'\t' read -r P IS_DIR; do
-    P=$(echo "$P" | tr -d '[:space:]')
-    [ -z "$P" ] && continue
-    if [ "$IS_DIR" = "true" ]; then
-        sync_directory "$P"
-    else
-        sync_file "$P"
-    fi
-done < <(echo "$MANIFEST" | awk '
-/^auto_update:/ { in_section=1; next }
+# manifest_entries <section> — "<path>\t<is_dir>" per entry of a top-level
+# section. Stops at the next top-level key (same delimiter every engine
+# version in the fleet uses — that is what makes the major gate structural).
+manifest_entries() {
+    echo "$MANIFEST" | awk -v sec="$1" '
+$0 ~ ("^" sec ":") { in_section=1; next }
 /^[a-zA-Z_]+:/ && in_section { exit }
 in_section && /^  - path:/ {
     if (path) print path "\t" is_dir
@@ -485,7 +615,32 @@ in_section && /^  - path:/ {
 }
 in_section && /is_directory:[[:space:]]*true/ { is_dir="true"; next }
 END { if (path) print path "\t" is_dir }
-')
+'
+}
+
+sync_section() {
+    while IFS=$'\t' read -r P IS_DIR; do
+        P=$(echo "$P" | tr -d '[:space:]')
+        [ -z "$P" ] && continue
+        if [ "$IS_DIR" = "true" ]; then
+            sync_directory "$P"
+        else
+            sync_file "$P"
+        fi
+    done < <(manifest_entries "$1")
+}
+
+echo ""
+echo "Syncing platform files..."
+sync_section "auto_update"
+
+if [ "$MAJOR_HELD" = "true" ]; then
+    echo "  Held (major v${LATEST_MAJOR} not accepted): $(manifest_entries auto_update_major | wc -l | tr -d ' ') gated entries"
+else
+    [ "$MAJOR_CROSSING" = "true" ] && FORCE_BACKUP=true
+    sync_section "auto_update_major"
+    FORCE_BACKUP=false
+fi
 
 # ------------------------------------------------------------------------------
 # 6. .gitignore append-merge (before cleanup, so cleanup entries win)
@@ -567,14 +722,50 @@ if [ "$MODE" != "dry-run" ]; then
     chmod +x scripts/*.sh 2>/dev/null || true
     chmod +x .devcontainer/*.sh 2>/dev/null || true
 
-    cat > .template-version << EOF
+    # A pending workflow file is cleared once the working tree matches the
+    # template (the engine just wrote it). A CI caller that still cannot push
+    # it re-records the field after this — see the platform sync workflow.
+    STILL_PENDING=""
+    if [ -n "$PENDING_WF" ]; then
+        IFS=',' read -ra PWF <<< "$PENDING_WF"
+        for wf in "${PWF[@]}"; do
+            wf=$(echo "$wf" | tr -d '[:space:]'); [ -n "$wf" ] || continue
+            if git cat-file -e "${TEMPLATE_REF}:${wf}" 2>/dev/null \
+               && ! git show "${TEMPLATE_REF}:${wf}" 2>/dev/null | cmp -s - "$wf"; then
+                STILL_PENDING="${STILL_PENDING:+$STILL_PENDING,}$wf"
+            fi
+        done
+    fi
+    PENDING_LINE=""
+    [ -n "$STILL_PENDING" ] && PENDING_LINE="pending_workflows: \"$STILL_PENDING\""
+
+    if [ "$MAJOR_HELD" = "true" ]; then
+        # Version stays put: the held major is not applied. Record what WAS
+        # synced so the session-start notice can say "additive updates current".
+        cat > .template-version << EOF
+# Template Version Tracker - DO NOT EDIT MANUALLY
+# This file tracks which version of the platform template is installed.
+version: "$LOCAL_VERSION"
+migrations_applied: "$MIG_BASELINE"
+template_repo: "$TEMPLATE_REPO"
+held_major: "$LATEST_MAJOR"
+additive_synced: "$LATEST_VERSION"
+last_updated: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
+${PENDING_LINE}
+EOF
+    else
+        cat > .template-version << EOF
 # Template Version Tracker - DO NOT EDIT MANUALLY
 # This file tracks which version of the platform template is installed.
 version: "$LATEST_VERSION"
 migrations_applied: "$LATEST_VERSION"
 template_repo: "$TEMPLATE_REPO"
 last_updated: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
+${PENDING_LINE}
 EOF
+    fi
+    # drop the blank line an empty PENDING_LINE leaves behind (portable sed)
+    grep -v '^$' .template-version > .template-version.tmp && mv .template-version.tmp .template-version
 fi
 
 # ------------------------------------------------------------------------------
@@ -603,6 +794,29 @@ if [ ${#BACKED_UP[@]} -gt 0 ]; then
     done
     echo "Review them if you had intentional customizations, then delete the backup."
     echo ""
+fi
+
+if [ "$MAJOR_HELD" = "true" ]; then
+    # Old callers (1.4.x workflow / Codespace scripts) only know the three
+    # tokens below — keep them honest: the recorded version did not move, and
+    # nothing changed means UP_TO_DATE. MAJOR_HELD is the extra line new
+    # callers act on.
+    echo "MAJOR_HELD|$LOCAL_VERSION|$LATEST_VERSION"
+    if [ -n "$RETIRED_STACK" ]; then
+        echo "MIGRATION_NEEDED|$RETIRED_STACK"
+    fi
+    if [ "$CHANGED" -gt 0 ]; then
+        echo "UPDATE_COMPLETE|$LOCAL_VERSION"
+        echo ""
+        echo "Additive platform files synced from template v$LATEST_VERSION; project stays on v$LOCAL_VERSION."
+    else
+        echo "UP_TO_DATE|$LOCAL_VERSION"
+        echo ""
+        echo "Additive platform files already current with template v$LATEST_VERSION; project stays on v$LOCAL_VERSION."
+    fi
+    echo "To move to v${LATEST_MAJOR} (new AI rules, snippets, harness): TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
+    echo "Your code (frontend/*, backend/*, database/init/*) was NOT touched."
+    exit 0
 fi
 
 echo "UPDATE_COMPLETE|$LATEST_VERSION"

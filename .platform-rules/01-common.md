@@ -21,7 +21,6 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 |-----------|-----------|---------|
 | Express | `app.get('/users', ...)` | `app.get('/api/users', ...)` |
 | FastAPI | `@app.get("/users")` | `@app.get("/api/users")` |
-| Flask | `@app.route('/users')` | `@app.route('/api/users')` |
 | Actix | `web::resource("/users")` | `web::resource("/api/users")` |
 
 ## /health Required in EVERY Container (deployment fails without it)
@@ -35,15 +34,36 @@ Frontend — always relative URLs: `fetch('/api/users')`. Never `http://localhos
 ```
 frontend/    nginx static (port 8080) — Dockerfile, nginx.conf (prod, no proxy),
              nginx.local.conf (local dev, proxies /api → backend:3000)
-backend/     Express / FastAPI / Flask / Actix (port 3000) — Dockerfile
+backend/     Express (TS) / FastAPI / Actix (port 3000) — Dockerfile
              migrations/ ← ALL schema changes after first boot live HERE
-database/    Postgres or MySQL (optional) — Dockerfile, init/ (schema, first boot
+database/    Postgres (optional) — Dockerfile, init/ (schema, first boot
              ONLY), seed/ (gitignored) — ⛔ NO other .sql anywhere under database/
-vectordb/    pgvector / Chroma / Qdrant (optional, independent) — Dockerfile, init/
+vectordb/    pgvector (optional, independent) — Dockerfile, init/
 docker-compose.yml   local dev — MUST mount nginx.local.conf over the frontend's default.conf
 ```
 
 Service names in docker-compose must stay `frontend`, `backend`, `db`/`database`, `vectordb`.
+
+## ⛔ Existing Project → Continue in ITS Stack
+
+The TypeScript defaults above are for **fresh** projects. If real code already exists, the
+stack is decided — detect it and stay in it, using the matching-language snippet
+(`snippets/**/*.py` for Python, `*.js` for JavaScript, `*.ts` for TypeScript):
+
+| Found | Stack — continue with |
+|-------|-----------------------|
+| `backend/main.py` / `requirements.txt` | Python + FastAPI (first-class: `Dockerfile.python`, 25 `.py` snippets) |
+| `backend/src/index.ts` / `tsconfig.json` | Node + Express, TypeScript |
+| `backend/server.js` / `src/index.js` (no tsconfig) | Node + Express, **JavaScript — do not convert to TS**; keep its existing `backend/Dockerfile` (`Dockerfile.node` is TS-only) |
+| `backend/Cargo.toml` | Rust + Actix-web |
+| `frontend/package.json` with `react` | React + Vite (keep its language: `.jsx` stays `.jsx`) |
+
+`bash scripts/detect-stack.sh` prints the answer (`backend=`, `frontend=`, …). Rewriting a
+working project into another language or framework is never a side effect of a feature
+request — only ever an explicit, separate ask. Two planned, opt-in paths exist:
+a *retired* layer (`retired=…`) → `.platform-rules/scope-migration.md`; a JavaScript layer
+that wants the TypeScript layout → `.platform-rules/scope-typescript.md`. Both need the
+user's yes and start with a backup branch.
 
 ⛔ **Database migrations are BACKEND code**: `backend/migrations/NNN_*.sql`, executed by
 the runner inside the backend container — which contains ONLY `backend/`. A migration
@@ -76,13 +96,17 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
 - If `vectordb/Dockerfile` exists: `VECTORDB_HOST`, `VECTORDB_PORT`, and (pgvector only)
   `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD`
 
+⛔ **Keep the platform's DB/user names — do NOT rename the database or user to your project**
+(e.g. inventing `myproject_db` / `myproject_user`). The injected `DATABASE_*` (prod) and the
+fixed local values are what the backend connects with; renaming them is the #1 cause of the
+backend failing to reach its own database.
+
 Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
 
 ## /data Persistence (EFS)
 
 All persistent data lives under `/data` — anything else is lost on redeploy. Template
-Dockerfiles are pre-configured (`PGDATA=/data/postgres`, MySQL `--datadir=/data/mysql`,
-Chroma `/data/chroma`, Qdrant `/data/qdrant`). App file uploads → `/data/uploads`.
+Dockerfiles are pre-configured (`PGDATA=/data/postgres`). App file uploads → `/data/uploads`.
 `database/init/` and `vectordb/init/` run on FIRST deployment only — schema changes after
 that need backend migrations.
 
@@ -120,3 +144,15 @@ never proxy WebSockets through production nginx.conf.
 - Implementation: COPY `snippets/realtime/websocket-helper.*` — it authenticates every
   socket from the OIDC headers and gates rooms. Gate sockets like API routes: no
   identity/approval check = broadcasting data to users your routes would block.
+- **Emit on every state change.** A socket that only handles `connection` pushes
+  nothing. After a REST handler writes, call `io.emit(event, row)` (or the
+  `broadcastChange` helper in `snippets/realtime/websocket-helper.*`, room-scoped
+  if gated) so clients update live without polling. Connection-only Socket.IO is
+  the most common real-time bug.
+- **Reference entities your routes act on must exist.** If status/history routes
+  target a fixed set the API never creates (e.g. production "lines"), the harness
+  pre-seeds 3 placeholder rows in `database/init/02_reference_data.sql` (guarded:
+  inserts only when the table is empty). If you add such a table yourself, seed it
+  the same way (placeholders, never real data) or expose a create route — a handler
+  that 404s because the row was never created looks "working" but is broken for
+  the user. `database/seed/` is manual local test data; nothing runs it.

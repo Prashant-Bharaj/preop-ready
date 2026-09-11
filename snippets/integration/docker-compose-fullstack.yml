@@ -1,0 +1,58 @@
+# scopes: [integration]
+# flags: []
+# description: Full-stack docker-compose (frontend + backend + PostgreSQL).
+
+# Full-stack docker-compose: frontend + backend + PostgreSQL database
+# Adapt service names, env vars, and ports to match your project.
+# CRITICAL: env var consistency — DATABASE_NAME must match POSTGRES_DB, etc.
+
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3000"
+    # Uncomment BOTH blocks below when the app uses an MGA assistant. The
+    # harness writes /workspace/.env with the three MGA_* keys at /confirm
+    # time when an AI feature is planned; compose interpolates them via
+    # ${VAR}. Without `env_file`, the .env at workspace root would still
+    # supply ${VAR} (compose's default behaviour) — but `env_file` ensures
+    # the keys also flow into the container's environment for runtime reads.
+    # env_file:
+    #   - ../.env
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_HOST=database
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=myapp
+      - DATABASE_USER=myapp_user
+      - DATABASE_PASSWORD=localdev123
+      # MGA assistant wiring (uncomment when app uses mga-* snippets):
+      # - MGA_API_KEY=${MGA_API_KEY}
+      # - MGA_BASE_URL=${MGA_BASE_URL}
+      # - MGA_ASSISTANT_ID=${MGA_ASSISTANT_ID}
+    depends_on:
+      - database
+
+  database:
+    build: ./database
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: localdev123
+    volumes:
+      - db-data:/data
+
+volumes:
+  db-data:

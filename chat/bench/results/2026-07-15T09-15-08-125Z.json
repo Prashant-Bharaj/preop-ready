@@ -1,0 +1,108 @@
+{
+  "ranAt": 1784106908125,
+  "results": [
+    {
+      "scenario": "crud-logbook",
+      "marker": "bmrlu2dqu",
+      "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+      "startedAt": 1784105022486,
+      "driveError": "timeout (1800s) waiting for app_ready",
+      "actions": [],
+      "expectationIncidents": [],
+      "incidents": [
+        "drive error: timeout (1800s) waiting for app_ready"
+      ],
+      "pass": false,
+      "silentFailure": false,
+      "telemetry": {
+        "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+        "intent": "Store equipment items, maintenance events, and user accounts with role-based access.",
+        "action": "execute",
+        "startedAt": 1784105107244,
+        "endedAt": 1784105465828,
+        "totalMs": 358584,
+        "scopes": [
+          "database",
+          "backend",
+          "frontend",
+          "integration"
+        ],
+        "status": "built",
+        "tokens": {
+          "prompt": 556551,
+          "completion": 31617,
+          "cached": 337757,
+          "total": 588168
+        },
+        "costUsd": null,
+        "mgaCalls": 42,
+        "toolCalls": 0,
+        "retryAttemptsByScope": {},
+        "reconcilerVerdicts": {
+          "ok": 1,
+          "mismatch": 0,
+          "legitimate": 15,
+          "noise": 0
+        },
+        "snippetFetches": [
+          {
+            "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "backend/postgres-connection.ts",
+            "fetchedAt": 1784105111836,
+            "sizeBytes": 869,
+            "source": "disk"
+          },
+          {
+            "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/parameterized-queries.ts",
+            "fetchedAt": 1784105111836,
+            "sizeBytes": 4625,
+            "source": "disk"
+          },
+          {
+            "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+            "scope": "backend",
+            "phase": "SUBAGENT",
+            "snippetPath": "security/input-validation.ts",
+            "fetchedAt": 1784105111837,
+            "sizeBytes": 4664,
+            "source": "disk"
+          },
+          {
+            "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/vite-react-config.ts",
+            "fetchedAt": 1784105112614,
+            "sizeBytes": 3741,
+            "source": "disk"
+          },
+          {
+            "sessionId": "13d0931e-2d8d-4ef3-9c8f-f7b191ca2197",
+            "scope": "frontend",
+            "phase": "SUBAGENT",
+            "snippetPath": "frontend/lib/utils.ts",
+            "fetchedAt": 1784105112615,
+            "sizeBytes": 689,
+            "source": "disk"
+          }
+        ],
+        "autoRecoveryAttempts": [],
+        "investigatorRecords": [],
+        "contractAttempt": 1,
+        "endpointProbe": null,
+        "uiSanity": null,
+        "contractStore": {
+          "mergedKinds": [],
+          "adoptedRoutes": 0,
+          "revisionCount": 1
+        }
+      },
+      "wallMs": 1885638
+    }
+  ]
+}

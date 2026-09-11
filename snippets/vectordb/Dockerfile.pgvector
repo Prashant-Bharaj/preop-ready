@@ -1,0 +1,39 @@
+# PostgreSQL + pgvector - Vector Database
+# SQL-based vector similarity search
+# Great when you want vectors alongside relational queries
+#
+# Environment variables (set by platform):
+#   POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+#
+# Data persistence:
+#   In production, EFS is mounted to /data for persistent storage.
+#   PostgreSQL is configured to use /data/postgres as its data directory.
+#   PGDATA env var is respected by PostgreSQL - no CMD override needed.
+#
+# To use: Copy this file to vectordb/Dockerfile
+# The init script enables the vector extension automatically.
+#
+# IMPORTANT: pin to an explicit version (e.g. 0.7.4-pg16). The floating
+# `pgvector/pgvector:pg16` tag is unreliable upstream — observed 2026-05-05
+# pulling a Debian 13 Trixie image with NO vector extension files at
+# /usr/share/postgresql/16/extension/, causing CREATE EXTENSION vector to
+# fail at first compose-up. Explicit version tags ship the extension.
+
+FROM pgvector/pgvector:0.7.4-pg16
+
+# Copy initialization scripts (run on first start only)
+COPY init/ /docker-entrypoint-initdb.d/
+
+# CRITICAL: Configure PostgreSQL to use /data/postgres for storage
+# This is where EFS is mounted in production for persistence
+# PostgreSQL respects PGDATA environment variable (unlike MySQL which needs CMD args)
+ENV PGDATA=/data/postgres
+
+# Create data directory with correct ownership
+RUN mkdir -p /data/postgres && chown -R postgres:postgres /data
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} || exit 1
+
+EXPOSE 5432

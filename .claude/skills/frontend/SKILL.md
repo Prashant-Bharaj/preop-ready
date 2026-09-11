@@ -1,6 +1,6 @@
 ---
 name: frontend
-description: Build or change the frontend: React+Vite or vanilla HTML served by nginx, the two-nginx-config model, UI libraries
+description: Build or change the frontend: React+Vite served by nginx, the two-nginx-config model, UI libraries
 ---
 
 Read `.platform-rules/scope-frontend.md` and follow it exactly. It is the canonical platform rule

@@ -1,0 +1,57 @@
+{
+  "name": "chat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "node --watch server/index.js",
+    "dev:client": "vite",
+    "smoke:server": "node server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "lint:frontmatter": "node scripts/lint-frontmatter.js",
+    "tag:files": "node scripts/tag-files.js",
+    "smoke": "node tests/smoke/smoke.js",
+    "smoke:metrics": "node tests/smoke/smoke-metrics.js",
+    "prompt:upload": "node scripts/upload-assistant-prompt.js",
+    "test": "npm run test:unit && npm run test:integration && npm run test:live-dispatch:list",
+    "test:unit": "node --test --test-isolation=process --test-concurrency=4 tests/unit/*.test.js",
+    "test:integration": "node --test --test-isolation=process --test-concurrency=2 --test-force-exit tests/integration/*.test.js && node scripts/refresh-mga-fixtures.js --check",
+    "test:live-dispatch": "node --test tests/live-dispatch/*.js",
+    "test:live-dispatch:list": "ls tests/live-dispatch/ 2>/dev/null && echo 'Run individually; requires real MGA.' || true",
+    "fixtures:check": "node scripts/refresh-mga-fixtures.js --check",
+    "fixtures:refresh": "node scripts/refresh-mga-fixtures.js --apply --yes",
+    "mga:cleanup-stale": "node scripts/mga-cleanup-stale.js",
+    "report": "node scripts/runs-report.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "cors": "^2.8.5",
+    "csv-parse": "^7.0.2",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.7.0",
+    "mammoth": "^1.8.0",
+    "multer": "^2.0.1",
+    "pdf-parse": "^1.1.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "yaml": "^2.8.3",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0"
+  },
+  "overrides": {
+    "qs": "^6.15.4",
+    "uuid": "^11.1.1"
+  }
+}

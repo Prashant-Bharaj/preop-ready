@@ -1,6 +1,6 @@
 ---
 name: database
-description: Add or change the relational database: PostgreSQL/MySQL setup, init scripts, EFS persistence, schema migrations
+description: Add or change the relational database: PostgreSQL setup, init scripts, EFS persistence, schema migrations
 ---
 
 Read `.platform-rules/scope-database.md` and follow it exactly. It is the canonical platform rule

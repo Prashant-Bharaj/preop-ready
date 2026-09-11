@@ -45,11 +45,11 @@ Outside the `context/` folder, never create files containing:
 
 ### `database/init/*.sql` — schema ONLY (tracked in git)
 
-Only `CREATE TABLE`, `CREATE INDEX`, `ALTER TABLE` constraints. **NO `INSERT INTO` data rows** (exception: trivial config like roles/settings — max 3 rows).
+Only `CREATE TABLE`, `CREATE INDEX`, `ALTER TABLE` constraints. **NO `INSERT INTO` data rows** (exception: trivial config like roles/settings, or the placeholder reference rows in `02_reference_data.sql` — max 3 rows per table, never real data).
 
 ### `database/seed/` — local test data (gitignored)
 
-Generate fake data here; docker-compose runs `database/init/` first (schema), then `database/seed/` (test data).
+Generate fake data here. Nothing runs this folder automatically — apply it by hand with `docker compose exec -T database psql -U <user> -d <db> < database/seed/<file>.sql`.
 
 ### When the user asks for test data
 
@@ -77,7 +77,7 @@ They stage ALL files, including sensitive data git might not yet be ignoring.
 
 ```bash
 # ✅ CORRECT — explicit files
-git add frontend/src/App.jsx backend/src/index.js
+git add frontend/src/App.tsx backend/src/index.ts
 
 # ❌ NEVER
 git add .

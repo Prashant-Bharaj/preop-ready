@@ -1,0 +1,538 @@
+{
+  "prompt": {
+    "id": "easy_policy_discovery",
+    "label": "Easy — Policy and Procedure Discovery",
+    "userMessage": "Our employees frequently struggle to find the latest version of internal policies, operational procedures, and compliance guidance across SharePoint sites and shared drives. Teams often rely on asking colleagues directly because search results are inconsistent and documents are duplicated across departments. This creates delays, especially for newer employees and regional offices that may not know where authoritative information is stored. Leadership wants a more reliable way for employees to quickly locate accurate business information without needing to understand the underlying systems."
+  },
+  "understanding": {
+    "rounds": [
+      {
+        "round": 1,
+        "isKillswitch": false,
+        "ms": 7812,
+        "content": "{\"action\":\"clarify\",\"round\":1,\"message\":\"Got it — you want a single place where employees can ask a question in plain language and get the authoritative answer from policies, procedures, and compliance docs spread across SharePoint, with pointers back to the source document.\\n\\nA couple of quick decisions:\\n\\n1) How should employees interact with it?\\n A) AI chat assistant that answers in plain English with citations to the source docs\\n B) Smart search bar with filters (department, doc type, date)\\n C) Both — chat for questions, search for browsing\\n\\n2) We can also wire up these out of the box — pick any that sound useful:\\n A) Admin dashboard to control which SharePoint sites/libraries get indexed and see what employees are searching for\\n B) Audit log of every question/search (useful for compliance review)\\n C) Email alerts to admins when document syncing fails or content looks stale\\n D) Settings page so admins can tune things (e.g. which doc types to include) without a redeploy\"}",
+        "parsed": {
+          "action": "clarify",
+          "round": 1,
+          "message": "Got it — you want a single place where employees can ask a question in plain language and get the authoritative answer from policies, procedures, and compliance docs spread across SharePoint, with pointers back to the source document.\n\nA couple of quick decisions:\n\n1) How should employees interact with it?\n A) AI chat assistant that answers in plain English with citations to the source docs\n B) Smart search bar with filters (department, doc type, date)\n C) Both — chat for questions, search for browsing\n\n2) We can also wire up these out of the box — pick any that sound useful:\n A) Admin dashboard to control which SharePoint sites/libraries get indexed and see what employees are searching for\n B) Audit log of every question/search (useful for compliance review)\n C) Email alerts to admins when document syncing fails or content looks stale\n D) Settings page so admins can tune things (e.g. which doc types to include) without a redeploy"
+        }
+      },
+      {
+        "round": 2,
+        "isKillswitch": false,
+        "ms": 9775,
+        "content": "{\"action\":\"ready\",\"brief\":{\"ready\":true,\"intent\":\"An AI assistant employees can ask in plain language to find authoritative internal policies, procedures, and compliance guidance from SharePoint, with citations back to the source documents.\",\"archetype\":\"ai-tool\",\"entities\":[\"documents\",\"sources\",\"queries\"],\"user_roles\":[\"employees\",\"admins\"],\"key_workflows\":[\"Employee asks a question in natural language and receives a plain-English answer with citations to source documents\",\"Employee clicks a citation to open the authoritative source document in SharePoint\",\"Admin configures which SharePoint sites and libraries are indexed as sources\",\"Admin reviews top questions, common topics, and content gaps in a dashboard\",\"System ingests and re-indexes documents from configured SharePoint locations on a schedule\"],\"stack_signals\":{\"backend_language\":\"node\",\"explicit_user_choice\":false},\"explicit_features\":[\"natural-language Q&A over internal policies and procedures\",\"SharePoint as the source of truth\",\"citations to original documents\",\"admin control over indexed SharePoint sites/libraries\",\"search analytics / content-gap visibility for admins\"],\"capabilities_offered\":{\"accepted\":[\"ai_rag_over_documents\",\"sharepoint_integration\",\"admin_dashboard\"],\"declined\":[],\"user_didnt_choose\":[\"in_app_search\",\"audit_logging\",\"email_notifications\",\"app_settings_page\"]},\"flags\":[\"has-users\",\"has-admin\",\"ai-rag\",\"sharepoint\"],\"notes_for_contract_agent\":\"User chose chat-style AI (RAG) over a search-bar UI. Admin dashboard should surface top queries and content-gap insights, plus configuration of which SharePoint sites/libraries are indexed. All answers must include citations linking back to the source SharePoint document.\"}}",
+        "parsed": {
+          "action": "ready",
+          "brief": {
+            "ready": true,
+            "intent": "An AI assistant employees can ask in plain language to find authoritative internal policies, procedures, and compliance guidance from SharePoint, with citations back to the source documents.",
+            "archetype": "ai-tool",
+            "entities": [
+              "documents",
+              "sources",
+              "queries"
+            ],
+            "user_roles": [
+              "employees",
+              "admins"
+            ],
+            "key_workflows": [
+              "Employee asks a question in natural language and receives a plain-English answer with citations to source documents",
+              "Employee clicks a citation to open the authoritative source document in SharePoint",
+              "Admin configures which SharePoint sites and libraries are indexed as sources",
+              "Admin reviews top questions, common topics, and content gaps in a dashboard",
+              "System ingests and re-indexes documents from configured SharePoint locations on a schedule"
+            ],
+            "stack_signals": {
+              "backend_language": "node",
+              "explicit_user_choice": false
+            },
+            "explicit_features": [
+              "natural-language Q&A over internal policies and procedures",
+              "SharePoint as the source of truth",
+              "citations to original documents",
+              "admin control over indexed SharePoint sites/libraries",
+              "search analytics / content-gap visibility for admins"
+            ],
+            "capabilities_offered": {
+              "accepted": [
+                "ai_rag_over_documents",
+                "sharepoint_integration",
+                "admin_dashboard"
+              ],
+              "declined": [],
+              "user_didnt_choose": [
+                "in_app_search",
+                "audit_logging",
+                "email_notifications",
+                "app_settings_page"
+              ]
+            },
+            "flags": [
+              "has-users",
+              "has-admin",
+              "ai-rag",
+              "sharepoint"
+            ],
+            "notes_for_contract_agent": "User chose chat-style AI (RAG) over a search-bar UI. Admin dashboard should surface top queries and content-gap insights, plus configuration of which SharePoint sites/libraries are indexed. All answers must include citations linking back to the source SharePoint document."
+          }
+        }
+      }
+    ],
+    "brief": {
+      "ready": true,
+      "intent": "An AI assistant employees can ask in plain language to find authoritative internal policies, procedures, and compliance guidance from SharePoint, with citations back to the source documents.",
+      "archetype": "ai-tool",
+      "entities": [
+        "documents",
+        "sources",
+        "queries"
+      ],
+      "user_roles": [
+        "employees",
+        "admins"
+      ],
+      "key_workflows": [
+        "Employee asks a question in natural language and receives a plain-English answer with citations to source documents",
+        "Employee clicks a citation to open the authoritative source document in SharePoint",
+        "Admin configures which SharePoint sites and libraries are indexed as sources",
+        "Admin reviews top questions, common topics, and content gaps in a dashboard",
+        "System ingests and re-indexes documents from configured SharePoint locations on a schedule"
+      ],
+      "stack_signals": {
+        "backend_language": "node",
+        "explicit_user_choice": false
+      },
+      "explicit_features": [
+        "natural-language Q&A over internal policies and procedures",
+        "SharePoint as the source of truth",
+        "citations to original documents",
+        "admin control over indexed SharePoint sites/libraries",
+        "search analytics / content-gap visibility for admins"
+      ],
+      "capabilities_offered": {
+        "accepted": [
+          "ai_rag_over_documents",
+          "sharepoint_integration",
+          "admin_dashboard"
+        ],
+        "declined": [],
+        "user_didnt_choose": [
+          "in_app_search",
+          "audit_logging",
+          "email_notifications",
+          "app_settings_page"
+        ]
+      },
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint"
+      ],
+      "notes_for_contract_agent": "User chose chat-style AI (RAG) over a search-bar UI. Admin dashboard should surface top queries and content-gap insights, plus configuration of which SharePoint sites/libraries are indexed. All answers must include citations linking back to the source SharePoint document."
+    },
+    "killswitchFired": false
+  },
+  "contract": {
+    "content": "{\n  \"action\": \"execute\",\n  \"archetype\": \"ai-tool\",\n  \"message\": \"Building an internal AI policy assistant. Employees chat in natural language to ask about policies, procedures, and compliance — and get plain-English answers with citations linking back to the authoritative SharePoint documents. Admins configure which SharePoint sites and libraries are indexed, and view a dashboard of top questions, common topics, and content gaps. Documents are ingested and re-indexed from SharePoint on a schedule.\",\n  \"flags\": [\"has-users\", \"has-admin\", \"ai-rag\", \"sharepoint\"],\n  \"tasks\": [\n    {\n      \"scope\": \"database\",\n      \"summary\": \"Stores employee accounts, the list of SharePoint sources admins have configured, indexed document metadata, and a log of questions employees ask.\",\n      \"task\": \"Tables: users, sources, documents, queries (see data_model). Indexes: documents(source_id), queries(user_id, created_at DESC), sources(enabled). FKs ordered users → sources → documents → queries. Column-level contract: data_model.\",\n      \"dockerfile\": \"Dockerfile.postgres\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"\"\n    },\n    {\n      \"scope\": \"vectordb\",\n      \"summary\": \"Stores the embedded text chunks from SharePoint documents so the assistant can find relevant passages when answering questions.\",\n      \"task\": \"pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER, source_id INTEGER, chunk_text TEXT, chunk_index INTEGER, sharepoint_url TEXT, embedding vector(3072), created_at TIMESTAMPTZ DEFAULT NOW()). Index: HNSW on embedding (vector_cosine_ops). Index on document_id. Embedding model: text-embedding-3-large via MGA /embeddings.\",\n      \"dockerfile\": \"Dockerfile.pgvector\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"vectordb/vectordb-connections.ts\"\n    },\n    {\n      \"scope\": \"backend\",\n      \"summary\": \"Provides the chat-answering API with citations, SharePoint ingestion, source configuration, and analytics endpoints.\",\n      \"task\": \"Data: pg Pool from env (main DB + vectordb on :5433). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; first login creates users row. Chat: embed question via MGA text-embedding-3-large, cosine-search doc_chunks top-k=8, call MGA claude-opus-4.7 with retrieved chunks, return answer + citations[{document_title, sharepoint_url, snippet}]. Persist every Q to queries. SharePoint ingestion: scheduled re-index reads enabled sources, fetches docs via Graph API, chunks, embeds, upserts doc_chunks. Admin analytics aggregates queries (top questions, topic clusters, low-confidence = content gaps).\",\n      \"dockerfile\": \"Dockerfile.node\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"backend/express-server-template.ts\"\n    },\n    {\n      \"scope\": \"frontend\",\n      \"summary\": \"A chat interface for employees to ask policy questions and view cited answers, plus an admin area for managing SharePoint sources and viewing analytics.\",\n      \"task\": \"Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Chat view streams/displays answer with inline citation chips that open SharePoint URLs in new tab. Admin views gated by role==='admin' from /whoami (hide nav + 403 page). States: spinner during answer, empty CTA on first load, toast on 4xx/5xx, 404 page, disabled submit while pending. Responsive.\",\n      \"dockerfile\": \"Dockerfile.react\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"frontend/AppScaffold.tsx\"\n    },\n    {\n      \"scope\": \"integration\",\n      \"summary\": \"Wires the frontend, backend, Postgres, and pgvector services together for local development.\",\n      \"task\": \"Wire frontend, backend, database, vectordb. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=policyai, DATABASE_USER=policyai_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5432. nginx.local.conf proxy /api→backend:3000. depends_on: backend→database+vectordb, frontend→backend. Healthchecks on all services. Named volumes per DB service.\",\n      \"dockerfile\": \"\",\n      \"rules\": [],\n      \"snippets\": [],\n      \"primarySnippet\": \"integration/docker-compose-fullstack.yml\"\n    }\n  ],\n  \"data_model\": {\n    \"tables\": [\n      {\n        \"name\": \"users\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"oidc_sub\", \"type\": \"TEXT UNIQUE NOT NULL\"},\n          {\"name\": \"email\", \"type\": \"VARCHAR(255) NOT NULL\"},\n          {\"name\": \"role\", \"type\": \"VARCHAR(32) NOT NULL DEFAULT 'employee'\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"sources\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"site_url\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"library_name\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"display_name\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"enabled\", \"type\": \"BOOLEAN NOT NULL DEFAULT TRUE\"},\n          {\"name\": \"last_indexed_at\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"created_by\", \"type\": \"INTEGER REFERENCES users(id)\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"documents\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"source_id\", \"type\": \"INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE\"},\n          {\"name\": \"sharepoint_id\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"title\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"sharepoint_url\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"last_modified\", \"type\": \"TIMESTAMPTZ\"},\n          {\"name\": \"indexed_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      },\n      {\n        \"name\": \"queries\",\n        \"columns\": [\n          {\"name\": \"id\", \"type\": \"SERIAL PRIMARY KEY\"},\n          {\"name\": \"user_id\", \"type\": \"INTEGER NOT NULL REFERENCES users(id)\"},\n          {\"name\": \"question\", \"type\": \"TEXT NOT NULL\"},\n          {\"name\": \"answer\", \"type\": \"TEXT\"},\n          {\"name\": \"citations\", \"type\": \"JSONB\"},\n          {\"name\": \"confidence\", \"type\": \"REAL\"},\n          {\"name\": \"created_at\", \"type\": \"TIMESTAMPTZ NOT NULL DEFAULT NOW()\"}\n        ]\n      }\n    ]\n  },\n  \"api_contract\": {\n    \"version\": 1,\n    \"endpoints\": [\n      {\n        \"method\": \"GET\",\n        \"path\": \"/whoami\",\n        \"response\": {\"status\": 200, \"body\": \"{ id, email, role }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/chat/ask\",\n        \"request\": {\"question\": \"string required\"},\n        \"response\": {\"status\": 200, \"body\": \"{ query_id, answer, citations: [{ document_title, sharepoint_url, snippet }], confidence }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/chat/history\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, question, answer, citations, created_at }], total }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/sources\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ id, site_url, library_name, display_name, enabled, last_indexed_at }] }\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources\",\n        \"request\": {\"site_url\": \"string required\", \"library_name\": \"string required\", \"display_name\": \"string required\"},\n        \"response\": {\"status\": 201, \"body\": \"{ id, site_url, library_name, display_name, enabled }\"}\n      },\n      {\n        \"method\": \"PUT\",\n        \"path\": \"/admin/sources/:id\",\n        \"request\": {\"enabled\": \"boolean optional\", \"display_name\": \"string optional\"},\n        \"response\": {\"status\": 200, \"body\": \"{ id, site_url, library_name, display_name, enabled }\"}\n      },\n      {\n        \"method\": \"DELETE\",\n        \"path\": \"/admin/sources/:id\",\n        \"response\": {\"status\": 204, \"body\": \"\"}\n      },\n      {\n        \"method\": \"POST\",\n        \"path\": \"/admin/sources/:id/reindex\",\n        \"response\": {\"status\": 202, \"body\": \"{ status: 'queued' }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/top-questions\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ question, count }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/topics\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ topic, count }] }\"}\n      },\n      {\n        \"method\": \"GET\",\n        \"path\": \"/admin/analytics/content-gaps\",\n        \"response\": {\"status\": 200, \"body\": \"{ items: [{ question, count, avg_confidence }] }\"}\n      }\n    ]\n  },\n  \"ui_contract\": {\n    \"primary_view\": \"chat with the policy assistant\",\n    \"primary_action\": \"ask a policy question and read the cited answer\",\n    \"secondary_views\": [\n      \"chat history\",\n      \"admin sources configuration page\",\n      \"admin analytics dashboard\"\n    ],\n    \"components\": [\n      {\"name\": \"ChatThread\", \"role\": \"scrolling conversation of questions and answers\"},\n      {\"name\": \"ChatComposer\", \"role\": \"input box for asking the next question\"},\n      {\"name\": \"AnswerBubble\", \"role\": \"AI answer with inline citation chips\"},\n      {\"name\": \"CitationChip\", \"role\": \"clickable citation that opens the source SharePoint document\"},\n      {\"name\": \"HistoryList\", \"role\": \"list of the user's prior questions\"},\n      {\"name\": \"SourceList\", \"role\": \"admin list of configured SharePoint sites and libraries\"},\n      {\"name\": \"SourceForm\", \"role\": \"admin form to add a new SharePoint source\"},\n      {\"name\": \"AnalyticsDashboard\", \"role\": \"admin view of top questions, topics, and content gaps\"},\n      {\"name\": \"TopQuestionsCard\", \"role\": \"ranked list of most-asked questions\"},\n      {\"name\": \"ContentGapsCard\", \"role\": \"questions with low-confidence answers indicating missing content\"}\n    ]\n  },\n  \"business_logic_contract\": {\n    \"triggers\": [\n      {\"event\": \"user_first_login\", \"action\": \"create users row from OIDC claims with role='employee'\"},\n      {\"event\": \"employee_asks_question\", \"action\": \"embed question via MGA, cosine-search doc_chunks top-k=8, call claude-opus-4.7 with retrieved context, return answer with citations, persist to queries\"},\n      {\"event\": \"admin_adds_source\", \"action\": \"create sources row and queue initial ingestion job\"},\n      {\"event\": \"scheduled_reindex\", \"action\": \"for each enabled source, fetch documents via SharePoint Graph API, chunk, embed via MGA text-embedding-3-large, upsert doc_chunks, update sources.last_indexed_at\"},\n      {\"event\": \"admin_views_content_gaps\", \"action\": \"aggregate queries with confidence below threshold and group by similar question\"}\n    ],\n    \"rules\": [\n      \"all /admin/* endpoints require users.role='admin'; return 403 otherwise\",\n      \"employees can only see their own /chat/history\",\n      \"every answer must include at least one citation with sharepoint_url; if no relevant chunks found, return low-confidence response indicating no authoritative source\",\n      \"citations must link to the original SharePoint document URL — never paraphrase without attribution\"\n    ],\n    \"side_effects\": [\n      \"every question persisted to queries table with answer, citations, and confidence for analytics\",\n      \"sources.last_indexed_at updated after each successful re-index\"\n    ]\n  },\n  \"vector_engine\": \"pgvector\",\n  \"mga_assistants\": [\n    {\n      \"key\": \"default\",\n      \"name\": \"Policy & Compliance Assistant\",\n      \"description\": \"Answers employee questions about internal policies, procedures, and compliance guidance using indexed SharePoint documents, with citations back to the authoritative source.\",\n      \"model\": \"claude-opus-4.7\",\n      \"tool_keys\": [],\n      \"starter_messages\": [\n        \"What is our policy on remote work?\",\n        \"How do I report a compliance concern?\",\n        \"What are the approval steps for vendor onboarding?\"\n      ],\n      \"instructions\": \"Answer only from the provided SharePoint document context. Always cite the source document(s) used. If the context does not contain the answer, say so plainly rather than guessing.\"\n    }\n  ]\n}",
+    "parsed": {
+      "action": "execute",
+      "archetype": "ai-tool",
+      "message": "Building an internal AI policy assistant. Employees chat in natural language to ask about policies, procedures, and compliance — and get plain-English answers with citations linking back to the authoritative SharePoint documents. Admins configure which SharePoint sites and libraries are indexed, and view a dashboard of top questions, common topics, and content gaps. Documents are ingested and re-indexed from SharePoint on a schedule.",
+      "flags": [
+        "has-users",
+        "has-admin",
+        "ai-rag",
+        "sharepoint"
+      ],
+      "tasks": [
+        {
+          "scope": "database",
+          "summary": "Stores employee accounts, the list of SharePoint sources admins have configured, indexed document metadata, and a log of questions employees ask.",
+          "task": "Tables: users, sources, documents, queries (see data_model). Indexes: documents(source_id), queries(user_id, created_at DESC), sources(enabled). FKs ordered users → sources → documents → queries. Column-level contract: data_model.",
+          "dockerfile": "Dockerfile.postgres",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": ""
+        },
+        {
+          "scope": "vectordb",
+          "summary": "Stores the embedded text chunks from SharePoint documents so the assistant can find relevant passages when answering questions.",
+          "task": "pgvector extension. Table: doc_chunks(id SERIAL PK, document_id INTEGER, source_id INTEGER, chunk_text TEXT, chunk_index INTEGER, sharepoint_url TEXT, embedding vector(3072), created_at TIMESTAMPTZ DEFAULT NOW()). Index: HNSW on embedding (vector_cosine_ops). Index on document_id. Embedding model: text-embedding-3-large via MGA /embeddings.",
+          "dockerfile": "Dockerfile.pgvector",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "vectordb/vectordb-connections.ts"
+        },
+        {
+          "scope": "backend",
+          "summary": "Provides the chat-answering API with citations, SharePoint ingestion, source configuration, and analytics endpoints.",
+          "task": "Data: pg Pool from env (main DB + vectordb on :5433). Endpoints + bodies: api_contract. Behaviors + rules + side-effects: business_logic_contract. Auth: x-amzn-oidc-data JWT sub/email; first login creates users row. Chat: embed question via MGA text-embedding-3-large, cosine-search doc_chunks top-k=8, call MGA claude-opus-4.7 with retrieved chunks, return answer + citations[{document_title, sharepoint_url, snippet}]. Persist every Q to queries. SharePoint ingestion: scheduled re-index reads enabled sources, fetches docs via Graph API, chunks, embeds, upserts doc_chunks. Admin analytics aggregates queries (top questions, topic clusters, low-confidence = content gaps).",
+          "dockerfile": "Dockerfile.node",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "backend/express-server-template.ts"
+        },
+        {
+          "scope": "frontend",
+          "summary": "A chat interface for employees to ask policy questions and view cited answers, plus an admin area for managing SharePoint sources and viewing analytics.",
+          "task": "Views + components: ui_contract. Endpoints + body shapes: api_contract (prepend /api/). Chat view streams/displays answer with inline citation chips that open SharePoint URLs in new tab. Admin views gated by role==='admin' from /whoami (hide nav + 403 page). States: spinner during answer, empty CTA on first load, toast on 4xx/5xx, 404 page, disabled submit while pending. Responsive.",
+          "dockerfile": "Dockerfile.react",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "frontend/AppScaffold.tsx"
+        },
+        {
+          "scope": "integration",
+          "summary": "Wires the frontend, backend, Postgres, and pgvector services together for local development.",
+          "task": "Wire frontend, backend, database, vectordb. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=policyai, DATABASE_USER=policyai_user, DATABASE_PASSWORD=localdev123, VECTORDB_HOST=vectordb, VECTORDB_PORT=5432. nginx.local.conf proxy /api→backend:3000. depends_on: backend→database+vectordb, frontend→backend. Healthchecks on all services. Named volumes per DB service.",
+          "dockerfile": "",
+          "rules": [],
+          "snippets": [],
+          "primarySnippet": "integration/docker-compose-fullstack.yml"
+        }
+      ],
+      "data_model": {
+        "tables": [
+          {
+            "name": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "oidc_sub",
+                "type": "TEXT UNIQUE NOT NULL"
+              },
+              {
+                "name": "email",
+                "type": "VARCHAR(255) NOT NULL"
+              },
+              {
+                "name": "role",
+                "type": "VARCHAR(32) NOT NULL DEFAULT 'employee'"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "sources",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "site_url",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "library_name",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "display_name",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "enabled",
+                "type": "BOOLEAN NOT NULL DEFAULT TRUE"
+              },
+              {
+                "name": "last_indexed_at",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "created_by",
+                "type": "INTEGER REFERENCES users(id)"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "source_id",
+                "type": "INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE"
+              },
+              {
+                "name": "sharepoint_id",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "title",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "sharepoint_url",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "last_modified",
+                "type": "TIMESTAMPTZ"
+              },
+              {
+                "name": "indexed_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          },
+          {
+            "name": "queries",
+            "columns": [
+              {
+                "name": "id",
+                "type": "SERIAL PRIMARY KEY"
+              },
+              {
+                "name": "user_id",
+                "type": "INTEGER NOT NULL REFERENCES users(id)"
+              },
+              {
+                "name": "question",
+                "type": "TEXT NOT NULL"
+              },
+              {
+                "name": "answer",
+                "type": "TEXT"
+              },
+              {
+                "name": "citations",
+                "type": "JSONB"
+              },
+              {
+                "name": "confidence",
+                "type": "REAL"
+              },
+              {
+                "name": "created_at",
+                "type": "TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+              }
+            ]
+          }
+        ]
+      },
+      "api_contract": {
+        "version": 1,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/whoami",
+            "response": {
+              "status": 200,
+              "body": "{ id, email, role }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/chat/ask",
+            "request": {
+              "question": "string required"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ query_id, answer, citations: [{ document_title, sharepoint_url, snippet }], confidence }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/chat/history",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, question, answer, citations, created_at }], total }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/sources",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ id, site_url, library_name, display_name, enabled, last_indexed_at }] }"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources",
+            "request": {
+              "site_url": "string required",
+              "library_name": "string required",
+              "display_name": "string required"
+            },
+            "response": {
+              "status": 201,
+              "body": "{ id, site_url, library_name, display_name, enabled }"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/admin/sources/:id",
+            "request": {
+              "enabled": "boolean optional",
+              "display_name": "string optional"
+            },
+            "response": {
+              "status": 200,
+              "body": "{ id, site_url, library_name, display_name, enabled }"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/admin/sources/:id",
+            "response": {
+              "status": 204,
+              "body": ""
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/admin/sources/:id/reindex",
+            "response": {
+              "status": 202,
+              "body": "{ status: 'queued' }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/top-questions",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ question, count }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/topics",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ topic, count }] }"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/admin/analytics/content-gaps",
+            "response": {
+              "status": 200,
+              "body": "{ items: [{ question, count, avg_confidence }] }"
+            }
+          }
+        ]
+      },
+      "ui_contract": {
+        "primary_view": "chat with the policy assistant",
+        "primary_action": "ask a policy question and read the cited answer",
+        "secondary_views": [
+          "chat history",
+          "admin sources configuration page",
+          "admin analytics dashboard"
+        ],
+        "components": [
+          {
+            "name": "ChatThread",
+            "role": "scrolling conversation of questions and answers"
+          },
+          {
+            "name": "ChatComposer",
+            "role": "input box for asking the next question"
+          },
+          {
+            "name": "AnswerBubble",
+            "role": "AI answer with inline citation chips"
+          },
+          {
+            "name": "CitationChip",
+            "role": "clickable citation that opens the source SharePoint document"
+          },
+          {
+            "name": "HistoryList",
+            "role": "list of the user's prior questions"
+          },
+          {
+            "name": "SourceList",
+            "role": "admin list of configured SharePoint sites and libraries"
+          },
+          {
+            "name": "SourceForm",
+            "role": "admin form to add a new SharePoint source"
+          },
+          {
+            "name": "AnalyticsDashboard",
+            "role": "admin view of top questions, topics, and content gaps"
+          },
+          {
+            "name": "TopQuestionsCard",
+            "role": "ranked list of most-asked questions"
+          },
+          {
+            "name": "ContentGapsCard",
+            "role": "questions with low-confidence answers indicating missing content"
+          }
+        ]
+      },
+      "business_logic_contract": {
+        "triggers": [
+          {
+            "event": "user_first_login",
+            "action": "create users row from OIDC claims with role='employee'"
+          },
+          {
+            "event": "employee_asks_question",
+            "action": "embed question via MGA, cosine-search doc_chunks top-k=8, call claude-opus-4.7 with retrieved context, return answer with citations, persist to queries"
+          },
+          {
+            "event": "admin_adds_source",
+            "action": "create sources row and queue initial ingestion job"
+          },
+          {
+            "event": "scheduled_reindex",
+            "action": "for each enabled source, fetch documents via SharePoint Graph API, chunk, embed via MGA text-embedding-3-large, upsert doc_chunks, update sources.last_indexed_at"
+          },
+          {
+            "event": "admin_views_content_gaps",
+            "action": "aggregate queries with confidence below threshold and group by similar question"
+          }
+        ],
+        "rules": [
+          "all /admin/* endpoints require users.role='admin'; return 403 otherwise",
+          "employees can only see their own /chat/history",
+          "every answer must include at least one citation with sharepoint_url; if no relevant chunks found, return low-confidence response indicating no authoritative source",
+          "citations must link to the original SharePoint document URL — never paraphrase without attribution"
+        ],
+        "side_effects": [
+          "every question persisted to queries table with answer, citations, and confidence for analytics",
+          "sources.last_indexed_at updated after each successful re-index"
+        ]
+      },
+      "vector_engine": "pgvector",
+      "mga_assistants": [
+        {
+          "key": "default",
+          "name": "Policy & Compliance Assistant",
+          "description": "Answers employee questions about internal policies, procedures, and compliance guidance using indexed SharePoint documents, with citations back to the authoritative source.",
+          "model": "claude-opus-4.7",
+          "tool_keys": [],
+          "starter_messages": [
+            "What is our policy on remote work?",
+            "How do I report a compliance concern?",
+            "What are the approval steps for vendor onboarding?"
+          ],
+          "instructions": "Answer only from the provided SharePoint document context. Always cite the source document(s) used. If the context does not contain the answer, say so plainly rather than guessing."
+        }
+      ]
+    },
+    "ms": 57027
+  }
+}

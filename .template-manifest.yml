@@ -10,13 +10,24 @@
 #   3. Child repos check manifest version and sync if outdated
 # =============================================================================
 
-version: "1.4.12"
+version: "2.0.0"
 template_repo: "bayer-int/dd-template-repository"
 template_branch: "master"
 
 # -----------------------------------------------------------------------------
 # Files to auto-update (platform files, not user code)
-# These are safe to overwrite - users shouldn't modify them
+# These are safe to overwrite - users shouldn't modify them.
+#
+# TWO SECTIONS, and the split is load-bearing (see apply-updates.sh § 3b):
+#   auto_update:        ADDITIVE — reaches every child on every release, whatever
+#                       template major it is on: Dockerfile/nginx templates,
+#                       security scripts, workflows, the engine itself.
+#   auto_update_major:  BREAKING — the AI rules, snippets, generated adapters
+#                       and the harness. Applied only when the child is already
+#                       on the current major or opts in (`--accept-major`).
+# Pre-engine children copy `auto_update:` themselves and stop at the next
+# top-level key, so they can never see the gated section — do NOT move an
+# entry down there by adding a flag; move the entry.
 # -----------------------------------------------------------------------------
 auto_update:
   # Workflows - CRITICAL: includes the sync workflow itself
@@ -30,14 +41,12 @@ auto_update:
     description: "Dependabot cadence: weekly grouped updates with cooldown (no per-push PR bursts)"
     
   # Frontend Dockerfile templates
-  - path: "frontend/Dockerfile.vanilla"
-    description: "Vanilla HTML/CSS/JS Dockerfile template (secure, non-root)"
   - path: "frontend/Dockerfile.react"
     description: "React/Vite Dockerfile template (secure, non-root)"
 
   # Docker build-context exclusions — Docker does NOT read .gitignore, so
-  # without these a local .env is baked into the image (and, for the vanilla
-  # frontend, SERVED at /.env). One per build context; the root one is inert.
+  # without these a local .env is baked into the image. One per build context;
+  # the root one is inert.
   - path: "frontend/.dockerignore"
     description: "Keeps .env and friends out of the frontend image (build context = ./frontend)"
   - path: "backend/.dockerignore"
@@ -64,40 +73,18 @@ auto_update:
   # Database Dockerfile templates
   - path: "database/Dockerfile.postgres"
     description: "PostgreSQL database template"
-  - path: "database/Dockerfile.mysql"
-    description: "MySQL database template"
   # Vector Database Dockerfile templates
   - path: "vectordb/Dockerfile.pgvector"
     description: "pgvector vector database template"
-  - path: "vectordb/Dockerfile.chroma"
-    description: "ChromaDB vector database template"
-  - path: "vectordb/Dockerfile.qdrant"
-    description: "Qdrant vector database template"
 
-  # AI rules — canonical source + generated per-tool adapters
-  # (.platform-rules/ is the ONLY hand-edited rules location; the rest is
-  #  produced by scripts/build-rule-adapters.js in the template repo)
-  - path: ".platform-rules/"
-    description: "Canonical platform rules (core + scopes + reference)"
+  # Migration escape hatch — shipped ADDITIVELY so projects held on an old
+  # major (retired stack) receive the skill that gets them off it. The parent
+  # directories stay gated; these explicit entries sync just these files.
+  - path: ".platform-rules/scope-migration.md"
+    description: "Canonical migration rule: retired stack → supported stack, then accept the major"
+  - path: ".claude/skills/migration/"
+    description: "Generated: Claude Code skill for the migration rule"
     is_directory: true
-  - path: ".claude/skills/"
-    description: "Generated: Claude Code skills (on-demand rule picking)"
-    is_directory: true
-  - path: ".cursor/rules/"
-    description: "Generated: Cursor rules (always-on core + glob-attached scopes)"
-    is_directory: true
-  - path: ".github/instructions/"
-    description: "Generated: Copilot path-scoped instructions"
-    is_directory: true
-  - path: ".github/copilot-instructions.md"
-    description: "Generated: Copilot always-on core mirror"
-  - path: ".clinerules/"
-    description: "Generated: Cline core mirror + router"
-    is_directory: true
-  - path: ".cursorrules"
-    description: "Deprecation stub (rules moved to .platform-rules/ + .cursor/rules/)"
-  - path: "CLAUDE.md"
-    description: "AI assistant instructions (Claude Code) — imports .platform-rules core"
 
   # Security — AI ignore files and pre-commit hook
   - path: ".clineignore"
@@ -129,27 +116,9 @@ auto_update:
   - path: ".devcontainer/auto-update-template.sh"
     description: "Auto-check and apply template updates on Codespace start"
     
-  # README
-  - path: "README.md"
-    description: "Project README with data security warning and getting started guide"
-
   # Documentation
-  - path: "docs/MIGRATION.md"
-    description: "Migration guide for existing projects"
-  - path: "docs/EXAMPLES.md"
-    description: "Example prompts for describing app ideas"
   - path: "docs/CODESPACE_CLAUDE_CODE_SETUP.md"
     description: "How Claude Code connects to myGenAssist in a Codespace"
-
-  # Code Snippet Library
-  - path: "snippets/"
-    description: "Reusable code snippets"
-    is_directory: true
-    
-  # Examples
-  - path: "examples/"
-    description: "Example config files (eslint, ruff, vite)"
-    is_directory: true
 
   # Scripts
   - path: "scripts/sync-from-template.sh"
@@ -162,6 +131,75 @@ auto_update:
     description: "Pre-deployment validation checks"
   - path: "scripts/check-dependabot-prs.sh"
     description: "Codespace-start Dependabot handler: auto-merge green patch/minor, surface majors"
+  - path: "scripts/check-template-pr.sh"
+    description: "Session-start platform status for AI tools: open sync PR, sync-workflow state, version"
+  - path: "scripts/detect-stack.sh"
+    description: "Stack detection (backend/frontend/db/vectordb + retired layers) for the major gate and the migration skill"
+  - path: "scripts/pre-push-review.sh"
+    description: "Pre-push audit attestation gate"
+  - path: "scripts/audit/"
+    description: "Deep-audit playbook, reviewer prompt, Stop hook, per-dev Claude hook installer"
+    is_directory: true
+
+# -----------------------------------------------------------------------------
+# Files applied only on the current MAJOR (or with --accept-major)
+# The AI rules, snippets, generated adapters and the harness: a major release
+# replaces how the assistant builds, which must not land under a project in
+# flight. Engine: apply-updates.sh § 3b. Same entry format as auto_update.
+# -----------------------------------------------------------------------------
+auto_update_major:
+  # AI rules — canonical source + generated per-tool adapters
+  # (.platform-rules/ is the ONLY hand-edited rules location; the rest is
+  #  produced by scripts/build-rule-adapters.js in the template repo)
+  - path: ".platform-rules/"
+    description: "Canonical platform rules (core + scopes + reference)"
+    is_directory: true
+  - path: ".claude/skills/"
+    description: "Generated: Claude Code skills (on-demand rule picking)"
+    is_directory: true
+  - path: ".cursor/rules/"
+    description: "Generated: Cursor rules (always-on core + glob-attached scopes)"
+    is_directory: true
+  - path: ".github/instructions/"
+    description: "Generated: Copilot path-scoped instructions"
+    is_directory: true
+  - path: ".github/copilot-instructions.md"
+    description: "Generated: Copilot always-on core mirror"
+  - path: ".clinerules/"
+    description: "Generated: Cline core mirror + router"
+    is_directory: true
+  - path: ".cursorrules"
+    description: "Deprecation stub (rules moved to .platform-rules/ + .cursor/rules/)"
+  - path: "CLAUDE.md"
+    description: "AI assistant instructions (Claude Code) — imports .platform-rules core"
+
+  # Code Snippet Library (TypeScript-canonical since 2.0)
+  - path: "snippets/"
+    description: "Reusable code snippets"
+    is_directory: true
+
+  # Examples
+  - path: "examples/"
+    description: "Example config files (eslint, ruff, vite)"
+    is_directory: true
+
+  # README + docs written for the 2.0 flow
+  - path: "README.md"
+    description: "Project README with data security warning and getting started guide"
+  - path: "docs/MIGRATION.md"
+    description: "Migration guide for existing projects"
+  - path: "docs/EXAMPLES.md"
+    description: "Example prompts for describing app ideas"
+
+  # The AI build harness (chat UI + build pipeline). Users do not edit it;
+  # git-ignored content inside it (node_modules, bench results) is preserved.
+  - path: "chat/"
+    description: "AI build harness: chat UI, planner, build pipeline, bench"
+    is_directory: true
+  - path: ".chat/README.md"
+    description: "Harness runtime folder: how to connect (secrets.json is gitignored)"
+  - path: ".chat/secrets.example.json"
+    description: "Harness credentials example (copy to .chat/secrets.json)"
 
 # -----------------------------------------------------------------------------
 # Files to merge intelligently
@@ -235,12 +273,6 @@ cleanup:
   - path: ".devcontainer/install-cline.sh"
     type: "file"
     reason: "Replaced by setup-claude-router.sh (Cline → Claude Code)"
-  - path: "chat"
-    type: "directory"
-    reason: "Chat app moved to feat/chat branch"
-  - path: ".chat"
-    type: "gitignore_entry"
-    reason: "Chat runtime data entry no longer needed"
   - path: "backend/env.example"
     type: "file"
     reason: "Removed — flagged by cybersecurity (credentials in repo)"
@@ -283,6 +315,16 @@ cleanup:
 migrations:
   # NOTE: the version key MUST equal the release version of the change it
   # belongs to — adjust before merging if the numbering has moved on.
+  # A block whose major is above the child's is deferred while that major is
+  # held (apply-updates.sh § 3b) and replays on --accept-major.
+  "2.0.0":
+    description: "TypeScript-canonical template + AI build harness; retired vanilla/MySQL/Chroma/Qdrant"
+    steps:
+      # Engine backups (.template-backup/) must never be committed; the engine
+      # adds this lazily, the migration makes it explicit for every 2.0 child.
+      - gitignore_add: ".template-backup/"
+      # Harness bench output is local scratch.
+      - gitignore_add: "chat/bench/results/"
   "1.4.0":
     description: "Sync engine + rules restructure (.platform-rules/ canonical tree, generated adapters)"
     steps:
@@ -295,6 +337,17 @@ migrations:
 # Changelog
 # -----------------------------------------------------------------------------
 changelog:
+  "2.0.0":
+    date: "2026-09-09"
+    changes:
+      - "MAJOR: template is TypeScript-canonical (Express+TS, React+Vite+TS, multi-stage Dockerfiles); Python/FastAPI and Rust stay first-class; existing projects continue in their own stack"
+      - "AI build harness (chat/) ships with the template and syncs to projects that accept 2.0"
+      - "Major-version gate: rules, snippets, adapters and the harness are applied only on opt-in (`TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh`); Dockerfile/nginx templates, security scripts and workflows keep flowing to every project"
+      - "Retired stacks (vanilla frontend, MySQL, Chroma, Qdrant) are detected and held with a .template-migration-needed marker; migration skill (.platform-rules/scope-migration.md) ships additively; supported until 2026-12-31"
+      - "Session-start platform update check for every AI tool (scripts/check-template-pr.sh) + Claude Code SessionStart hook + harness preflight item"
+      - "Template sync runs through the platform reusable workflow (no org secret needed); workflow files that GitHub refuses to let the platform push are held back with a notice"
+      - "Reference-data seeding: deterministic database/init/02_reference_data.sql for fixed reference tables; endpoint probe no longer treats a 404 on a mutation as a pass"
+      - "Security review on every build; pre-push audit attestation gate; realtime broadcast-on-mutation guardrail"
   "1.4.0":
     date: "2026-07-15"
     changes:
