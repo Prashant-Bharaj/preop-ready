@@ -1457,6 +1457,30 @@ input, textarea, select { font-size: 16px; }
   border-bottom-color: rgba(251, 191, 36, 0.2);
 }
 
+.workspace-gone {
+  padding: 1rem 1.25rem;
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--text);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.35);
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  animation: slideDown 0.3s ease-out;
+}
+.workspace-gone p { margin: 0.35rem 0 0; }
+.workspace-gone-title { font-weight: 600; color: var(--warning); }
+.workspace-gone-hint { opacity: 0.85; }
+.btn-wake {
+  display: inline-block;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  background: var(--warning);
+  color: #1a1a1a;
+  font-weight: 600;
+  text-decoration: none;
+}
+.btn-wake:hover { filter: brightness(1.08); }
+
 /* ── Messages ── */
 .messages-container {
   flex: 1;

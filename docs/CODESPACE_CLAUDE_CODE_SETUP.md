@@ -158,12 +158,10 @@ sidebar if you want.
 
 ## Running the harness (chat UI) in a Codespace
 
-The post-start hook installs `chat/` dependencies and builds the UI, so the
-harness is one command away:
-
-```bash
-cd chat && npm start
-```
+The post-start hook installs `chat/` dependencies, builds the UI and **starts
+the harness in the background** (log: `/tmp/harness.log`), so after opening or
+restarting a Codespace the harness is already running. Start it by hand only if
+it is not (`cd chat && npm start`).
 
 Port **5050** opens in the browser automatically once the server listens (the
 built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
@@ -172,8 +170,10 @@ port by hand in the Ports tab after Vite is listening — a forward created
 earlier can leave the proxy's 404 page cached in your browser.
 
 After a Codespace restart everything persists (workspace, `.harness/`, Docker
-images and volumes); run `cd chat && npm start` again and, if the app should be
-up, click **Start app** in the UI. The idle timeout can be raised to 4 hours in
+images and volumes). When the codespace idles out, the harness tab shows
+"Your workspace went to sleep" with a **Wake it up** link: it opens the editor,
+which starts the codespace, the start hook starts the harness, and the tab
+reconnects by itself. If the app should be up afterwards, click **Start app**. The idle timeout can be raised to 4 hours in
 GitHub Settings → Codespaces → Default idle timeout (applies to new codespaces).
 
 ### Ports after a Codespace restart

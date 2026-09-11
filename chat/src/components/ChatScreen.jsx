@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { editorUrlFor, classifyHealthProbe, OFFLINE_GRACE_MS, OFFLINE_PROBE_MS } from '../lib/workspace-status.js';
 import { sendMessage, resetSession, cleanProject, connectStream, getEnvironment, getDockerStatus, cancelSession, confirmPlan, discardPlan, revisePlan, pauseSession, uploadFile, confirmOpenApp, closeAutoStartedApp, startApp, branchSession } from '../lib/api.js';
 import MessageBubble from './MessageBubble.jsx';
 import ExamplesModal from './ExamplesModal.jsx';
@@ -182,6 +183,10 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   const [activity, setActivity] = useState('Initializing...');
   const [workingElapsedSec, setWorkingElapsedSec] = useState(0);
   const [wsStatus, setWsStatus] = useState('connected');
+  // 'gone' once a disconnect outlasts the grace period AND the API no longer
+  // answers JSON — the codespace idled out (or the server died). Cleared by a
+  // full reload when it answers again.
+  const [workspaceGone, setWorkspaceGone] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false);
   // Full-process modal: { label, events } for one subagent, or null.
@@ -667,6 +672,34 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
     streamRef.current = stream;
     return () => stream.close();
   }, [sessionId]);
+
+  // Workspace-gone detection. Socket.IO retries on its own, but a codespace
+  // that idled out never comes back by itself: the user has to start it (and
+  // the harness) again. Tell them, instead of showing "Reconnecting..." forever.
+  useEffect(() => {
+    if (wsStatus === 'connected') { setWorkspaceGone(false); return undefined; }
+    let cancelled = false;
+    let timer = null;
+    const probe = async () => {
+      if (cancelled) return;
+      let result = 'gone';
+      try {
+        const res = await fetch('/api/auth/status', { cache: 'no-store' });
+        result = classifyHealthProbe({ ok: res.ok, contentType: res.headers.get('content-type') || '' });
+      } catch { result = 'gone'; }
+      if (cancelled) return;
+      if (result === 'online') {
+        // Back (the harness restarted). A reload rehydrates everything —
+        // history, pending plan, app state — from the server.
+        if (workspaceGone) { window.location.reload(); return; }
+      } else {
+        setWorkspaceGone(true);
+      }
+      timer = setTimeout(probe, OFFLINE_PROBE_MS);
+    };
+    timer = setTimeout(probe, workspaceGone ? OFFLINE_PROBE_MS : OFFLINE_GRACE_MS);
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [wsStatus, workspaceGone]);
 
   // "Follow mode": the outer container only auto-scrolls when the user is
   // already near the bottom. If they've scrolled up to read something, we
@@ -1271,16 +1304,35 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
         </div>
       </header>
 
-      {wsStatus === 'disconnected' && (
+      {workspaceGone ? (
+        <div className="workspace-gone" role="alert">
+          <div className="workspace-gone-title">Your workspace went to sleep</div>
+          <p>
+            The environment behind this page stopped (Codespaces pauses it after a period of inactivity).
+            Nothing is lost: your chat, plan and app are saved and come back as they were.
+          </p>
+          {editorUrlFor(window.location.hostname) ? (
+            <p>
+              <a className="btn-wake" href={editorUrlFor(window.location.hostname)} target="_blank" rel="noreferrer">
+                Wake it up
+              </a>
+              <span className="workspace-gone-hint">
+                {' '}opens your workspace and starts it; the harness starts with it and this page reconnects by itself.
+              </span>
+            </p>
+          ) : (
+            <p className="workspace-gone-hint">Start the harness again (<code>cd chat &amp;&amp; npm start</code>); this page reconnects by itself.</p>
+          )}
+        </div>
+      ) : wsStatus === 'disconnected' ? (
         <div className="connection-banner" role="alert">
           Connection lost. Trying to reconnect...
         </div>
-      )}
-      {wsStatus === 'reconnecting' && (
+      ) : wsStatus === 'reconnecting' ? (
         <div className="connection-banner reconnecting" role="status">
           Reconnecting...
         </div>
-      )}
+      ) : null}
 
       {showBuildProgress && (
         <div className="build-progress">
