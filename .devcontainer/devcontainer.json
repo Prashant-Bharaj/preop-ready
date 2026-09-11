@@ -71,13 +71,15 @@
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
   // In Codespaces the harness (chat/) is also STARTED here, in the background
   // (log: /tmp/harness.log), so a restarted codespace comes back with the UI
-  // on 5050 without anyone typing `npm start`. Guarded against double starts.
+  // on 5050 without anyone typing `npm start`. Guarded against double starts;
+  // idle cost is a node process only (no validator container until a build);
+  // opt out with the Codespaces secret/env HARNESS_AUTOSTART=0.
   // The sysctl keeps same-bridge container traffic out of iptables. The default
   // Codespaces image moved to Docker 29.x (2026-09), whose bridge firewall rules
   // fail to install inside the nested kernel: containers stay "healthy" (localhost
   // works) but frontend->backend and backend->database TCP silently hang.
   // Verified fix 2026-09-10; harmless where the rules install correctly.
-  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; [ -n \"$CODESPACE_NAME\" ] && [ -f chat/dist/index.html ] && ! pgrep -f \"node server/index.js\" >/dev/null && (cd chat && nohup node server/index.js > /tmp/harness.log 2>&1 &) || true",
+  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; [ -n \"$CODESPACE_NAME\" ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ -f chat/dist/index.html ] && ! pgrep -f \"node server/index.js\" >/dev/null && (cd chat && SQL_VALIDATOR_WARMUP=0 nohup node server/index.js > /tmp/harness.log 2>&1 &) || true",
 
   // No pre-forwarded ports on purpose. A forward the devcontainer creates
   // at startup goes STALE on GitHub's proxy after a Codespace restart (404
@@ -91,7 +93,7 @@
   "forwardPorts": [],
 
   "portsAttributes": {
-    "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "openBrowser" },
+    "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "notify" },
     "8080": { "label": "Generated app", "onAutoForward": "notify" },
     "3000": { "label": "Generated app backend", "onAutoForward": "silent" },
     "5173": { "label": "Vite (frontend-only projects)", "onAutoForward": "notify" },

@@ -94,6 +94,10 @@ server.listen(PORT, () => {
   }
   // Pre-warm the SQL-validation Postgres (used by the reconciler's PREPARE gate)
   // so the first build doesn't pay a cold container boot. Fully best-effort —
-  // never blocks startup; the gate fails open if it isn't ready.
-  startValidatorInBackground();
+  // never blocks startup; the gate fails open if it isn't ready. Skipped when
+  // the server is auto-started as a background service (Codespaces start hook,
+  // SQL_VALIDATOR_WARMUP=0): a user who only wants the editor must not get a
+  // Postgres container for a harness they never open — the gate starts it on
+  // first use instead.
+  if (process.env.SQL_VALIDATOR_WARMUP !== '0') startValidatorInBackground();
 });

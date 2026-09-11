@@ -1458,28 +1458,37 @@ input, textarea, select { font-size: 16px; }
 }
 
 .workspace-gone {
-  padding: 1rem 1.25rem;
+  padding: 1.1rem 1.25rem 1.25rem;
   background: rgba(251, 191, 36, 0.08);
   color: var(--text);
   border-bottom: 1px solid rgba(251, 191, 36, 0.35);
   flex-shrink: 0;
   font-size: 0.85rem;
-  line-height: 1.45;
+  line-height: 1.5;
+  text-align: center;
   animation: slideDown 0.3s ease-out;
 }
-.workspace-gone p { margin: 0.35rem 0 0; }
-.workspace-gone-title { font-weight: 600; color: var(--warning); }
-.workspace-gone-hint { opacity: 0.85; }
+.workspace-gone p { margin: 0.4rem auto 0; max-width: 62rem; }
+.workspace-gone-title { font-weight: 600; font-size: 0.95rem; color: var(--warning); }
+.workspace-gone-hint { display: block; margin-top: 0.4rem; opacity: 0.8; font-size: 0.8rem; }
 .btn-wake {
-  display: inline-block;
-  padding: 0.35rem 0.8rem;
-  border-radius: 6px;
-  background: var(--warning);
-  color: #1a1a1a;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.35rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.05em;
   text-decoration: none;
+  box-shadow: 0 1px 6px rgba(229, 255, 0, 0.18);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.btn-wake:hover { filter: brightness(1.08); }
+.btn-wake:hover { background: var(--accent-hover); box-shadow: var(--accent-glow); transform: translateY(-1px); }
 
 /* ── Messages ── */
 .messages-container {

@@ -1317,7 +1317,7 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
                 Wake it up
               </a>
               <span className="workspace-gone-hint">
-                {' '}opens your workspace and starts it; the harness starts with it and this page reconnects by itself.
+                Opens your workspace and starts it. The harness starts with it and this page reconnects by itself.
               </span>
             </p>
           ) : (

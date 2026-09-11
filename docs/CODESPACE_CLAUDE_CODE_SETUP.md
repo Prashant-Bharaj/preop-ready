@@ -161,10 +161,14 @@ sidebar if you want.
 The post-start hook installs `chat/` dependencies, builds the UI and **starts
 the harness in the background** (log: `/tmp/harness.log`), so after opening or
 restarting a Codespace the harness is already running. Start it by hand only if
-it is not (`cd chat && npm start`).
+it is not (`cd chat && npm start`). If you only use the editor (Claude Code,
+Copilot, Cline), the running harness costs a single idle node process and
+nothing else — it starts no containers until a build runs — and a notification
+for port 5050 is all you see. To disable the auto-start entirely, set the
+Codespaces secret `HARNESS_AUTOSTART` to `0`.
 
-Port **5050** opens in the browser automatically once the server listens (the
-built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
+Port **5050** is forwarded automatically once the server listens; open it from
+the notification or the Ports tab (the built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
 reload) is only needed when editing the chat UI itself; if you use it, add the
 port by hand in the Ports tab after Vite is listening — a forward created
 earlier can leave the proxy's 404 page cached in your browser.
