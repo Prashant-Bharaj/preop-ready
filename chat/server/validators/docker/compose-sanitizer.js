@@ -62,7 +62,6 @@ export function scanComposeContainerNames(workspaceDir) {
  */
 export function stripContainerNames(workspaceDir) {
   const composePath = path.join(workspaceDir, 'docker-compose.yml');
-  if (!fs.existsSync(composePath)) return 0;
 
   let content;
   try {

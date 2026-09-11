@@ -98,9 +98,13 @@ export function scanComposeForBadDirectives(workspaceDir) {
 export function applyStrategyAFixes(workspaceDir, issues) {
   if (!issues.length) return [];
   const composePath = path.join(workspaceDir, 'docker-compose.yml');
-  if (!fs.existsSync(composePath)) return [];
-
-  const source = fs.readFileSync(composePath, 'utf8');
+  let source;
+  try {
+    source = fs.readFileSync(composePath, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
   const doc = YAML.parseDocument(source);
   const compose = doc.toJS();
   const applied = [];

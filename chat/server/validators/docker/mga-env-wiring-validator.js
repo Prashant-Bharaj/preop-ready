@@ -23,15 +23,24 @@ import YAML from 'yaml';
 export function applyMgaEnvWiringFix(workspaceDir) {
   const envPath = path.join(workspaceDir, '.env');
   const composePath = path.join(workspaceDir, 'docker-compose.yml');
-  if (!fs.existsSync(envPath) || !fs.existsSync(composePath)) {
-    return { applied: false, reason: 'no .env or compose' };
-  }
   let envText = '';
-  try { envText = fs.readFileSync(envPath, 'utf-8'); } catch { return { applied: false, reason: 'env unreadable' }; }
+  try {
+    envText = fs.readFileSync(envPath, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return { applied: false, reason: 'no .env or compose' };
+    return { applied: false, reason: 'env unreadable' };
+  }
   if (!/^MGA_/m.test(envText)) return { applied: false, reason: 'no MGA_* in .env' };
 
+  let composeText;
+  try {
+    composeText = fs.readFileSync(composePath, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return { applied: false, reason: 'no .env or compose' };
+    return { applied: false, reason: 'compose unparseable' };
+  }
   let doc;
-  try { doc = YAML.parseDocument(fs.readFileSync(composePath, 'utf-8')); } catch {
+  try { doc = YAML.parseDocument(composeText); } catch {
     return { applied: false, reason: 'compose unparseable' };
   }
   const backend = doc.getIn(['services', 'backend']);

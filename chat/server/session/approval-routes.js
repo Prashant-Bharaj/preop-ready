@@ -16,6 +16,7 @@
  */
 
 import { tlog } from '../util/timestamped-log.js';
+import { logSafe } from '../util/log-helpers.js';
 
 /**
  * @param {import('express').Application} app
@@ -39,7 +40,7 @@ export function mountApprovalRoutes(app, getSession) {
       return res.status(404).json({ error: 'No pending action with that id' });
     }
 
-    tlog('[approval] approved actionId=%s session=%s', actionId, session.id);
+    tlog('[approval] approved actionId=%s session=%s', logSafe(actionId), session.id);
     session.pendingApprovals.delete(actionId);
     pending.resolve({ approved: true, actionId });
     return res.json({ ok: true, actionId, result: 'approved' });
@@ -63,7 +64,7 @@ export function mountApprovalRoutes(app, getSession) {
     }
 
     tlog('[approval] rejected actionId=%s session=%s reason=%s',
-      actionId, session.id, reason || 'none');
+      logSafe(actionId), session.id, logSafe(reason || 'none'));
     session.pendingApprovals.delete(actionId);
     pending.reject(Object.assign(new Error('Action rejected by user'), { actionId, reason }));
     return res.json({ ok: true, actionId, result: 'rejected' });

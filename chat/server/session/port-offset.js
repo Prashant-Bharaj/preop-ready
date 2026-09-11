@@ -18,7 +18,7 @@
  *
  * @returns {Array<{from: string, to: string}>|null} remappings applied, null if nothing changed
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const MARKER = path.join('.harness', 'port-offset.json');
@@ -35,10 +35,15 @@ function readMarker(workspaceDir) {
 export function applyPortOffsetToCompose(workspaceDir, offset) {
   if (!offset || offset <= 0) return null;
   const composePath = path.join(workspaceDir, 'docker-compose.yml');
-  if (!existsSync(composePath)) return null;
+  let text;
+  try {
+    text = readFileSync(composePath, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
   const marker = readMarker(workspaceDir);
   const already = marker.offset === offset ? marker.applied : new Set();
-  const text = readFileSync(composePath, 'utf-8');
   const lines = text.split('\n');
   const out = [];
   const remappings = [];

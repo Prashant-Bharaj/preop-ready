@@ -25,6 +25,7 @@ import {
 } from '../core/app-secrets-scaffold.js';
 import { refreshSensitiveStrings } from '../core/redact-refresh.js';
 import { WORKSPACE_DIR } from '../core/paths.js';
+import { logSafe } from '../util/log-helpers.js';
 
 // Probe `gh` once per process — cheap, and lets the panel tell the user
 // whether sync is even possible before they click. `gh auth status`
@@ -143,7 +144,7 @@ export function mountAppSecretsRoutes(app) {
       // now or already public via the GET endpoint).
       res.json({ ok: true, name, isSet: result.isSet, description: result.description });
     } catch (err) {
-      console.error('[app-secrets] write failed for %s: %s', name, err.message);
+      console.error('[app-secrets] write failed for %s: %s', logSafe(name), logSafe(err.message));
       res.status(500).json({ error: 'Failed to write secret. Check chat server logs.' });
     }
   });

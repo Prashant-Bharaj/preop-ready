@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -64,6 +64,16 @@ import { analyzeCascade } from './contract-cascade.js';
 import { ITERATE_MINIMAL_CHANGE_POLICY } from '../agent/iterate-policy.js';
 import { mergeAndPersistIterateDiffs, normalizeContractDiffs, diffHasRemovals } from '../agent/coordinator/contract-store.js';
 import { preStageScaffolds } from '../agent/coordinator/pre-stage-scaffolds.js';
+import { logSafe } from '../util/log-helpers.js';
+
+const SESSION_ID_RE = /^[A-Za-z0-9_-]+$/;
+
+// Session ids name files on disk (transcripts, shadow repos, run logs).
+function cleanSessionId(raw) {
+  const id = String(raw ?? '');
+  if (!SESSION_ID_RE.test(id)) return null;
+  return path.basename(id);
+}
 
 let activeSession = null;
 let middlewareReady = false;
@@ -530,7 +540,7 @@ export async function runDiagnoseAndRespond(
   const dispatchIterateFn = deps.dispatchIterateFn || dispatchIterate;
   const tryAutoStartAppFn = deps.tryAutoStartAppFn || tryAutoStartApp;
   tlog('[session] diagnose: symptom=%s suspected_scope=%s — spawning investigator',
-    symptom.slice(0, 80), suspectedScope || 'none');
+    logSafe(symptom.slice(0, 80)), logSafe(suspectedScope || 'none'));
 
   // Surface dispatch activity to the UI so the user sees we're
   // working on the bug report (analogous to the iterate-acknowledge
@@ -1516,7 +1526,7 @@ export function mountSessionRoutes(app) {
         try {
           const checkScript = path.join(WORKSPACE_DIR, 'scripts', 'check-updates.sh');
           if (existsSync(checkScript)) {
-            execSync(`bash "${checkScript}"`, { cwd: WORKSPACE_DIR, timeout: BASH_SCRIPT_MS, stdio: 'pipe' });
+            execFileSync('bash', [checkScript], { cwd: WORKSPACE_DIR, timeout: BASH_SCRIPT_MS, stdio: 'pipe' });
           }
         } catch { /* update check is non-critical */ }
 
@@ -1586,8 +1596,8 @@ export function mountSessionRoutes(app) {
 
       emitUserAction(session.id, 'concierge_turn', { messageChars: message.length, uploadCount: uploads.length });
       tlog('[concierge] mid-build turn (chars=%d uploads=%d): %s',
-        message.length, uploads.length,
-        message.length > 200 ? message.slice(0, 200) + '...' : message);
+        Number(message.length) || 0, uploads.length,
+        logSafe(message.length > 200 ? message.slice(0, 200) + '...' : message));
 
       // Fire-and-forget. SSE delivers the concierge reply.
       res.status(202).json({ accepted: true });
@@ -1651,8 +1661,8 @@ export function mountSessionRoutes(app) {
         uploadCount: uploads.length,
       });
       tlog('[concierge] post-build turn (chars=%d uploads=%d): %s',
-        message.length, uploads.length,
-        message.length > 200 ? message.slice(0, 200) + '...' : message);
+        Number(message.length) || 0, uploads.length,
+        logSafe(message.length > 200 ? message.slice(0, 200) + '...' : message));
 
       let conciergeResult = null;
       try {
@@ -1918,7 +1928,7 @@ export function mountSessionRoutes(app) {
           const tRouter = Date.now();
           const clarifyRound = session.clarifyRound || 0;
           tlog('[session] Router: user message (%d chars, clarify round %d): %s',
-            message.length, clarifyRound, message.length > 300 ? message.slice(0, 300) + '...' : message);
+            Number(message.length) || 0, clarifyRound, logSafe(message.length > 300 ? message.slice(0, 300) + '...' : message));
 
           // Emit "thinking" status so the frontend shows activity
           sessionEvents.emit('event', session.id, {
@@ -2113,7 +2123,7 @@ export function mountSessionRoutes(app) {
       // message, no routerConversationId) OR when it failed mid-flight.
       if (!skipFallbackDispatch) {
         tlog('[session] Message: sending raw to custom-agent (%d chars, elapsed=%dms)',
-          enrichedMessage.length, Date.now() - msgStart);
+          Number(enrichedMessage.length) || 0, Date.now() - msgStart);
         const tStart = Date.now();
 
         // Synthetic "main" scope so the UI quick-actions bar shows after completion.
@@ -2179,7 +2189,8 @@ export function mountSessionRoutes(app) {
   // Usage: run an agent task, then curl this endpoint. No UI needed.
   //   curl -X POST http://localhost:5051/api/session/<sessionId>/summarize
   app.post('/api/session/:sessionId/summarize', async (req, res) => {
-    const { sessionId } = req.params;
+    const sessionId = cleanSessionId(req.params.sessionId);
+    if (!sessionId) return res.status(400).json({ error: 'Invalid session id' });
     try {
       const { SummarizerClient, buildTranscriptFromHistory, buildTranscriptFromEvents } =
         await import('../agent/compaction/summarizer.js');
@@ -2273,8 +2284,8 @@ export function mountSessionRoutes(app) {
       try {
         const project = path.basename(WORKSPACE_DIR).toLowerCase().replace(/[^a-z0-9_-]/g, '');
         try {
-          const stale = execSync(`docker ps -aq --filter name=${project}`, { stdio: 'pipe', timeout: 15_000 }).toString().trim();
-          if (stale) execSync(`docker rm -f ${stale.split('\n').join(' ')}`, { stdio: 'pipe', timeout: 30_000 });
+          const stale = execFileSync('docker', ['ps', '-aq', '--filter', `name=${project}`], { stdio: 'pipe', timeout: 15_000 }).toString().trim();
+          if (stale) execFileSync('docker', ['rm', '-f', ...stale.split('\n')], { stdio: 'pipe', timeout: 30_000 });
         } catch { /* no stale containers */ }
         const vols = execSync('docker volume ls --format {{.Name}}', { stdio: 'pipe', timeout: 15_000 })
           .toString().split('\n').filter((v) => v.startsWith(`${project}_`));
@@ -3249,7 +3260,9 @@ export function mountSessionRoutes(app) {
 
   app.get('/api/session/:sessionId/history', (req, res) => {
     const tail = parseInt(req.query.tail) || 100;
-    const events = readTail(req.params.sessionId, tail);
+    const sessionId = cleanSessionId(req.params.sessionId);
+    if (!sessionId) return res.status(400).json({ error: 'Invalid session id' });
+    const events = readTail(sessionId, tail);
     res.json({ events });
   });
 
@@ -3267,7 +3280,7 @@ export function mountSessionRoutes(app) {
       return res.status(400).json({ error: 'title is required' });
     }
     renameSession(sessionId, title.trim());
-    tlog('[session] Renamed session %s → "%s"', sessionId, title.trim().slice(0, 60));
+    tlog('[session] Renamed session %s → "%s"', logSafe(sessionId), logSafe(title.trim().slice(0, 60)));
     res.json({ ok: true });
   });
 
@@ -3279,7 +3292,8 @@ export function mountSessionRoutes(app) {
   // Body: { fromEventTs: number } — ts of the user event to branch from.
   app.post('/api/session/:sessionId/branch', (req, res) => {
     try {
-      const sourceSessionId = req.params.sessionId;
+      const sourceSessionId = cleanSessionId(req.params.sessionId);
+      if (!sourceSessionId) return res.status(400).json({ error: 'Invalid session id' });
       const { fromEventTs } = req.body || {};
       if (typeof fromEventTs !== 'number') {
         return res.status(400).json({ error: 'fromEventTs (number, ts of the user turn) is required' });
@@ -3345,7 +3359,7 @@ export function mountSessionRoutes(app) {
 
       tlog('[session] Branch: %s → %s at ts=%d (restored=%s, sha=%s)',
         sourceSessionId.slice(0, 8), newSessionId.slice(0, 8),
-        fromEventTs, restored, snapshotSha ? snapshotSha.slice(0, 8) : 'none');
+        Number(fromEventTs), restored, snapshotSha ? snapshotSha.slice(0, 8) : 'none');
 
       res.json({ newSessionId, restored, snapshotSha });
     } catch (err) {
@@ -3356,7 +3370,8 @@ export function mountSessionRoutes(app) {
 
   // ── Delete a session (index entry + transcript file) ──
   app.delete('/api/session/:sessionId', async (req, res) => {
-    const { sessionId } = req.params;
+    const sessionId = cleanSessionId(req.params.sessionId);
+    if (!sessionId) return res.status(400).json({ error: 'Invalid session id' });
 
     // If this is the currently active session, kill it first.
     // Delete any MGA assistants while we still have the session object —
@@ -3408,7 +3423,8 @@ export function mountSessionRoutes(app) {
         return res.status(400).json({ error: 'Missing config' });
       }
 
-      const { sessionId } = req.params;
+      const sessionId = cleanSessionId(req.params.sessionId);
+      if (!sessionId) return res.status(400).json({ error: 'Invalid session id' });
 
       // If this session is already active, just return it
       if (activeSession?.id === sessionId) {

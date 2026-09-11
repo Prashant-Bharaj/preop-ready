@@ -31,7 +31,7 @@
  * every public function returns silently. Logging must never break a run.
  */
 
-import { mkdirSync, appendFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, appendFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -122,7 +122,6 @@ function ensureSessionMeta(runContext) {
     const sessionDir = path.join(RUN_LOGS_BASE, runContext.sessionId);
     mkdirSync(sessionDir, { recursive: true });
     const metaPath = path.join(sessionDir, 'meta.json');
-    if (existsSync(metaPath)) return;
     const meta = {
       sessionId: runContext.sessionId,
       scenarioId: runContext.scenarioId || null,
@@ -130,7 +129,7 @@ function ensureSessionMeta(runContext) {
       workspaceDir: runContext.workspaceDir || null,
       firstWriteAt: new Date().toISOString(),
     };
-    writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2), { flag: 'wx' });
   } catch {
     // Best-effort sidecar — failure must not crash logging.
   }

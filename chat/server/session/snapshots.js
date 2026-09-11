@@ -41,6 +41,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { WORKSPACE_DIR, CHAT_DATA_DIR } from '../core/paths.js';
+import { logSafe } from '../util/log-helpers.js';
 
 const SNAPSHOTS_ROOT = path.join(CHAT_DATA_DIR, 'snapshots');
 
@@ -70,7 +71,12 @@ function ensureShadowRepo(sessionId) {
     // `.gitignore` it encounters), so we only need to add paths not already
     // covered by the workspace's own rules.
     const excludePath = path.join(gitDir, 'info', 'exclude');
-    const existing = existsSync(excludePath) ? readFileSync(excludePath, 'utf-8') : '';
+    let existing = '';
+    try {
+      existing = readFileSync(excludePath, 'utf-8');
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
     writeFileSync(excludePath, [existing.trimEnd(), ...SHADOW_EXCLUDES, ''].join('\n'));
   }
   return gitDir;
@@ -128,7 +134,7 @@ export function createSnapshot(sessionId, label = '') {
     const sha = gitShadow(gitDir, ['rev-parse', 'HEAD']).trim();
     return sha || null;
   } catch (err) {
-    console.error('[snapshots] createSnapshot failed for session %s: %s', sessionId, err.message);
+    console.error('[snapshots] createSnapshot failed for session %s: %s', logSafe(sessionId), logSafe(err.message));
     return null;
   }
 }
@@ -154,7 +160,7 @@ export function createSnapshot(sessionId, label = '') {
 export function restoreSnapshot(sessionId, sha) {
   const gitDir = path.join(SNAPSHOTS_ROOT, `${sessionId}.git`);
   if (!existsSync(gitDir)) {
-    console.error('[snapshots] restoreSnapshot: no shadow repo for session %s', sessionId);
+    console.error('[snapshots] restoreSnapshot: no shadow repo for session %s', logSafe(sessionId));
     return false;
   }
   try {
@@ -205,7 +211,7 @@ export function restoreSnapshot(sessionId, sha) {
     return true;
   } catch (err) {
     console.error('[snapshots] restoreSnapshot failed for session %s sha %s: %s',
-      sessionId, sha, err.message);
+      logSafe(sessionId), sha, logSafe(err.message));
     return false;
   }
 }

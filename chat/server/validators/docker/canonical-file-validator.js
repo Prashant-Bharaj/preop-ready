@@ -152,10 +152,9 @@ export function scanForMissingCanonicalFiles(workspaceDir) {
 export function applyCanonicalFixes(workspaceDir, issues) {
   const applied = [];
   for (const issue of issues) {
-    if (fs.existsSync(issue.missingPath)) continue; // belt + suspenders
     try {
       const content = fs.readFileSync(issue.snippetPath, 'utf8');
-      fs.writeFileSync(issue.missingPath, content);
+      fs.writeFileSync(issue.missingPath, content, { flag: 'wx' }); // never clobber a file that appeared meanwhile
       applied.push({
         scope: issue.scope,
         copyName: issue.copyName,

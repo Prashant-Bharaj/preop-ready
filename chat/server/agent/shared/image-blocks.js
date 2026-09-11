@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { tlog } from '../../util/timestamped-log.js';
+import { logSafe } from '../../util/log-helpers.js';
 
 // Vision accepts png/jpeg/gif/webp; it does NOT accept SVG.
 export function isVisionImage(mime) {
@@ -46,7 +47,7 @@ export function buildImageBlocks(uploads, workspaceDir, logTag = 'image-blocks')
       });
     } catch (err) {
       tlog('[%s] failed to read image upload %s (%s): %s — skipping',
-        logTag, u?.filename, u?.relativePath, err.message);
+        logTag, logSafe(u?.filename), logSafe(u?.relativePath), logSafe(err.message));
     }
   }
   return blocks;

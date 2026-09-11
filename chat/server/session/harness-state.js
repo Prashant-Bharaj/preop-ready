@@ -16,7 +16,8 @@
  * at call sites: the project-memory layer is telemetry-class (per L.5), a
  * failed write must never block a build.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { appendWithHeader } from '../util/fs-safe.js';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../core/paths.js';
 import { canonicalizeContracts } from './contract-canonicalizer.js';
@@ -353,11 +354,8 @@ export function renderDecisionEntry(decision = {}) {
 export function appendDecision(workspaceDir, decision) {
   const dir = ensureHarnessDir(workspaceDir);
   const file = path.join(dir, DECISIONS_FILENAME);
-  let prefix = '';
-  if (!existsSync(file)) {
-    prefix = '# Decisions Log\n\nAppend-only audit trail of non-obvious build decisions.\n\n';
-  }
-  appendFileSync(file, prefix + renderDecisionEntry(decision), 'utf-8');
+  const header = '# Decisions Log\n\nAppend-only audit trail of non-obvious build decisions.\n\n';
+  appendWithHeader(file, header, renderDecisionEntry(decision));
 }
 
 // ── notes.md ──────────────────────────────────────────────────────────────
@@ -371,13 +369,10 @@ export function appendDecision(workspaceDir, decision) {
 export function appendNote(workspaceDir, line) {
   const dir = ensureHarnessDir(workspaceDir);
   const file = path.join(dir, NOTES_FILENAME);
-  let prefix = '';
-  if (!existsSync(file)) {
-    prefix = '# Build Notes\n\nAppend-only build log. Format: `YYYY-MM-DD — summary — paths`.\n\n';
-  }
+  const header = '# Build Notes\n\nAppend-only build log. Format: `YYYY-MM-DD — summary — paths`.\n\n';
   const ts = new Date().toISOString().slice(0, 10);
   const entry = `${ts} — ${line}\n`;
-  appendFileSync(file, prefix + entry, 'utf-8');
+  appendWithHeader(file, header, entry);
 }
 
 // ── read helpers (used by router/subagents on iteration) ──────────────────

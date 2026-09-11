@@ -151,7 +151,7 @@ export async function runConciergeTurn(session, userMessage, uploads = [], works
     ? uploads.filter(u => typeof u?.mime === 'string' && u.mime.startsWith('image/') && u.mime !== 'image/svg+xml').length
     : 0;
   tlog('[concierge] turn for session=%s build_phase=%s user_msg_len=%d uploads=%d images=%d',
-    session.id, sessionState.build_phase, userMessage.length,
+    session.id, sessionState.build_phase, Number(userMessage.length) || 0,
     Array.isArray(uploads) ? uploads.length : 0, imageCount);
 
   const t0 = Date.now();

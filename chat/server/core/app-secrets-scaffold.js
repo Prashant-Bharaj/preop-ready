@@ -28,7 +28,7 @@
  * user makes by hand.
  */
 
-import { readFileSync, writeFileSync, existsSync, chmodSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, chmodSync, openSync, fstatSync, writeSync, closeSync } from 'node:fs';
 import path from 'node:path';
 
 // Mirror of .github/workflows/deploy.yml lines 148–157. If you add a slot
@@ -97,14 +97,16 @@ export function ensureBackendEnvScaffold(workspaceDir) {
 
   const envPath = backendEnvPath(workspaceDir);
 
-  if (existsSync(envPath)) {
-    let size = -1;
-    try { size = statSync(envPath).size; } catch { /* fall through */ }
-    if (size > 0) return { skipped: 'exists' };
+  // One descriptor: create if missing, fill only if still empty, never
+  // clobber a populated file that appeared in between.
+  const fd = openSync(envPath, 'a', 0o600);
+  try {
+    if (fstatSync(fd).size > 0) return { skipped: 'exists' };
+    writeSync(fd, buildScaffold());
+  } finally {
+    closeSync(fd);
   }
-
-  writeFileSync(envPath, buildScaffold(), { mode: 0o600 });
-  // writeFileSync's mode is best-effort if the file already existed — make it explicit.
+  // The open() mode is best-effort if the file already existed — make it explicit.
   try { chmodSync(envPath, 0o600); } catch { /* non-fatal */ }
   return { created: envPath };
 }
@@ -224,14 +226,17 @@ export function writeBackendEnv(workspaceDir, name, { value, description } = {})
   }
 
   const envPath = backendEnvPath(workspaceDir);
-  if (!existsSync(envPath)) {
+  let original;
+  try {
+    original = readFileSync(envPath, 'utf-8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
     const result = ensureBackendEnvScaffold(workspaceDir);
     if (!result.created) {
       throw new Error('backend/.env does not exist and could not be scaffolded — does backend/ exist?');
     }
+    original = readFileSync(envPath, 'utf-8');
   }
-
-  const original = readFileSync(envPath, 'utf-8');
   let lines = original.split('\n');
 
   // ── 1. update the value line if requested ────────────────────────────────

@@ -229,6 +229,7 @@ const REACT_VITE_PACKAGE_JSON = `{
 
 const REACT_VITE_CONFIG = `import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { logSafe } from '../util/log-helpers.js';
 
 export default defineConfig({
   plugins: [react()],
@@ -275,15 +276,14 @@ function ensureScopeScaffolding(scope, writtenPaths, emit, logScope) {
   const filled = [];
   const ensure = (rel, content) => {
     const abs = path.join(WORKSPACE_DIR, rel);
-    if (existsSync(abs)) return;
     try {
-      const dir = path.dirname(abs);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(abs, content);
+      mkdirSync(path.dirname(abs), { recursive: true });
+      writeFileSync(abs, content, { flag: 'wx' });
       console.log(`[${new Date().toTimeString().slice(0, 8)}] ${logScope} auto-filled missing ${rel} (React+Vite scaffold)`);
       emit({ say: 'text', text: `[agent] auto-filled missing ${rel} (React+Vite scaffold)` });
       filled.push(rel);
     } catch (err) {
+      if (err.code === 'EEXIST') return;
       logAndSwallow(err, `${logScope} scaffold auto-fill FAILED for ${rel}`);
     }
   };
@@ -446,7 +446,7 @@ export async function runCustomAgent(sessionId, prompt, { conversationId = null,
   }
   const logScope = scope ? `[agent:${scope}]` : '[agent]';
   tlog('%s starting turn: conversation=%s prompt=%d chars',
-    logScope, conversationId || 'new', prompt.length);
+    logScope, conversationId || 'new', Number(prompt.length) || 0);
 
   // Step 7c — derive run context for per-scenario / per-phase logs. The
   // smoke harness sets WORKSPACE_DIR to a path encoding the scenario and
@@ -507,8 +507,8 @@ export async function runCustomAgent(sessionId, prompt, { conversationId = null,
   // of what it was supposed to build.
   const taskSpec = extractTaskSpec(prompt);
   const contractBlocks = extractContractBlocks(prompt);
-  tlog('%s extracted task spec: %d chars', logScope, taskSpec.length);
-  dlog('%s task spec: %s', logScope, taskSpec);
+  tlog('%s extracted task spec: %d chars', logScope, Number(taskSpec.length) || 0);
+  dlog('%s task spec: %s', logScope, logSafe(taskSpec));
 
   let currentConversationId = conversationId;
   let currentMessage = prompt;

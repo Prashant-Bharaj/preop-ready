@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../../core/paths.js';
 import { GIT_QUICK_MS, BASH_SCRIPT_MS } from '../../config/defaults.js';
@@ -210,10 +210,11 @@ function detectStack() {
   const scriptPath = path.join(WORKSPACE_DIR, 'scripts', 'detect-stack.sh');
   if (!existsSync(scriptPath)) return null;
   try {
-    const out = execSync(`bash "${scriptPath}" 2>/dev/null`, {
+    const out = execFileSync('bash', [scriptPath], {
       cwd: WORKSPACE_DIR,
       encoding: 'utf-8',
       timeout: BASH_SCRIPT_MS,
+      stdio: ['ignore', 'pipe', 'ignore'],
     });
     const stack = {};
     for (const line of out.split('\n')) {
@@ -233,10 +234,11 @@ function checkTemplateVersion() {
   }
 
   try {
-    const output = execSync(`bash "${scriptPath}" 2>/dev/null`, {
+    const output = execFileSync('bash', [scriptPath], {
       cwd: WORKSPACE_DIR,
       encoding: 'utf-8',
       timeout: BASH_SCRIPT_MS,
+      stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
 
     if (output.startsWith('UP_TO_DATE')) {

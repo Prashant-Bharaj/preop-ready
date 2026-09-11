@@ -15,7 +15,7 @@
  *   node chat/scripts/tag-files.js --apply    # writes changes
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter } from '../server/mcp/frontmatter.js';
@@ -464,7 +464,11 @@ for (const [rel, spec] of Object.entries(TAGS)) {
   if (spec === null) { skipped++; continue; }
 
   const abs = path.join(REPO_ROOT, rel);
-  if (!existsSync(abs)) {
+  let content;
+  try {
+    content = readFileSync(abs, 'utf-8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
     console.error(`[tag-files] missing: ${rel}`);
     missing++;
     continue;
@@ -484,7 +488,6 @@ for (const [rel, spec] of Object.entries(TAGS)) {
   }
 
   const header = render(spec);
-  const content = readFileSync(abs, 'utf-8');
   const next = header + content;
 
   if (apply) {

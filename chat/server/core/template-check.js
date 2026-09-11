@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
 import { BASH_SCRIPT_MS } from '../config/defaults.js';
@@ -105,10 +105,11 @@ export function runTemplateCheck() {
   const scriptPath = path.join(WORKSPACE_DIR, 'scripts', 'check-template-pr.sh');
   if (!existsSync(scriptPath)) return { ...EMPTY };
   try {
-    const output = execSync(`bash "${scriptPath}" 2>/dev/null`, {
+    const output = execFileSync('bash', [scriptPath], {
       cwd: WORKSPACE_DIR,
       encoding: 'utf-8',
       timeout: BASH_SCRIPT_MS,
+      stdio: ['ignore', 'pipe', 'ignore'],
     });
     return parseTemplateCheckOutput(output);
   } catch {

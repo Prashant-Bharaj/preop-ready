@@ -235,7 +235,6 @@ export function applyInitSqlFixes(workspaceDir, issues) {
   for (const [serviceName, serviceIssues] of byService) {
     const buildContextDir = serviceIssues[0].buildContextDir;
     const dockerfilePath = path.join(buildContextDir, 'Dockerfile');
-    if (!fs.existsSync(dockerfilePath)) continue;
 
     // Pick the recommended image of the first issue. If multiple extensions
     // need different base images we'd need a smarter resolver, but the

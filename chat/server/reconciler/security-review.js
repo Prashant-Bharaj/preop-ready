@@ -17,7 +17,8 @@
  * "skipped", never an error.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileCapped } from '../util/fs-safe.js';
 import path from 'node:path';
 import { callMgaCompletions } from '../agent/llm/llm.js';
 import { pickModel } from '../agent/llm/model-picker.js';
@@ -102,8 +103,9 @@ function collectDir(absDir, relPrefix, budget) {
     const abs = path.join(absDir, name);
     let content;
     try {
-      if (statSync(abs).size > MAX_FILE_BYTES * 4) continue; // skip very large files outright
-      content = readFileSync(abs, 'utf8');
+      const read = readFileCapped(abs, MAX_FILE_BYTES * 4); // skip very large files outright
+      if (read.content === undefined) continue;
+      content = read.content;
     } catch { continue; }
     if (content.length > MAX_FILE_BYTES) content = content.slice(0, MAX_FILE_BYTES) + '\n… (truncated)';
     const rel = `${relPrefix}/${name}`;

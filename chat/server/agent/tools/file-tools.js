@@ -14,6 +14,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, realpathSync } from 'node:fs';
+import { readFileCapped } from '../../util/fs-safe.js';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../../core/paths.js';
 import { isSensitiveWorkspacePath } from '../../core/sensitive-paths.js';
@@ -101,13 +102,13 @@ export async function toolReadFile(params, ctx) {
     throw new Error(`read_file: access to '${rel}' is not allowed (credential/secret path)`);
   }
 
-  const st = statSync(abs);
-  if (st.isDirectory()) throw new Error(`Path is a directory, use list_files: ${rel}`);
-  if (st.size > MAX_READ_BYTES) {
-    throw new Error(`File too large (${st.size} bytes, max ${MAX_READ_BYTES})`);
+  const read = readFileCapped(abs, MAX_READ_BYTES);
+  if (read.directory) throw new Error(`Path is a directory, use list_files: ${rel}`);
+  if (read.tooLarge) {
+    throw new Error(`File too large (${read.size} bytes, max ${MAX_READ_BYTES})`);
   }
 
-  const content = readFileSync(abs, 'utf-8');
+  const content = read.content;
   const lines = content.split('\n');
   const startLine = params.start_line ? Math.max(1, parseInt(params.start_line, 10)) : 1;
   const endLine = params.end_line
@@ -137,19 +138,17 @@ export async function toolWriteToFile(params, ctx) {
   // don't re-write. Models sometimes "refresh" their own earlier writes when
   // flipping between task and rule guidance; rewriting the same bytes burns
   // a turn with no disk change. Return a clear signal instead.
-  if (existsSync(abs)) {
-    try {
-      const existing = readFileSync(abs, 'utf-8');
-      if (existing === content) {
-        if (emit) emit(makeToolEventPayload('editedExistingFile', { path: rel, content }));
-        return (
-          `File already at this state — no write needed. ${rel} (${content.length} chars) is unchanged.\n\n` +
-          `--- Current content of ${rel} (byte-exact; use as your SEARCH reference for replace_in_file) ---\n${content}\n` +
-          `--- End of ${rel} ---`
-        );
-      }
-    } catch { /* fall through to write */ }
-  }
+  try {
+    const existing = readFileSync(abs, 'utf-8');
+    if (existing === content) {
+      if (emit) emit(makeToolEventPayload('editedExistingFile', { path: rel, content }));
+      return (
+        `File already at this state — no write needed. ${rel} (${content.length} chars) is unchanged.\n\n` +
+        `--- Current content of ${rel} (byte-exact; use as your SEARCH reference for replace_in_file) ---\n${content}\n` +
+        `--- End of ${rel} ---`
+      );
+    }
+  } catch { /* new file, or unreadable: fall through to write */ }
 
   mkdirSync(path.dirname(abs), { recursive: true });
   writeFileSync(abs, content, 'utf-8');
@@ -244,15 +243,13 @@ export async function toolCopyTemplate(params, ctx) {
   const content = readFileSync(sourceAbs, 'utf-8');
   const sourceRel = path.relative(workspaceDir, sourceAbs);
 
-  if (existsSync(destAbs)) {
-    try {
-      const existing = readFileSync(destAbs, 'utf-8');
-      if (existing === content) {
-        if (emit) emit(makeToolEventPayload('copyTemplate', { template, dest, source: sourceRel, unchanged: true }));
-        return `Template already at this state - no copy needed. ${dest} (${content.length} chars) is unchanged.`;
-      }
-    } catch { /* fall through to write */ }
-  }
+  try {
+    const existing = readFileSync(destAbs, 'utf-8');
+    if (existing === content) {
+      if (emit) emit(makeToolEventPayload('copyTemplate', { template, dest, source: sourceRel, unchanged: true }));
+      return `Template already at this state - no copy needed. ${dest} (${content.length} chars) is unchanged.`;
+    }
+  } catch { /* new file, or unreadable: fall through to write */ }
 
   mkdirSync(path.dirname(destAbs), { recursive: true });
   writeFileSync(destAbs, content, 'utf-8');
@@ -310,12 +307,17 @@ export async function toolReplaceInFile(params, ctx) {
   if (!diff) throw new Error('replace_in_file: missing diff');
 
   const abs = resolvePath(rel, ctx);
-  if (!existsSync(abs)) throw fileNotFoundWithContext(rel, abs, writtenPaths);
+  let original;
+  try {
+    original = readFileSync(abs, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') throw fileNotFoundWithContext(rel, abs, writtenPaths);
+    throw err;
+  }
 
   const blocks = parseDiffBlocks(diff);
   if (blocks.length === 0) throw new Error('replace_in_file: no SEARCH/REPLACE blocks found');
 
-  const original = readFileSync(abs, 'utf-8');
   let content = original;
   let appliedCount = 0;
   let alreadyAppliedCount = 0;

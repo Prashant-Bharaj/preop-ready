@@ -172,7 +172,8 @@ export function buildProjectMemoryBlock(workspaceDir) {
  * outbound message is dramatically larger than the session's first-turn
  * size or past the absolute char ceiling. Catches context-injection runaway.
  */
-export function maybeWarnPromptSize(outboundChars, priorFirstMessageChars) {
+export function maybeWarnPromptSize(outboundCharsRaw, priorFirstMessageChars) {
+  const outboundChars = Number(outboundCharsRaw) || 0;
   if (outboundChars > PROMPT_SIZE_RUNAWAY_CHARS) {
     console.warn(
       '[two-agent] iteration prompt-size %d chars exceeds absolute ceiling %d — possible context-injection runaway',

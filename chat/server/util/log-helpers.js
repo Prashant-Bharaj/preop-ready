@@ -25,7 +25,11 @@
  */
 import { terr } from './timestamped-log.js';
 
+export function logSafe(value) {
+  return String(value).replace(/\n|\r/g, '');
+}
+
 export function logAndSwallow(err, label, fallback) {
-  terr('%s: %s', label, err?.message || String(err));
+  terr('%s: %s', logSafe(label), logSafe(err?.message || String(err)));
   return fallback;
 }

@@ -5,6 +5,16 @@ import { loadAssistantIds, HARNESS_ASSISTANT_KEYS, envVarFor } from '../config/a
 import { MGA_PREFLIGHT_MS, MGA_VALIDATE_MS, MGA_HEALTH_PROBE_MS, DEFAULT_MODEL } from '../config/defaults.js';
 import { logAndSwallow } from '../util/log-helpers.js';
 
+// Parsed secrets file, or null when it does not exist yet.
+function readSecretsFile() {
+  try {
+    return JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
 function harnessIds() {
   const fromConfig = loadAssistantIds();
   const out = {};
@@ -92,9 +102,7 @@ export function saveCredentials({ baseUrl, apiKey, model }) {
   ensureChatDir();
   // Preserve existing preferences when re-saving credentials
   let existing = {};
-  if (existsSync(SECRETS_PATH)) {
-    try { existing = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8')); } catch { /* ignore */ }
-  }
+  try { existing = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8')); } catch { /* first save, or unreadable */ }
   const data = {
     baseUrl,
     apiKey,
@@ -281,11 +289,11 @@ export function mountAuthRoutes(app) {
   app.post('/api/auth/config-model', (req, res) => {
     const { model } = req.body || {};
     if (!model) return res.status(400).json({ error: 'model is required' });
-    if (!existsSync(SECRETS_PATH)) {
+    const data = readSecretsFile();
+    if (!data) {
       return res.status(400).json({ error: 'No configuration found — save your API key first' });
     }
     try {
-      const data = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
       data.model = model;
       writeFileSync(SECRETS_PATH, JSON.stringify(data, null, 2) + '\n');
       res.json({ ok: true });
@@ -297,11 +305,11 @@ export function mountAuthRoutes(app) {
   // ── Update baseUrl and/or model without requiring a new API key ───────────
   app.post('/api/auth/config-connection', (req, res) => {
     const { baseUrl, model } = req.body || {};
-    if (!existsSync(SECRETS_PATH)) {
+    const data = readSecretsFile();
+    if (!data) {
       return res.status(400).json({ error: 'No configuration found — save your API key first' });
     }
     try {
-      const data = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
       if (baseUrl) data.baseUrl = baseUrl;
       if (model)   data.model   = model;
       writeFileSync(SECRETS_PATH, JSON.stringify(data, null, 2) + '\n');
@@ -313,11 +321,11 @@ export function mountAuthRoutes(app) {
 
   app.post('/api/auth/preferences', (req, res) => {
     const { mode, projectType } = req.body;
-    if (!existsSync(SECRETS_PATH)) {
+    const data = readSecretsFile();
+    if (!data) {
       return res.status(400).json({ error: 'No configuration found' });
     }
     try {
-      const data = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
       if (mode) data.mode = mode;
       if (projectType) data.projectType = projectType;
       writeFileSync(SECRETS_PATH, JSON.stringify(data, null, 2) + '\n');
