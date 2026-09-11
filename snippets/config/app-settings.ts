@@ -182,7 +182,7 @@ export async function setConfig(
     return result.rows[0];
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('[AppSettings] DB write failed for key %s: %s', String(key).replace(/[\r\n]+/g, ' '), message);
+    console.error('[AppSettings] DB write failed for key %s: %s', String(key).replace(/\n|\r/g, ''), message);
     throw new Error(`Failed to save setting "${key}": ${message}`);
   }
 }

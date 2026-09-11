@@ -68,11 +68,11 @@ export function deepSanitize<T>(value: T): T {
     return value.map((v) => deepSanitize(v)) as unknown as T;
   }
   if (value && typeof value === 'object') {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-      sanitized[key] = deepSanitize(v);
-    }
+    const sanitized = Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => key !== '__proto__' && key !== 'constructor' && key !== 'prototype')
+        .map(([key, v]) => [key, deepSanitize(v)]),
+    );
     return sanitized as unknown as T;
   }
   return value;

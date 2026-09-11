@@ -88,11 +88,11 @@ const UPLOADS_ROOT = path.resolve(UPLOADS_DIR);
  * instead of trusting the caller.
  */
 function resolveUploadPath(filePath: string): string {
-  const abs = path.resolve(filePath);
-  if (abs !== UPLOADS_ROOT && !abs.startsWith(UPLOADS_ROOT + path.sep)) {
+  const name = path.basename(String(filePath));
+  if (!name || name === '.' || name === '..') {
     throw new Error('Refusing to access a file outside the uploads directory');
   }
-  return abs;
+  return path.join(UPLOADS_ROOT, name);
 }
 
 // ---------------------------------------------------------------------------
