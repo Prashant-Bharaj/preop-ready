@@ -88,16 +88,17 @@
   // opt out with the Codespaces secret/env HARNESS_AUTOSTART=0 or a
   // .chat/no-autostart file. Codespace detection is the /.codespaces dir, not
   // $CODESPACE_NAME — lifecycle commands don't get the terminal profile env.
-  // /tmp/harness-hook.log records what the guard saw. The pgrep
-  // pattern uses [n]ode so it cannot match the shell running this very hook
-  // (whose command line contains the text) — that self-match skipped the
-  // start on every boot until 2026-09-11.
+  // /tmp/harness-hook.log records what the guard saw. "Already running" is
+  // decided by asking port 5050, never by pgrep: the shell running this hook
+  // has the start command in its own command line, so any process pattern
+  // that matches the server also matches the hook (skipped every boot until
+  // 2026-09-11).
   // The sysctl keeps same-bridge container traffic out of iptables. The default
   // Codespaces image moved to Docker 29.x (2026-09), whose bridge firewall rules
   // fail to install inside the nested kernel: containers stay "healthy" (localhost
   // works) but frontend->backend and backend->database TCP silently hang.
   // Verified fix 2026-09-10; harmless where the rules install correctly.
-  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; echo \"autostart check: codespaces=$([ -d /.codespaces ] && echo y || echo n) optout=${HARNESS_AUTOSTART:-unset} dist=$([ -f chat/dist/index.html ] && echo y || echo n) running=$(pgrep -f \"[n]ode server/index.js\" >/dev/null && echo y || echo n)\" > /tmp/harness-hook.log; [ -d /.codespaces ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ ! -f .chat/no-autostart ] && [ -f chat/dist/index.html ] && ! pgrep -f \"[n]ode server/index.js\" >/dev/null && (cd chat && SQL_VALIDATOR_WARMUP=0 nohup node server/index.js > /tmp/harness.log 2>&1 &) && echo \"started harness\" >> /tmp/harness-hook.log || true",
+  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; echo \"autostart check: codespaces=$([ -d /.codespaces ] && echo y || echo n) optout=${HARNESS_AUTOSTART:-unset} dist=$([ -f chat/dist/index.html ] && echo y || echo n) running=$(curl -s -o /dev/null -m 2 http://localhost:5050/health && echo y || echo n)\" > /tmp/harness-hook.log; [ -d /.codespaces ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ ! -f .chat/no-autostart ] && [ -f chat/dist/index.html ] && ! curl -s -o /dev/null -m 2 http://localhost:5050/health && (cd chat && SQL_VALIDATOR_WARMUP=0 nohup node server/index.js > /tmp/harness.log 2>&1 &) && echo \"started harness\" >> /tmp/harness-hook.log || true",
 
   // Pre-forwarded on purpose: GitHub registers ports on its proxy only when
   // (a) they are listed here, or (b) an EDITOR client auto-detects a
