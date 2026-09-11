@@ -68,6 +68,18 @@
     "ANTHROPIC_SMALL_FAST_MODEL": "myGenAssist,claude-sonnet-4.5-azure"
   },
 
+  // The default image bundles the git-lfs feature with autoPull=true; its
+  // post-create step runs `git lfs install`, which refuses to overwrite our
+  // pre-push audit hook (installed by scripts/install-hooks.sh on the first
+  // start) and exits 2 — and the devcontainer CLI then SKIPS every later
+  // lifecycle command, including postStartCommand, on a container REBUILD
+  // (observed 2026-09-11: no deps, no build, no sysctl, no harness).
+  // Redeclaring the feature with autoPull=false makes that step a no-op;
+  // this repo tracks no LFS files.
+  "features": {
+    "ghcr.io/devcontainers/features/git-lfs:1": { "autoPull": false }
+  },
+
   "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
   // In Codespaces the harness (chat/) is also STARTED here, in the background
   // (log: /tmp/harness.log), so a restarted codespace comes back with the UI
