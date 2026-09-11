@@ -28,7 +28,7 @@ import { appendEvent } from '../session/transcript.js';
 import { sessionEvents } from '../session/events.js';
 import { redact } from '../util/redact.js';
 import { tlog } from '../util/timestamped-log.js';
-import { logAndSwallow } from '../util/log-helpers.js';
+import { logAndSwallow, logSafe } from '../util/log-helpers.js';
 import { WORKSPACE_DIR } from '../core/paths.js';
 import { callMgaCompletions, MgaLlmError } from './llm/llm.js';
 import { composeAssistantPrompt } from './prompts/disk-prompt.js';
@@ -229,7 +229,6 @@ const REACT_VITE_PACKAGE_JSON = `{
 
 const REACT_VITE_CONFIG = `import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { logSafe } from '../util/log-helpers.js';
 
 export default defineConfig({
   plugins: [react()],
