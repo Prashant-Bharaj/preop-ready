@@ -85,13 +85,16 @@
   // (log: /tmp/harness.log), so a restarted codespace comes back with the UI
   // on 5050 without anyone typing `npm start`. Guarded against double starts;
   // idle cost is a node process only (no validator container until a build);
-  // opt out with the Codespaces secret/env HARNESS_AUTOSTART=0.
+  // opt out with the Codespaces secret/env HARNESS_AUTOSTART=0. The pgrep
+  // pattern uses [n]ode so it cannot match the shell running this very hook
+  // (whose command line contains the text) — that self-match skipped the
+  // start on every boot until 2026-09-11.
   // The sysctl keeps same-bridge container traffic out of iptables. The default
   // Codespaces image moved to Docker 29.x (2026-09), whose bridge firewall rules
   // fail to install inside the nested kernel: containers stay "healthy" (localhost
   // works) but frontend->backend and backend->database TCP silently hang.
   // Verified fix 2026-09-10; harmless where the rules install correctly.
-  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; [ -n \"$CODESPACE_NAME\" ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ -f chat/dist/index.html ] && ! pgrep -f \"node server/index.js\" >/dev/null && (cd chat && SQL_VALIDATOR_WARMUP=0 nohup node server/index.js > /tmp/harness.log 2>&1 &) || true",
+  "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm install --no-audit --no-fund --loglevel=error && npm run build --silent) || true; [ -n \"$CODESPACE_NAME\" ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ -f chat/dist/index.html ] && ! pgrep -f \"[n]ode server/index.js\" >/dev/null && (cd chat && SQL_VALIDATOR_WARMUP=0 nohup node server/index.js > /tmp/harness.log 2>&1 &) || true",
 
   // Pre-forwarded on purpose: GitHub registers ports on its proxy only when
   // (a) they are listed here, or (b) an EDITOR client auto-detects a
