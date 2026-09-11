@@ -67,13 +67,16 @@ export function buildEnvSection(env) {
   if (tc?.caller === 'outdated' || tc?.caller === 'missing') {
     lines.push('WARNING: This repo\'s weekly template sync cannot reach the template (pre-platform workflow copy). One `bash scripts/apply-updates.sh` run + commit fixes it — offer that.');
   }
+  if (tc?.pendingWorkflows) {
+    lines.push(`WARNING: The last platform sync left workflow file(s) for a human commit (${tc.pendingWorkflows}). Offer to run bash scripts/apply-updates.sh and commit those files + .template-version.`);
+  }
   if (tc?.tsMigration) {
     lines.push(`OPTIONAL: JavaScript layer(s) (${tc.tsMigration}) could move to the TypeScript layout — offer it in one sentence at most once, only do it on an explicit yes (.platform-rules/scope-typescript.md).`);
   }
   if (tc?.migrationNeeded) {
     lines.push(`NOTE: This project is on a retired stack (${tc.migrationNeeded}). Keep building in its existing stack; offer the migration (.platform-rules/scope-migration.md) once, only migrate with an explicit yes.`);
   } else if (tc?.majorHeld) {
-    lines.push(`NOTE: Template v${tc.majorHeld.major} is available but held (security files synced). Mention once; accept only when the user says so (bash scripts/apply-updates.sh --accept-major).`);
+    lines.push(`NOTE: Template v${tc.majorHeld.major} is available but held (security files synced). Mention once; accept only when the user says so (TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh).`);
   }
 
   // App secrets — names + descriptions + isSet, never values. Read fresh from

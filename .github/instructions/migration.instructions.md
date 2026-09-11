@@ -9,7 +9,7 @@ applyTo: ".template-migration-needed"
 
 Template v2 dropped four stacks. A project still on one is **held**: it keeps receiving
 platform security updates, but the v2 AI rules, snippets and harness are not applied and
-`bash scripts/apply-updates.sh --accept-major` refuses until the project is migrated.
+`TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh` refuses until the project is migrated.
 The marker `.template-migration-needed` records which layers are retired. Retired stacks
 stay deployable until **2026-12-31**; after that they get no rule or snippet support.
 
@@ -43,7 +43,7 @@ Say: "Your current code is saved on the `pre-2.0-backup` branch; nothing is lost
 Fix what fails before moving on. Do not weaken the checks.
 
 **3. Un-hold.** `rm .template-migration-needed`, then
-`bash scripts/apply-updates.sh --accept-major`. Stage exactly the files it lists plus
+`TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh`. Stage exactly the files it lists plus
 `.template-version`, commit `chore: migrate to the supported stack and accept template v2`, push.
 Summarise: what moved, where the backup branch is, and that the v2 rules are now active.
 

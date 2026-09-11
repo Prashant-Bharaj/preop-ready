@@ -60,6 +60,13 @@ test('TypeScript migration offer is informational, not attention-worthy', () => 
   assert.equal(describeTemplateCheck(r), null);
 });
 
+test('pending workflow files need attention', () => {
+  const r = parseTemplateCheckOutput('TEMPLATE_PR|none\nTEMPLATE_CALLER|current\nTEMPLATE_VERSION|UP_TO_DATE\nTEMPLATE_WORKFLOWS_PENDING|.github/workflows/deploy.yml\n');
+  assert.equal(r.pendingWorkflows, '.github/workflows/deploy.yml');
+  assert.equal(templateNeedsAttention(r), true);
+  assert.match(describeTemplateCheck(r), /await a local engine run \+ commit \(\.github\/workflows\/deploy\.yml\)/);
+});
+
 test('garbage and empty input degrade to the empty shape', () => {
   for (const input of ['', null, undefined, 'TEMPLATE_PR|abc|x|y\nTEMPLATE_CALLER|weird\nnot a line']) {
     const r = parseTemplateCheckOutput(input);

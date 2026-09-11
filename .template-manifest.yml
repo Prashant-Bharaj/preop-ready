@@ -342,7 +342,7 @@ changelog:
     changes:
       - "MAJOR: template is TypeScript-canonical (Express+TS, React+Vite+TS, multi-stage Dockerfiles); Python/FastAPI and Rust stay first-class; existing projects continue in their own stack"
       - "AI build harness (chat/) ships with the template and syncs to projects that accept 2.0"
-      - "Major-version gate: rules, snippets, adapters and the harness are applied only on opt-in (`bash scripts/apply-updates.sh --accept-major`); Dockerfile/nginx templates, security scripts and workflows keep flowing to every project"
+      - "Major-version gate: rules, snippets, adapters and the harness are applied only on opt-in (`TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh`); Dockerfile/nginx templates, security scripts and workflows keep flowing to every project"
       - "Retired stacks (vanilla frontend, MySQL, Chroma, Qdrant) are detected and held with a .template-migration-needed marker; migration skill (.platform-rules/scope-migration.md) ships additively; supported until 2026-12-31"
       - "Session-start platform update check for every AI tool (scripts/check-template-pr.sh) + Claude Code SessionStart hook + harness preflight item"
       - "Template sync runs through the platform reusable workflow (no org secret needed); workflow files that GitHub refuses to let the platform push are held back with a notice"

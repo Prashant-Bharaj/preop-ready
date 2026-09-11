@@ -205,9 +205,15 @@ if [ -f .template-version ]; then
     # Absent on repos last updated by a pre-engine script — treated as 0.0.0,
     # which replays all migration blocks (they are idempotent by contract).
     MIG_BASELINE=$(grep "^migrations_applied:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
+    # Workflow files a CI sync could not push (GitHub never lets a workflow's
+    # token write .github/workflows/*). The platform records them here so the
+    # version can advance truthfully while these keep being re-applied until
+    # a human run (Codespace / local) commits them.
+    PENDING_WF=$(grep "^pending_workflows:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
 fi
 [ -n "${LOCAL_VERSION:-}" ] || LOCAL_VERSION="0.0.0"
 [ -n "${MIG_BASELINE:-}" ] || MIG_BASELINE="0.0.0"
+PENDING_WF="${PENDING_WF:-}"
 
 # ver_gt A B  ->  true when A > B (semver compare via sort -V)
 ver_gt() {
@@ -237,9 +243,12 @@ if [ -n "$LATEST_MIGRATION" ] && ver_gt "$LATEST_MIGRATION" "$MIG_BASELINE"; the
     PENDING_MIGRATIONS=true
 fi
 
-if ! ver_gt "$LATEST_VERSION" "$LOCAL_VERSION" && [ "$PENDING_MIGRATIONS" = "false" ]; then
+if ! ver_gt "$LATEST_VERSION" "$LOCAL_VERSION" && [ "$PENDING_MIGRATIONS" = "false" ] && [ -z "$PENDING_WF" ]; then
     echo "UP_TO_DATE|$LOCAL_VERSION"
     exit 0
+fi
+if [ -n "$PENDING_WF" ]; then
+    echo "Workflow file(s) still pending from a CI sync (need a human commit): $PENDING_WF"
 fi
 
 # ------------------------------------------------------------------------------
@@ -250,7 +259,7 @@ fi
 # working against. Those live in the manifest's `auto_update_major:` section
 # and are applied ONLY when the child is already on the new major or opts in:
 #
-#     bash scripts/apply-updates.sh --accept-major      (or TEMPLATE_ACCEPT_MAJOR=1)
+#     TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh      (or TEMPLATE_ACCEPT_MAJOR=1)
 #
 # Everything in plain `auto_update:` (Dockerfile templates, nginx, security
 # scripts, workflows, this engine) keeps flowing to every child regardless —
@@ -321,12 +330,12 @@ if [ "$MAJOR_HELD" = "true" ]; then
     echo "Template v${LATEST_VERSION} is a MAJOR release; this project is on v${LOCAL_VERSION}."
     echo "Applying additive updates only (Dockerfile/nginx templates, security scripts, workflows)."
     echo "The v${LATEST_MAJOR} AI rules, snippets and harness are held until you opt in:"
-    echo "    bash scripts/apply-updates.sh --accept-major"
+    echo "    TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
     echo ""
 elif ver_gt "$LATEST_VERSION" "$LOCAL_VERSION"; then
     echo "Updating $LOCAL_VERSION -> $LATEST_VERSION (mode: $MODE)..."
 else
-    echo "Version current ($LOCAL_VERSION) but migrations pending — converging (mode: $MODE)..."
+    echo "Version current ($LOCAL_VERSION) but migrations or workflow files pending — converging (mode: $MODE)..."
 fi
 echo ""
 
@@ -713,6 +722,23 @@ if [ "$MODE" != "dry-run" ]; then
     chmod +x scripts/*.sh 2>/dev/null || true
     chmod +x .devcontainer/*.sh 2>/dev/null || true
 
+    # A pending workflow file is cleared once the working tree matches the
+    # template (the engine just wrote it). A CI caller that still cannot push
+    # it re-records the field after this — see the platform sync workflow.
+    STILL_PENDING=""
+    if [ -n "$PENDING_WF" ]; then
+        IFS=',' read -ra PWF <<< "$PENDING_WF"
+        for wf in "${PWF[@]}"; do
+            wf=$(echo "$wf" | tr -d '[:space:]'); [ -n "$wf" ] || continue
+            if git cat-file -e "${TEMPLATE_REF}:${wf}" 2>/dev/null \
+               && ! git show "${TEMPLATE_REF}:${wf}" 2>/dev/null | cmp -s - "$wf"; then
+                STILL_PENDING="${STILL_PENDING:+$STILL_PENDING,}$wf"
+            fi
+        done
+    fi
+    PENDING_LINE=""
+    [ -n "$STILL_PENDING" ] && PENDING_LINE="pending_workflows: \"$STILL_PENDING\""
+
     if [ "$MAJOR_HELD" = "true" ]; then
         # Version stays put: the held major is not applied. Record what WAS
         # synced so the session-start notice can say "additive updates current".
@@ -725,6 +751,7 @@ template_repo: "$TEMPLATE_REPO"
 held_major: "$LATEST_MAJOR"
 additive_synced: "$LATEST_VERSION"
 last_updated: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
+${PENDING_LINE}
 EOF
     else
         cat > .template-version << EOF
@@ -734,8 +761,11 @@ version: "$LATEST_VERSION"
 migrations_applied: "$LATEST_VERSION"
 template_repo: "$TEMPLATE_REPO"
 last_updated: "$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)"
+${PENDING_LINE}
 EOF
     fi
+    # drop the blank line an empty PENDING_LINE leaves behind (portable sed)
+    grep -v '^$' .template-version > .template-version.tmp && mv .template-version.tmp .template-version
 fi
 
 # ------------------------------------------------------------------------------
@@ -784,7 +814,7 @@ if [ "$MAJOR_HELD" = "true" ]; then
         echo ""
         echo "Additive platform files already current with template v$LATEST_VERSION; project stays on v$LOCAL_VERSION."
     fi
-    echo "To move to v${LATEST_MAJOR} (new AI rules, snippets, harness): bash scripts/apply-updates.sh --accept-major"
+    echo "To move to v${LATEST_MAJOR} (new AI rules, snippets, harness): TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
     echo "Your code (frontend/*, backend/*, database/init/*) was NOT touched."
     exit 0
 fi

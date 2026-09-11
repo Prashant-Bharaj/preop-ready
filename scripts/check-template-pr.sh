@@ -28,7 +28,11 @@
 #                               A MAJOR template release is available but held
 #                               (only additive files were synced, up to
 #                               <synced-version>). Opt in with
-#                               `bash scripts/apply-updates.sh --accept-major`.
+#                               `TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh`.
+#   TEMPLATE_WORKFLOWS_PENDING|<files>
+#                               Workflow files a CI sync could not push (GitHub
+#                               restriction) — apply with `bash scripts/apply-updates.sh`
+#                               here, then commit those files + .template-version.
 #   TEMPLATE_MIGRATION_NEEDED|<retired layers>
 #                               The project is on a retired stack; the major
 #                               cannot be accepted until migrated
@@ -119,6 +123,8 @@ if [ -n "$HELD_MAJOR" ]; then
     SYNCED=$(grep "^additive_synced:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
     echo "TEMPLATE_MAJOR_HELD|${HELD_MAJOR}|${SYNCED:-?}"
 fi
+PENDING_WF=$(grep "^pending_workflows:" .template-version 2>/dev/null | head -1 | cut -d'"' -f2)
+[ -n "$PENDING_WF" ] && echo "TEMPLATE_WORKFLOWS_PENDING|${PENDING_WF}"
 if [ -f .template-migration-needed ]; then
     RETIRED=$(grep "^retired:" .template-migration-needed 2>/dev/null | head -1 | cut -d'"' -f2)
     echo "TEMPLATE_MIGRATION_NEEDED|${RETIRED:-unknown}"

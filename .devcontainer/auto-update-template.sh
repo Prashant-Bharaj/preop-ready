@@ -70,7 +70,7 @@ case "$RESULT" in
           echo "   Ask your AI assistant: 'migrate to the supported stack' (see .template-migration-needed)."
         else
           echo "   When ready: ask your AI assistant to 'accept the major template update', or run"
-          echo "       bash scripts/apply-updates.sh --accept-major"
+          echo "       TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
         fi
       fi
     else

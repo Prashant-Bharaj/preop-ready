@@ -18,6 +18,7 @@ const EMPTY = Object.freeze({
   caller: null,      // 'current' | 'outdated' | 'missing' | null
   version: null,     // { status: 'UP_TO_DATE'|'UPDATE_AVAILABLE'|'CHECK_FAILED', current?, latest?, reason? } | null
   majorHeld: null,   // { major, synced } when a major release is available but not accepted
+  pendingWorkflows: null, // workflow files a CI sync could not push; need a local engine run + commit
   migrationNeeded: null, // retired layers string when the project must migrate first
   tsMigration: null, // JavaScript layers that could opt into the TypeScript layout
   autoUpdate: false,
@@ -54,6 +55,9 @@ export function parseTemplateCheckOutput(output) {
       case 'TEMPLATE_MAJOR_HELD':
         result.majorHeld = { major: rest[0] || '?', synced: rest[1] || '?' };
         break;
+      case 'TEMPLATE_WORKFLOWS_PENDING':
+        result.pendingWorkflows = rest[0] || null;
+        break;
       case 'TEMPLATE_MIGRATION_NEEDED':
         result.migrationNeeded = rest[0] || 'unknown';
         break;
@@ -76,7 +80,7 @@ export function templateNeedsAttention(check) {
   return Boolean(check.pr)
     || check.caller === 'outdated' || check.caller === 'missing'
     || check.version?.status === 'UPDATE_AVAILABLE'
-    || Boolean(check.majorHeld) || Boolean(check.migrationNeeded);
+    || Boolean(check.majorHeld) || Boolean(check.migrationNeeded) || Boolean(check.pendingWorkflows);
 }
 
 /** One-line human summary, or null when nothing is pending. */
@@ -90,6 +94,7 @@ export function describeTemplateCheck(check) {
   }
   if (check.caller === 'outdated') parts.push('the weekly sync workflow is the pre-platform copy and cannot reach the template');
   if (check.caller === 'missing') parts.push('the sync workflow is missing');
+  if (check.pendingWorkflows) parts.push(`workflow file(s) await a local engine run + commit (${check.pendingWorkflows})`);
   if (check.migrationNeeded) parts.push(`retired stack (${check.migrationNeeded}) — migrate before accepting template v${check.majorHeld?.major || '2'}`);
   else if (check.majorHeld) parts.push(`template v${check.majorHeld.major} is available (held until accepted)`);
   return parts.join('; ');
