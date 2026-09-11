@@ -64,7 +64,15 @@ export function convertShareLinkToGraphUrl(sharingUrl: string): string {
  */
 export function isShareLink(url: unknown): url is string {
   if (!url || typeof url !== 'string') return false;
-  return url.includes('sharepoint.com/') && !url.startsWith('https://graph.microsoft.com');
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+  const host = parsed.hostname.toLowerCase();
+  return host === 'sharepoint.com' || host.endsWith('.sharepoint.com');
 }
 
 /**

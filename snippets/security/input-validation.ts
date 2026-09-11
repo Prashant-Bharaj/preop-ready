@@ -138,12 +138,21 @@ export function sanitizeObject<T extends Record<string, unknown>, K extends keyo
 
 /**
  * Remove HTML tags from a string. Returns the input unchanged if it's not a string.
+ * Repeats until nothing changes so nested fragments (`<scr<script>ipt>`) cannot
+ * survive a single pass. This is input hygiene, not output encoding — escape
+ * on render regardless.
  */
 export function stripHtml(str: string): string;
 export function stripHtml<T>(str: T): T;
 export function stripHtml(str: unknown): unknown {
   if (typeof str !== 'string') return str;
-  return str.replace(/<[^>]*>/g, '');
+  let out = str;
+  let prev: string;
+  do {
+    prev = out;
+    out = out.replace(/<[^>]*>/g, '');
+  } while (out !== prev);
+  return out;
 }
 
 // Re-export zod's `z` for callers that want to build schemas inline.

@@ -21,7 +21,7 @@
  *   INITIAL_ADMIN_EMAILS (or SECRET_3) environment variable.
  *
  * DEPENDENCIES:
- *   npm install pg
+ *   npm install pg express-rate-limit
  *
  * ENV:
  *   SECRET_3 or INITIAL_ADMIN_EMAILS — comma-separated list of
@@ -46,6 +46,7 @@ import express, {
   type RequestHandler,
 } from 'express';
 import type { Pool } from 'pg';
+import rateLimit from 'express-rate-limit';
 
 export type UserRole = 'user' | 'expert' | 'admin';
 export type AccountStatus = 'pending' | 'approved' | 'denied';
@@ -208,6 +209,8 @@ export async function logAudit(pool: Pool, entry: AuditEntry): Promise<void> {
  */
 export function createUserRouter(pool: Pool): Router {
   const router = express.Router();
+  // Every handler below hits the database; cap abusive callers per IP.
+  router.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false }));
 
   // GET / — return the current user's identity (from OIDC middleware)
   router.get('/', (req: Request, res: Response) => {

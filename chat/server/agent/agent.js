@@ -309,13 +309,16 @@ function ensureScopeScaffolding(scope, writtenPaths, emit, logScope) {
  * prompt (the task is always at the end).
  */
 function extractTaskSpec(prompt) {
-  const markers = [
-    /=== USER REQUEST ===\n([\s\S]+?)(?:\n===|$)/,
-    /=== YOUR TASK \([A-Z]+ scope\) ===\n([\s\S]+?)(?:\n===|$)/,
-  ];
-  for (const re of markers) {
-    const m = prompt.match(re);
-    if (m && m[1].trim()) return m[1].trim().slice(0, 2000);
+  // Header regexes are fixed-width; the body is sliced by index so a long
+  // user prompt can never make this polynomial.
+  const headers = [/=== USER REQUEST ===\n/, /=== YOUR TASK \([A-Z]+ scope\) ===\n/];
+  for (const re of headers) {
+    const h = re.exec(prompt);
+    if (!h) continue;
+    const from = h.index + h[0].length;
+    const end = prompt.indexOf('\n===', from);
+    const body = prompt.slice(from, end === -1 ? undefined : end).trim();
+    if (body) return body.slice(0, 2000);
   }
   return prompt.slice(-500).trim();
 }

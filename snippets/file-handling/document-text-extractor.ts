@@ -80,6 +80,21 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+const UPLOADS_ROOT = path.resolve(UPLOADS_DIR);
+
+/**
+ * Pin a path to the uploads directory. multer writes there, but the value
+ * still travels through request objects, so every read/unlink re-checks it
+ * instead of trusting the caller.
+ */
+function resolveUploadPath(filePath: string): string {
+  const abs = path.resolve(filePath);
+  if (abs !== UPLOADS_ROOT && !abs.startsWith(UPLOADS_ROOT + path.sep)) {
+    throw new Error('Refusing to access a file outside the uploads directory');
+  }
+  return abs;
+}
+
 // ---------------------------------------------------------------------------
 // Core: Extract text from any supported file
 // ---------------------------------------------------------------------------
@@ -90,10 +105,11 @@ export async function extractText(
   originalname: string
 ): Promise<string> {
   const ext = (originalname || '').toLowerCase().split('.').pop() || '';
+  const safePath = resolveUploadPath(filePath);
 
   // PDF
   if (mimetype === 'application/pdf' || ext === 'pdf') {
-    const buffer = fs.readFileSync(filePath);
+    const buffer = fs.readFileSync(safePath);
     const data = await pdfParse(buffer);
     return data.text;
   }
@@ -103,14 +119,14 @@ export async function extractText(
     mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     ext === 'docx'
   ) {
-    const result = await mammoth.extractRawText({ path: filePath });
+    const result = await mammoth.extractRawText({ path: safePath });
     return result.value;
   }
 
   // DOC (legacy Word) — best-effort plain text
   if (mimetype === 'application/msword' || ext === 'doc') {
     try {
-      return fs.readFileSync(filePath, 'utf-8');
+      return fs.readFileSync(safePath, 'utf-8');
     } catch {
       return '[Could not extract text from .doc file]';
     }
@@ -124,7 +140,7 @@ export async function extractText(
     ext === 'xls'
   ) {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(filePath);
+    await workbook.xlsx.readFile(safePath);
     const sheets: string[] = [];
     workbook.eachSheet((sheet) => {
       const rows: string[] = [];
@@ -143,7 +159,7 @@ export async function extractText(
     ext === 'pptx'
   ) {
     try {
-      const zip = new AdmZip(filePath);
+      const zip = new AdmZip(safePath);
       const entries = zip.getEntries();
       const texts: string[] = [];
       for (const entry of entries) {
@@ -170,12 +186,12 @@ export async function extractText(
     mimetype === 'application/csv' ||
     ['csv', 'json', 'xml', 'txt', 'md', 'yaml', 'yml', 'toml'].includes(ext)
   ) {
-    return fs.readFileSync(filePath, 'utf-8');
+    return fs.readFileSync(safePath, 'utf-8');
   }
 
   // Fallback
   try {
-    return fs.readFileSync(filePath, 'utf-8');
+    return fs.readFileSync(safePath, 'utf-8');
   } catch {
     return '[Binary file — content could not be extracted]';
   }
@@ -233,7 +249,7 @@ export const uploadAndExtract = {
           next(err);
         } finally {
           try {
-            fs.unlinkSync(req.file.path);
+            fs.unlinkSync(resolveUploadPath(req.file.path));
           } catch {
             /* noop */
           }
@@ -263,7 +279,7 @@ export const uploadAndExtract = {
         } finally {
           for (const f of files) {
             try {
-              fs.unlinkSync(f.path);
+              fs.unlinkSync(resolveUploadPath(f.path));
             } catch {
               /* noop */
             }

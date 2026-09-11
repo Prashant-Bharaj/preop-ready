@@ -70,6 +70,7 @@ export function deepSanitize<T>(value: T): T {
   if (value && typeof value === 'object') {
     const sanitized: Record<string, unknown> = {};
     for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
       sanitized[key] = deepSanitize(v);
     }
     return sanitized as unknown as T;

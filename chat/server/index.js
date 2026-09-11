@@ -9,6 +9,7 @@ import { mountUploadRoutes } from './routes/uploads.js';
 import { mountAppSecretsRoutes } from './routes/app-secrets.js';
 import { ensureBackendEnvScaffold } from './core/app-secrets-scaffold.js';
 import { startValidatorInBackground } from './reconciler/sql-validation-db.js';
+import rateLimit from 'express-rate-limit';
 import { attachSocketIO } from './util/stream.js';
 import path from 'node:path';
 import { STATIC_DIR, WORKSPACE_DIR } from './core/paths.js';
@@ -50,6 +51,19 @@ app.use((_req, res, next) => {
 });
 
 app.use(express.json());
+
+// Single-user dev tool, but every route hits the filesystem or an LLM: cap
+// runaway clients per IP. Socket.IO long-polling is excluded — it is chatty
+// by design and has its own connection limits.
+app.use(rateLimit({
+  windowMs: 60_000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/socket.io'),
+  // Codespaces/portal put a proxy in front; we do not key on the forwarded IP.
+  validate: { xForwardedForHeader: false },
+}));
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

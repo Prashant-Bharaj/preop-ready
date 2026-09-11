@@ -203,5 +203,5 @@ function lowerFirst(s) {
 }
 
 function escapePathLiteral(p) {
-  return String(p || '').replace(/'/g, "\\'");
+  return String(p || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }

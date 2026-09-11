@@ -246,24 +246,24 @@ export function mountUploadRoutes(app) {
   // Only serves files that actually live inside context/; rejects traversal.
   app.get('/api/uploads/:name', (req, res) => {
     const rawName = rawBasename(req.params.name);
-    if (!rawName) return res.status(400).send('Bad filename');
+    if (!rawName) return res.status(400).json({ error: 'Bad filename' });
 
     const blockedReason = checkBlocked(rawName);
-    if (blockedReason) return res.status(403).send(blockedReason);
+    if (blockedReason) return res.status(403).json({ error: String(blockedReason) });
 
     const sanitised = sanitiseFilename(req.params.name);
-    if (!sanitised) return res.status(400).send('Bad filename');
+    if (!sanitised) return res.status(400).json({ error: 'Bad filename' });
 
     const absPath = path.join(CONTEXT_DIR, sanitised);
     if (!isInsideContextDir(absPath) || !existsSync(absPath)) {
-      return res.status(404).send('Not found');
+      return res.status(404).json({ error: 'Not found' });
     }
 
     try {
       const st = statSync(absPath);
-      if (!st.isFile()) return res.status(404).send('Not found');
+      if (!st.isFile()) return res.status(404).json({ error: 'Not found' });
     } catch {
-      return res.status(404).send('Not found');
+      return res.status(404).json({ error: 'Not found' });
     }
 
     res.setHeader('Cache-Control', 'private, max-age=3600');

@@ -51,6 +51,11 @@ export const PREDEFINED_SLOTS = [
 
 export const PREDEFINED_SLOT_NAMES = PREDEFINED_SLOTS.map((s) => s.name);
 
+// Secret names are validated upstream, but they still become RegExp source here.
+function escapeRegExp(v) {
+  return String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function findSlotMeta(name) {
   return PREDEFINED_SLOTS.find((s) => s.name === name) || null;
 }
@@ -232,8 +237,8 @@ export function writeBackendEnv(workspaceDir, name, { value, description } = {})
   // ── 1. update the value line if requested ────────────────────────────────
   if (typeof value === 'string') {
     const isClearing = !value.trim();
-    const liveRe = new RegExp(`^(\\s*)${name}\\s*=.*$`);
-    const commentedRe = new RegExp(`^(\\s*)#\\s*${name}\\s*=.*$`);
+    const liveRe = new RegExp(`^(\\s*)${escapeRegExp(name)}\\s*=.*$`);
+    const commentedRe = new RegExp(`^(\\s*)#\\s*${escapeRegExp(name)}\\s*=.*$`);
 
     let replaced = false;
     for (let i = 0; i < lines.length; i++) {
@@ -252,7 +257,7 @@ export function writeBackendEnv(workspaceDir, name, { value, description } = {})
   // ── 2. update the description comment if requested ───────────────────────
   if (typeof description === 'string') {
     const desc = sanitizeDescription(description);
-    const descRe = new RegExp(`^\\s*#\\s*${name}\\s*:\\s*.+?\\s*$`);
+    const descRe = new RegExp(`^\\s*#\\s*${escapeRegExp(name)}\\s*:\\s*.+?\\s*$`);
 
     let descIdx = -1;
     for (let i = 0; i < lines.length; i++) {
@@ -267,7 +272,7 @@ export function writeBackendEnv(workspaceDir, name, { value, description } = {})
       lines[descIdx] = `# ${name}: ${desc}`;
     } else {
       // Insert a new description line directly above the slot's value line.
-      const slotRe = new RegExp(`^\\s*(?:#\\s*)?${name}\\s*=`);
+      const slotRe = new RegExp(`^\\s*(?:#\\s*)?${escapeRegExp(name)}\\s*=`);
       let slotIdx = -1;
       for (let i = 0; i < lines.length; i++) {
         if (slotRe.test(lines[i])) { slotIdx = i; break; }

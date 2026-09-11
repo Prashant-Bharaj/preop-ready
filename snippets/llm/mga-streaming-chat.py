@@ -40,6 +40,7 @@ RESPONSE STREAM (SSE):
 """
 
 import json
+import logging
 import os
 import httpx
 from fastapi import Request
@@ -118,7 +119,8 @@ async def stream_chat_endpoint(request: Request) -> StreamingResponse | JSONResp
                                 yield f"data: {json.dumps({'conversationId': parsed['conversation_id']})}\n\n"
                                 convo_sent = True
                     yield 'data: {"done": true}\n\n'
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        except Exception:
+            logging.getLogger(__name__).exception("myGenAssist streaming request failed")
+            yield f"data: {json.dumps({'error': 'Upstream chat request failed'})}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
