@@ -189,3 +189,13 @@ fine. Codespaces auto-forwards a port the moment a process listens on it, and
 that forward is fresh every time — so `cd chat && npm start` is all it takes;
 5050 opens in the browser by itself. If a port URL ever 404s, right-click it in
 the Ports tab, **Stop Forwarding Port**, then **Add Port** again.
+
+### Launched from the Vibe portal
+
+The portal injects your myGenAssist key into the codespace as the secret
+`MYGENASSIST_API_KEY`; the harness picks it up (platform endpoint, default
+model), so there is no setup screen. Your own choices in the harness settings
+(`.chat/secrets.json`) still take precedence. When the codespace also carries
+`VIBE_PORTAL_URL`, the "workspace went to sleep" card sends you back to the
+portal, whose **Start Vibe Coding** wakes the workspace and reopens the harness.
+
