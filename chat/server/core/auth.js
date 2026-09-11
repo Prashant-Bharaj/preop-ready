@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { SECRETS_PATH, CHAT_DATA_DIR } from './paths.js';
 import { loadAssistantIds, HARNESS_ASSISTANT_KEYS, envVarFor } from '../config/assistant-ids.js';
-import { MGA_PREFLIGHT_MS, MGA_VALIDATE_MS, MGA_HEALTH_PROBE_MS } from '../config/defaults.js';
+import { MGA_PREFLIGHT_MS, MGA_VALIDATE_MS, MGA_HEALTH_PROBE_MS, DEFAULT_MODEL } from '../config/defaults.js';
 import { logAndSwallow } from '../util/log-helpers.js';
 
 function harnessIds() {
@@ -25,24 +25,38 @@ function ensureChatDir() {
  * 1. Environment variables (OPENAI_COMPAT_BASE_URL, OPENAI_COMPAT_API_KEY)
  * 2. Stored secrets file (.chat/secrets.json)
  */
+// The platform's myGenAssist endpoint. The vibe portal injects the user's key
+// into their codespaces as the secret MYGENASSIST_API_KEY (nothing else), so
+// with that alone the harness must be usable without a setup screen.
+export const DEFAULT_MGA_BASE_URL = 'https://chat.int.bayer.com/api/v2';
+
 export function getCredentials() {
-  const envBaseUrl = process.env.OPENAI_COMPAT_BASE_URL;
-  const envApiKey = process.env.OPENAI_COMPAT_API_KEY;
+  return resolveCredentials();
+}
+
+/**
+ * Resolution order: explicit env (OPENAI_COMPAT_*) → the user's saved
+ * settings (.chat/secrets.json) → the portal-injected codespace secret.
+ * Injectable for tests.
+ */
+export function resolveCredentials({ env = process.env, secretsPath = SECRETS_PATH } = {}) {
+  const envBaseUrl = env.OPENAI_COMPAT_BASE_URL;
+  const envApiKey = env.OPENAI_COMPAT_API_KEY;
   if (envBaseUrl && envApiKey) {
     return {
       baseUrl: envBaseUrl,
       apiKey: envApiKey,
-      model: process.env.OPENAI_COMPAT_MODEL || 'gpt-4.1-mini',
+      model: env.OPENAI_COMPAT_MODEL || 'gpt-4.1-mini',
       ...harnessIds(),
-      mode: process.env.CHAT_MODE || 'beginner',
-      projectType: process.env.CHAT_PROJECT_TYPE || 'fresh',
+      mode: env.CHAT_MODE || 'beginner',
+      projectType: env.CHAT_PROJECT_TYPE || 'fresh',
       source: 'env',
     };
   }
 
-  if (existsSync(SECRETS_PATH)) {
+  if (existsSync(secretsPath)) {
     try {
-      const data = JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
+      const data = JSON.parse(readFileSync(secretsPath, 'utf-8'));
       if (data.baseUrl && data.apiKey) {
         return {
           baseUrl: data.baseUrl,
@@ -57,6 +71,18 @@ export function getCredentials() {
     } catch {
       // Corrupt file — treat as unconfigured
     }
+  }
+
+  if (env.MYGENASSIST_API_KEY) {
+    return {
+      baseUrl: env.MYGENASSIST_BASE_URL || DEFAULT_MGA_BASE_URL,
+      apiKey: env.MYGENASSIST_API_KEY,
+      model: env.MYGENASSIST_MODEL || DEFAULT_MODEL,
+      ...harnessIds(),
+      mode: env.CHAT_MODE || 'beginner',
+      projectType: env.CHAT_PROJECT_TYPE || 'fresh',
+      source: 'codespace-secret',
+    };
   }
 
   return null;
@@ -82,7 +108,15 @@ export function saveCredentials({ baseUrl, apiKey, model }) {
 export function mountAuthRoutes(app) {
   app.get('/api/auth/status', (_req, res) => {
     const creds = getCredentials();
-    res.json({ configured: !!creds, source: creds?.source || null, mode: creds?.mode || 'beginner' });
+    res.json({
+      configured: !!creds,
+      source: creds?.source || null,
+      mode: creds?.mode || 'beginner',
+      // Where the user came from when a portal launched this workspace; the
+      // "workspace went to sleep" card sends them back there (the portal
+      // starts the codespace and reopens the harness) instead of the editor.
+      portalUrl: process.env.VIBE_PORTAL_URL || null,
+    });
   });
 
   app.get('/api/auth/settings', (_req, res) => {

@@ -187,6 +187,14 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   // answers JSON — the codespace idled out (or the server died). Cleared by a
   // full reload when it answers again.
   const [workspaceGone, setWorkspaceGone] = useState(false);
+  // Set when a portal launched this workspace (server env VIBE_PORTAL_URL):
+  // the sleep card sends the user back there instead of to the editor.
+  const [portalUrl, setPortalUrl] = useState(null);
+  useEffect(() => {
+    fetch('/api/auth/status').then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.portalUrl) setPortalUrl(d.portalUrl); })
+      .catch(() => { /* offline or old server — editor link fallback */ });
+  }, []);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false);
   // Full-process modal: { label, events } for one subagent, or null.
@@ -1311,7 +1319,16 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
             The environment behind this page stopped (Codespaces pauses it after a period of inactivity).
             Nothing is lost: your chat, plan and app are saved and come back as they were.
           </p>
-          {editorUrlFor(window.location.hostname) ? (
+          {portalUrl ? (
+            <p>
+              <a className="btn-wake" href={portalUrl} target="_blank" rel="noreferrer">
+                Back to the portal
+              </a>
+              <span className="workspace-gone-hint">
+                Choose &quot;Start Vibe Coding&quot; there: it wakes the workspace and brings you back here.
+              </span>
+            </p>
+          ) : editorUrlFor(window.location.hostname) ? (
             <p>
               <a className="btn-wake" href={editorUrlFor(window.location.hostname)} target="_blank" rel="noreferrer">
                 Wake it up
