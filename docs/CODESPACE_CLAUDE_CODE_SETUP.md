@@ -167,8 +167,8 @@ nothing else — it starts no containers until a build runs — and a notificati
 for port 5050 is all you see. To disable the auto-start entirely, set the
 Codespaces secret `HARNESS_AUTOSTART` to `0`.
 
-Port **5050** is forwarded automatically once the server listens; open it from
-the notification or the Ports tab (the built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
+Port **5050** is pre-forwarded; open it from the Ports tab or the notification
+(the built UI and the API share it). The generated app runs on port **8080**. `npm run dev` (Vite on 8889 with hot
 reload) is only needed when editing the chat UI itself; if you use it, add the
 port by hand in the Ports tab after Vite is listening — a forward created
 earlier can leave the proxy's 404 page cached in your browser.
@@ -180,15 +180,17 @@ which starts the codespace, the start hook starts the harness, and the tab
 reconnects by itself. If the app should be up afterwards, click **Start app**. The idle timeout can be raised to 4 hours in
 GitHub Settings → Codespaces → Default idle timeout (applies to new codespaces).
 
-### Ports after a Codespace restart
+### Ports and Codespace restarts
 
-Ports are not pre-forwarded on purpose. A forward created by the devcontainer at
-startup goes stale on GitHub's proxy after a restart: the browser shows "page
-can't be found" while the Ports tab, `gh codespace ports` and `localhost` all look
-fine. Codespaces auto-forwards a port the moment a process listens on it, and
-that forward is fresh every time — so `cd chat && npm start` is all it takes;
-5050 opens in the browser by itself. If a port URL ever 404s, right-click it in
-the Ports tab, **Stop Forwarding Port**, then **Add Port** again.
+The harness (5050) and the generated app (8080, backend 3000) are pre-forwarded
+in the devcontainer on purpose: GitHub registers a port on its proxy only when
+it is listed there or when an editor auto-detects a listening process, and the
+vibe portal starts codespaces through the API with no editor attached. A listed
+port can go stale after an editor-driven restart (browser shows "page can't be
+found" while the Ports tab and `gh codespace ports` still list it); the remedy
+is right-click the port in the Ports tab, **Stop Forwarding Port**, then
+**Add Port** again. `cd chat && npm start` is otherwise all it takes in a
+codespace opened from the editor.
 
 ### Launched from the Vibe portal
 
