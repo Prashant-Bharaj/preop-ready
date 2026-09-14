@@ -405,6 +405,24 @@ function whoamiContractValidator(_report, ctx) {
     }
   }
 
+  // The Python parser verifies ES256 with the `cryptography` package; a
+  // backend that ships the parser without the dependency fails at import.
+  if (stagedParser === 'backend/src/oidc_identity.py') {
+    const reqPath = path.join(ctx.workspaceDir, 'backend', 'requirements.txt');
+    let requirements = '';
+    try { requirements = readFileSync(reqPath, 'utf-8'); } catch { requirements = ''; }
+    if (!/^\s*cryptography\b/m.test(requirements)) {
+      return {
+        name: 'whoami-contract',
+        blocking: true,
+        header: 'Your attempt_completion didn\'t land — backend/src/oidc_identity.py needs the `cryptography` package and backend/requirements.txt does not list it.',
+        directive: 'Add a line `cryptography>=42` to backend/requirements.txt (create the file if it does not exist), then retry attempt_completion.',
+        footer: 'The pre-staged identity parser verifies ALB tokens with it in production.',
+        logTag: 'attempt_completion deferred — cryptography missing from requirements.txt',
+      };
+    }
+  }
+
   const hasDevMode = /devMode/.test(all);
   const hasAvailableRoles = /availableRoles/.test(all);
   if (hasDevMode && hasAvailableRoles) {

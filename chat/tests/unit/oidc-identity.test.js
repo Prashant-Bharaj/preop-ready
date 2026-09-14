@@ -37,9 +37,13 @@ test('node parser: dev-claim semantics, role claim, no-header fallback', () => {
   assert.equal(out.relPath, 'backend/src/lib/oidc-identity.ts');
   assert.match(out.source, /devMode: payload\.dev === true/);
   assert.match(out.source, /roleClaim: typeof payload\.role === 'string'/);
-  assert.match(out.source, /present: false, devMode: true/);
+  assert.match(out.source, /present: false, verified: false, devMode: true/);
+  assert.match(out.source, /export async function parseOidcIdentity/);
+  assert.match(out.source, /PLATFORM_ALB_ARN/);
+  assert.match(out.source, /ALB_EXPECTED_ISSUER/);
+  assert.match(out.source, /header\.alg !== 'ES256'/);
   // Malformed token: present but NOT devMode (fail closed).
-  assert.match(out.source, /present: true, devMode: false/);
+  assert.match(out.source, /present: true, verified: false, devMode: false/);
 });
 
 test('python parser variant', () => {
@@ -47,6 +51,9 @@ test('python parser variant', () => {
   assert.equal(out.relPath, 'backend/src/oidc_identity.py');
   assert.match(out.source, /payload\.get\("dev"\) is True/);
   assert.match(out.source, /role_claim/);
+  assert.match(out.source, /PLATFORM_ALB_ARN/);
+  assert.match(out.source, /ALB_EXPECTED_ISSUER/);
+  assert.match(out.source, /cryptography/);
 });
 
 test('no backend scope emits nothing', () => {
