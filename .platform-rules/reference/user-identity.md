@@ -29,6 +29,23 @@ the JWT's ES256 signature against the ALB's regional public key
 (`https://public-keys.auth.elb.<region>.amazonaws.com/<kid>`, cached) and the `exp` claim.
 A present-but-invalid token is rejected with 401 — never the local-dev fallback.
 
+**Signer and issuer pins (platform-injected, every project).** That key endpoint serves the
+signing keys of EVERY load balancer in the region, so a signature check alone would accept a
+token minted by another ALB. The platform injects two values into every deployed task and the
+snippets compare them against the JWT *header* (not the payload):
+
+| Env var | Value | Pinned against |
+|---------|-------|----------------|
+| `PLATFORM_ALB_ARN` | ARN of the platform ALB (`arn:aws:elasticloadbalancing:eu-central-1:<account>:loadbalancer/app/<name>/<id>`) | header `signer` |
+| `ALB_EXPECTED_ISSUER` | Cognito user-pool issuer (`https://cognito-idp.eu-central-1.amazonaws.com/<pool-id>`) — the ALB authenticates via Cognito, which federates to Entra ID | header `iss` |
+
+Rules: never hardcode either value, never remove the checks, never put them in a GitHub secret
+(the deploy workflow reads them from platform SSM). An unset pin means signature-only
+verification; the Node and Python snippets then log `PLATFORM_ALB_ARN not set` once at startup in
+production. A wrong pin shows up immediately as every request returning 401 — check the injected
+value, not the code. Traefik already strips unproven `x-amzn-oidc-*` headers before they reach
+the container (`expectedSigner` pinned to the same ARN); the in-app pin is defence in depth.
+
 **A MISSING header must also be a 401 in production.** The user-facing ALB is not the only
 way in: a second ingress path (API Gateway with an API-key authorizer -> VPC Link -> NLB ->
 the machine-to-machine ALB, which has NO `authenticate-oidc` action -> Traefik) reaches the

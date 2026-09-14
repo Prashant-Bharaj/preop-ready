@@ -31,6 +31,18 @@ SECURITY MODEL:
     Production task definitions never set it, so a header-less request in
     production yields None and the caller rejects with 401.
 
+    The regional key endpoint serves the signing keys of EVERY load balancer
+    in the region, so a signature check alone accepts a token minted by any
+    other ALB. The platform therefore injects two pins into every deployed
+    task, checked against the JWT header:
+
+        PLATFORM_ALB_ARN      the platform ALB's ARN   -> header `signer`
+        ALB_EXPECTED_ISSUER   the Cognito pool issuer  -> header `iss`
+
+    Never hardcode either value or remove the checks. When PLATFORM_ALB_ARN
+    is absent in production the module logs a warning at import time and
+    falls back to signature-only verification.
+
 DEPENDENCIES:
     pip install cryptography
 
@@ -78,6 +90,13 @@ from typing import Any, Dict, Optional
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, utils
+
+# Platform-injected pins (see SECURITY MODEL above). Empty = not pinned.
+_EXPECTED_SIGNER = os.environ.get('PLATFORM_ALB_ARN', '')
+_EXPECTED_ISSUER = os.environ.get('ALB_EXPECTED_ISSUER', '')
+if not _EXPECTED_SIGNER and os.environ.get('ENVIRONMENT') == 'production':
+    print('OIDC verify: PLATFORM_ALB_ARN not set - accepting tokens signed by any '
+          'load balancer in the region (signer pinning inactive)')
 
 # ALB public keys, cached per key id (keys rotate rarely)
 _alb_key_cache: Dict[str, Any] = {}
@@ -132,6 +151,17 @@ def verify_oidc_token(oidc_data: str) -> Optional[Dict[str, Any]]:
         )
         signing_input = f"{parts[0]}.{parts[1]}".encode()
         key.verify(der_sig, signing_input, ec.ECDSA(hashes.SHA256()))  # raises if invalid
+
+        # Pin the signing load balancer and the identity provider behind it.
+        # Both live in the JWT HEADER (`signer`, `iss`), not the payload. The
+        # regional key endpoint serves keys for EVERY ALB in the region, so
+        # without these a token minted elsewhere would verify.
+        if _EXPECTED_SIGNER and header.get('signer') != _EXPECTED_SIGNER:
+            print('OIDC verify: signer is not the platform load balancer')
+            return None
+        if _EXPECTED_ISSUER and header.get('iss') != _EXPECTED_ISSUER:
+            print('OIDC verify: issuer is not the platform identity provider')
+            return None
 
         payload = json.loads(_b64url_decode(parts[1]))
         if payload.get('exp') and payload['exp'] < time.time():

@@ -34,6 +34,17 @@
 ///   Production task definitions never set it, so a header-less request in
 ///   production yields None and the handler must answer 401.
 ///
+///   The regional key endpoint serves the signing keys of EVERY load balancer
+///   in the region, so a signature check alone accepts a token minted by any
+///   other ALB. The platform therefore injects two pins into every deployed
+///   task, checked against the JWT header:
+///
+///       PLATFORM_ALB_ARN      the platform ALB's ARN   -> header `signer`
+///       ALB_EXPECTED_ISSUER   the Cognito pool issuer  -> header `iss`
+///
+///   Never hardcode either value or remove the checks. An unset pin falls
+///   back to signature-only verification.
+///
 /// DEPENDENCIES (add to Cargo.toml):
 ///   serde = { version = "1", features = ["derive"] }
 ///   serde_json = "1"
@@ -169,6 +180,16 @@ pub async fn verify_oidc_token(oidc_data: &str) -> Option<serde_json::Value> {
     let signing_input = format!("{}.{}", parts[0], parts[1]);
     key.verify(signing_input.as_bytes(), &signature).ok()?;
 
+    // Pin the signing load balancer and the identity provider behind it. Both
+    // live in the JWT HEADER (`signer`, `iss`), not the payload. The regional
+    // key endpoint serves keys for EVERY ALB in the region, so without these a
+    // token minted elsewhere would verify.
+    if !header_matches_env(&header, "signer", "PLATFORM_ALB_ARN")
+        || !header_matches_env(&header, "iss", "ALB_EXPECTED_ISSUER")
+    {
+        return None;
+    }
+
     let payload: serde_json::Value = serde_json::from_slice(&b64url_decode(parts[1])?).ok()?;
     if let Some(exp) = payload["exp"].as_i64() {
         let now = SystemTime::now()
@@ -180,6 +201,14 @@ pub async fn verify_oidc_token(oidc_data: &str) -> Option<serde_json::Value> {
         }
     }
     Some(payload)
+}
+
+/// True when the pin in `env_var` is unset/empty, or equals `header[field]`.
+fn header_matches_env(header: &serde_json::Value, field: &str, env_var: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(expected) if !expected.is_empty() => header[field].as_str() == Some(expected.as_str()),
+        _ => true,
+    }
 }
 
 /// Extract user identity from AWS ALB OIDC headers (with verification).
