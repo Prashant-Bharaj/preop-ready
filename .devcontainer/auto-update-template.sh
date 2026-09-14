@@ -57,6 +57,31 @@ fi
 # status` before/after the run), so work in flight stays untouched. Workflow
 # files are left out: Codespaces tokens may not push them (the engine tracks
 # those as pending_workflows). Opt out with:  touch .template-auto-commit-disabled
+# Filter stdin paths to the ones the template manifest owns (auto_update,
+# auto_update_major, merge_update entries) plus the version tracker.
+platform_owned_paths() {
+  local patterns
+  patterns=$(awk '
+    /^auto_update:|^auto_update_major:|^merge_update:/ { in_section=1; next }
+    /^[a-zA-Z_]+:/ && !/^auto_update:|^auto_update_major:|^merge_update:/ { in_section=0 }
+    in_section && /^  - path:/ {
+      line=$0
+      sub(/^  - path:[[:space:]]*/, "", line); gsub(/"/, "", line); sub(/[[:space:]]*#.*$/, "", line)
+      print line
+    }' .template-manifest.yml 2>/dev/null || true)
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    if [ "$f" = ".template-version" ] || [ "$f" = ".template-manifest.yml" ]; then echo "$f"; continue; fi
+    while IFS= read -r pat; do
+      [ -n "$pat" ] || continue
+      case "$pat" in
+        */) [ "${f#$pat}" != "$f" ] && { echo "$f"; break; } ;;
+        *)  [ "$f" = "$pat" ] && { echo "$f"; break; } ;;
+      esac
+    done <<< "$patterns"
+  done
+}
+
 auto_commit_platform_update() {
   local from="$1" to="$2"
   if [ -f ".template-auto-commit-disabled" ]; then
@@ -67,9 +92,16 @@ auto_commit_platform_update() {
     echo "   ℹ️  Not on $DEFAULT_BRANCH — synced files left for you to commit."
     return 0
   fi
-  local post changed files wf
+  local post changed platform files wf
   post=$(git status --porcelain --untracked-files=all 2>/dev/null || true)
+  # Files this run changed (status diff before/after) ...
   changed=$(comm -13 <(printf '%s\n' "$PRE_STATUS" | sort) <(printf '%s\n' "$post" | sort) | cut -c4- || true)
+  # ... plus platform-owned files that were already dirty, e.g. left by an
+  # earlier update that ran before auto-commit existed. The manifest's synced
+  # paths are the platform's: users do not edit them, so staging them never
+  # sweeps up project work.
+  platform=$(printf '%s\n' "$post" | cut -c4- | platform_owned_paths || true)
+  changed=$(printf '%s\n%s\n' "$changed" "$platform" | sed '/^$/d' | sort -u)
   [ -n "$changed" ] || return 0
   wf=$(printf '%s\n' "$changed" | grep '^\.github/workflows/' || true)
   files=$(printf '%s\n' "$changed" | grep -v '^\.github/workflows/' || true)
