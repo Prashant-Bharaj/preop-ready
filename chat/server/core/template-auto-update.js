@@ -2,7 +2,7 @@ import { execFile, spawn } from 'node:child_process';
 import { existsSync, openSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
-import { broadcastEvent } from '../util/stream.js';
+import { broadcastEvent, connectedClientCount } from '../util/stream.js';
 import { tlog, terr } from '../util/timestamped-log.js';
 
 // Keeps a running harness current with the template. The codespace start hook
@@ -23,6 +23,8 @@ const HARNESS_DIR = path.join(WORKSPACE_DIR, 'chat');
 const HARNESS_WATCH = ['server', 'src', 'package.json', 'index.html'];
 
 let running = false;
+// A built update waiting for a restart while tabs are open.
+let pendingRestart = null;
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve) => {
@@ -94,23 +96,41 @@ export async function runTemplateUpdate({ isBusy } = {}) {
     tlog('[template-update] applied %s (harness files changed: %s)', latest, harnessChanged ? 'yes' : 'no');
     if (!harnessChanged) return { updated: true, version: latest, restarting: false };
 
-    broadcastEvent({ ts: Date.now(), type: 'harness_updating', payload: { version: latest } });
     const build = await run('npm', ['run', 'build', '--silent'], { cwd: HARNESS_DIR });
     if (!build.ok) {
       terr('[template-update] client build failed; keeping the running harness: %s', (build.stderr || build.stdout).slice(-400));
       return { updated: true, version: latest, restarting: false, reason: 'build-failed' };
     }
+    pendingRestart = { version: latest };
     return { updated: true, version: latest, restarting: true };
   } finally {
     running = false;
   }
 }
 
-export { restartSelf as restartHarness };
+/** Announce and perform the restart: tabs show a notice and reload afterwards. */
+export function restartHarness(version = pendingRestart?.version || null) {
+  broadcastEvent({ ts: Date.now(), type: 'harness_updating', payload: { version } });
+  pendingRestart = null;
+  setTimeout(restartSelf, 300);
+}
 
+/** The update that is built and waiting for a restart, if any. */
+export function pendingHarnessRestart() {
+  return pendingRestart;
+}
+
+// Restart on its own only when nobody has the harness open; with tabs open
+// the update is announced and the restart waits for a quiet check or the
+// user's click. A user mid-thought never gets reloaded under their hands.
 async function tick({ isBusy }) {
   const r = await runTemplateUpdate({ isBusy });
-  if (r.restarting) restartSelf();
+  if (!pendingRestart) return;
+  if (connectedClientCount() === 0) {
+    restartHarness();
+  } else if (r.restarting) {
+    broadcastEvent({ ts: Date.now(), type: 'harness_update_ready', payload: { version: pendingRestart.version } });
+  }
 }
 
 export function startTemplateAutoUpdate({ isBusy }) {

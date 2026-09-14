@@ -284,6 +284,11 @@ export async function triggerTemplateUpdate() {
   return res.json();
 }
 
+export async function restartHarness() {
+  const res = await fetch(`${API_BASE}/environment/restart`, { method: 'POST' });
+  return res.json();
+}
+
 // ── App secrets ──────────────────────────────────────────────────────────
 export async function getAppSecrets() {
   const res = await fetch(`${API_BASE}/app-secrets`);

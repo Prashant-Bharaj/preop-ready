@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
 import { getCachedEnvContext, refreshEnvContext } from '../agent/context/env-context.js';
-import { runTemplateUpdate, restartHarness } from './template-auto-update.js';
+import { runTemplateUpdate, restartHarness, pendingHarnessRestart } from './template-auto-update.js';
 import { isHarnessBusy } from '../session/routes.js';
 import { describeTemplateCheck } from './template-check.js';
 import { routeMessage } from '../agent/planner/two-agent.js';
@@ -219,10 +219,19 @@ export function mountEnvironmentRoutes(app) {
       const result = await runTemplateUpdate({ isBusy: isHarnessBusy });
       if (result.updated) await refreshEnvContext();
       res.json(result);
-      if (result.restarting) restartHarness();
+      // The user asked for it from an open tab: restart right away.
+      if (result.restarting) restartHarness(result.version);
     } catch (err) {
       res.status(500).json({ error: 'Template update failed. Check chat server logs.', detail: err?.message });
     }
+  });
+
+  // Restart onto an update that was applied while tabs were open.
+  app.post('/api/environment/restart', (_req, res) => {
+    const pending = pendingHarnessRestart();
+    if (!pending) return res.status(409).json({ error: 'No update is waiting for a restart.' });
+    res.json({ restarting: true, version: pending.version });
+    restartHarness(pending.version);
   });
 
   app.post('/api/environment/refresh', async (_req, res) => {

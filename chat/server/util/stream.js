@@ -50,6 +50,11 @@ export function broadcastEvent(event) {
   ioRef?.emit('event', event);
 }
 
+/** Number of browser tabs currently connected. */
+export function connectedClientCount() {
+  return ioRef?.engine?.clientsCount || 0;
+}
+
 export function attachSocketIO(httpServer) {
   const io = new IOServer(httpServer, {
     // Same-origin in production; localhost-dev needs explicit allowlist.

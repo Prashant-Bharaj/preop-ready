@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { editorUrlFor, classifyHealthProbe, OFFLINE_GRACE_MS, OFFLINE_PROBE_MS } from '../lib/workspace-status.js';
-import { sendMessage, resetSession, cleanProject, connectStream, getEnvironment, getDockerStatus, cancelSession, confirmPlan, discardPlan, revisePlan, pauseSession, uploadFile, confirmOpenApp, closeAutoStartedApp, startApp, branchSession, triggerTemplateUpdate } from '../lib/api.js';
+import { sendMessage, resetSession, cleanProject, connectStream, getEnvironment, getDockerStatus, cancelSession, confirmPlan, discardPlan, revisePlan, pauseSession, uploadFile, confirmOpenApp, closeAutoStartedApp, startApp, branchSession, triggerTemplateUpdate, restartHarness } from '../lib/api.js';
 import MessageBubble from './MessageBubble.jsx';
 import ExamplesModal from './ExamplesModal.jsx';
 import DropZone from './DropZone.jsx';
@@ -193,6 +193,8 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   // Set while the harness applies a template update to itself; the server
   // rebuilds and restarts, and this page reloads once a new server answers.
   const [harnessUpdate, setHarnessUpdate] = useState(null);
+  // An update was applied and built while this tab was open; restart on request.
+  const [harnessUpdateReady, setHarnessUpdateReady] = useState(null);
   const bootIdRef = useRef(null);
   useEffect(() => {
     fetch('/api/auth/status').then((r) => (r.ok ? r.json() : null))
@@ -391,7 +393,12 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
 
     const stream = connectStream(sessionId, (event) => {
       if (event.type === 'harness_updating') {
+        setHarnessUpdateReady(null);
         setHarnessUpdate({ version: event.payload?.version || null });
+        return;
+      }
+      if (event.type === 'harness_update_ready') {
+        setHarnessUpdateReady({ version: event.payload?.version || null });
         return;
       }
       if (event.type === 'history_batch') {
@@ -1366,6 +1373,23 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
         </div>
       </header>
 
+      {harnessUpdateReady && !harnessUpdate && !workspaceGone && (
+        <div className="workspace-gone" role="status">
+          <div className="workspace-gone-title">
+            Your assistant was updated{harnessUpdateReady.version ? ` to v${harnessUpdateReady.version}` : ''}
+          </div>
+          <p>
+            Restart to use it. Nothing is lost, this page reloads on the new version.{' '}
+            <button
+              type="button"
+              className="btn-wake"
+              onClick={() => { restartHarness().catch(() => {}); }}
+            >
+              Restart now
+            </button>
+          </p>
+        </div>
+      )}
       {harnessUpdate && !workspaceGone && (
         <div className="workspace-gone" role="status">
           <div className="workspace-gone-title">
