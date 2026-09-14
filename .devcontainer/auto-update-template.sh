@@ -2,6 +2,14 @@
 # Auto-check and apply template updates on Codespace start.
 # Also activates Claude Code (see the migration bridge below).
 
+# bash reads a script lazily, and the update applied below replaces THIS
+# file: the running shell would continue parsing the new content at the old
+# offset and die with a syntax error after the sync. Run from a private copy.
+if [ -z "${TEMPLATE_HOOK_FROM_COPY:-}" ]; then
+  _hook_copy=$(mktemp) && cp "${BASH_SOURCE[0]}" "$_hook_copy" \
+    && TEMPLATE_HOOK_FROM_COPY=1 exec bash "$_hook_copy" "$@"
+fi
+
 # Fail fast. This is the Codespace boot path, so every step whose failure is
 # EXPECTED (optional scripts, a git repo with no upstream, a diverged branch)
 # is explicitly tolerated with `|| true` or an `if` below — an unexpected

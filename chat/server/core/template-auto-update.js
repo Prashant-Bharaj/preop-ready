@@ -88,10 +88,15 @@ export async function runTemplateUpdate({ isBusy } = {}) {
 
     const before = harnessFingerprint();
     const apply = await run('bash', [UPDATE_SCRIPT]);
-    if (!apply.ok) {
-      terr('[template-update] update script failed: %s', (apply.stderr || apply.stdout).slice(-400));
+    // Judge by the version on disk, not the exit code: an older hook can be
+    // replaced under itself by the sync and exit non-zero after doing the work.
+    const after = await run('bash', [CHECK_SCRIPT]);
+    const applied = after.stdout.trim().startsWith('UP_TO_DATE');
+    if (!applied) {
+      terr('[template-update] update did not apply: %s', (apply.stderr || apply.stdout).slice(-400));
       return { ...idle, reason: 'apply-failed' };
     }
+    if (!apply.ok) tlog('[template-update] script exited non-zero after applying %s (hook replaced mid-run)', latest);
     const harnessChanged = harnessFingerprint() !== before;
     tlog('[template-update] applied %s (harness files changed: %s)', latest, harnessChanged ? 'yes' : 'no');
     if (!harnessChanged) return { updated: true, version: latest, restarting: false };
