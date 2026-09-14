@@ -174,3 +174,6 @@ coverage/
 .template-backup/
 # Harness bench output (local scratch)
 chat/bench/results/
+
+# Maintainer working notes (plans, lessons) — never part of the template
+tasks/
