@@ -192,7 +192,16 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   const [portalUrl, setPortalUrl] = useState(null);
   useEffect(() => {
     fetch('/api/auth/status').then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.portalUrl) setPortalUrl(d.portalUrl); })
+      .then((d) => {
+        if (!d?.portalUrl) return;
+        try {
+          const u = new URL(d.portalUrl);
+          if (d.projectName) u.searchParams.set('project', d.projectName);
+          setPortalUrl(u.toString());
+        } catch {
+          setPortalUrl(d.portalUrl);
+        }
+      })
       .catch(() => { /* offline or old server — editor link fallback */ });
   }, []);
   const [showScrollBtn, setShowScrollBtn] = useState(false);

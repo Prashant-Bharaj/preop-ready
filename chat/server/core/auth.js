@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { SECRETS_PATH, CHAT_DATA_DIR } from './paths.js';
+import { SECRETS_PATH, CHAT_DATA_DIR, WORKSPACE_DIR } from './paths.js';
 import { loadAssistantIds, HARNESS_ASSISTANT_KEYS, envVarFor } from '../config/assistant-ids.js';
 import { MGA_PREFLIGHT_MS, MGA_VALIDATE_MS, MGA_HEALTH_PROBE_MS, DEFAULT_MODEL } from '../config/defaults.js';
 import { logAndSwallow } from '../util/log-helpers.js';
@@ -124,6 +124,8 @@ export function mountAuthRoutes(app) {
       // "workspace went to sleep" card sends them back there (the portal
       // starts the codespace and reopens the harness) instead of the editor.
       portalUrl: process.env.VIBE_PORTAL_URL || null,
+      // The portal uses this to land on the list with this project in focus.
+      projectName: path.basename(WORKSPACE_DIR),
     });
   });
 

@@ -104,10 +104,12 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED" | sed 's/^/  /'
 
-          # Collect synced paths from the manifest (auto_update + merge_update)
+          # Collect synced paths from the manifest (auto_update, auto_update_major,
+          # merge_update). The gated section counts too: a harness or rules change
+          # must bump the version or children on the current major never see it.
           PATTERNS=$(awk '
-            /^auto_update:|^merge_update:/ { in_section=1; next }
-            /^[a-zA-Z_]+:/ && !/^auto_update:|^merge_update:/ { in_section=0 }
+            /^auto_update:|^auto_update_major:|^merge_update:/ { in_section=1; next }
+            /^[a-zA-Z_]+:/ && !/^auto_update:|^auto_update_major:|^merge_update:/ { in_section=0 }
             in_section && /^  - path:/ {
               line=$0
               sub(/^  - path:[[:space:]]*/, "", line)
