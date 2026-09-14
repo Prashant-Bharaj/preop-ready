@@ -95,6 +95,19 @@ jobs:
             exit 0
           fi
 
+          # Platform updates are committed by the template engine with [skip ci];
+          # if one still reaches this gate (re-run, manual dispatch), it changes
+          # no app code and must not redeploy the app.
+          HEAD_MSG=$(git log -1 --format=%s 2>/dev/null || true)
+          if [[ "$HEAD_MSG" == "chore(template): apply platform update"* ]]; then
+            REASON="template-update"
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "skip-reason=$REASON" >> $GITHUB_OUTPUT
+            echo "codeql-failed-on-schedule=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Platform update commit — nothing to deploy"
+            exit 0
+          fi
+
           # Nothing deployable yet (fresh template repo, or the app is not set up):
           # the platform needs backend/Dockerfile or frontend/Dockerfile.
           if [[ ! -f "backend/Dockerfile" ]] && [[ ! -f "frontend/Dockerfile" ]]; then
@@ -154,6 +167,8 @@ jobs:
               echo "Check the **CodeQL** workflow run for details on security findings."
             elif [[ "$REASON" == "template-repo" ]]; then
               echo "**Reason:** This is the template repository — deployment is disabled."
+            elif [[ "$REASON" == "template-update" ]]; then
+              echo "**Reason:** This commit only applies a platform (template) update — the app is unchanged, no redeploy."
             elif [[ "$REASON" == "no-app-yet" ]]; then
               echo "**Reason:** Nothing to deploy yet — this commit has no \`backend/Dockerfile\` or \`frontend/Dockerfile\`."
               echo ""

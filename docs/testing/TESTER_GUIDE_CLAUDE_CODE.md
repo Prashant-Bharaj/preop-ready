@@ -75,6 +75,12 @@ git clean -fd .platform-rules .claude/skills .cursor .github/instructions .templ
 touch .template-auto-update-disabled
 ```
 
+Updates that were applied are committed and pushed for you on the default branch. To keep applying them but commit yourself:
+
+```bash
+touch .template-auto-commit-disabled
+```
+
 The last line stops the automatic re-update on your next Codespace start. Delete that
 file whenever you are ready to adopt 1.4.0 (recommended — updates then apply silently
 on every Codespace start and your app code is never touched).
