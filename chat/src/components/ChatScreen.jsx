@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { editorUrlFor, classifyHealthProbe, OFFLINE_GRACE_MS, OFFLINE_PROBE_MS } from '../lib/workspace-status.js';
-import { sendMessage, resetSession, cleanProject, connectStream, getEnvironment, getDockerStatus, cancelSession, confirmPlan, discardPlan, revisePlan, pauseSession, uploadFile, confirmOpenApp, closeAutoStartedApp, startApp, branchSession } from '../lib/api.js';
+import { sendMessage, resetSession, cleanProject, connectStream, getEnvironment, getDockerStatus, cancelSession, confirmPlan, discardPlan, revisePlan, pauseSession, uploadFile, confirmOpenApp, closeAutoStartedApp, startApp, branchSession, triggerTemplateUpdate } from '../lib/api.js';
 import MessageBubble from './MessageBubble.jsx';
 import ExamplesModal from './ExamplesModal.jsx';
 import DropZone from './DropZone.jsx';
@@ -190,9 +190,14 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   // Set when a portal launched this workspace (server env VIBE_PORTAL_URL):
   // the sleep card sends the user back there instead of to the editor.
   const [portalUrl, setPortalUrl] = useState(null);
+  // Set while the harness applies a template update to itself; the server
+  // rebuilds and restarts, and this page reloads once a new server answers.
+  const [harnessUpdate, setHarnessUpdate] = useState(null);
+  const bootIdRef = useRef(null);
   useEffect(() => {
     fetch('/api/auth/status').then((r) => (r.ok ? r.json() : null))
       .then((d) => {
+        if (d?.bootId) bootIdRef.current = d.bootId;
         if (!d?.portalUrl) return;
         try {
           const u = new URL(d.portalUrl);
@@ -385,6 +390,10 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
     if (!sessionId) return;
 
     const stream = connectStream(sessionId, (event) => {
+      if (event.type === 'harness_updating') {
+        setHarnessUpdate({ version: event.payload?.version || null });
+        return;
+      }
       if (event.type === 'history_batch') {
         const restored = processHistoryBatch(event.events || []);
         setEvents(restored);
@@ -694,6 +703,23 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   // that idled out never comes back by itself: the user has to start it (and
   // the harness) again. Tell them, instead of showing "Reconnecting..." forever.
   useEffect(() => {
+    if (!harnessUpdate) return undefined;
+    let cancelled = false;
+    let timer = null;
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const res = await fetch('/api/auth/status', { cache: 'no-store' });
+        const d = res.ok ? await res.json() : null;
+        if (d?.bootId && d.bootId !== bootIdRef.current) { window.location.reload(); return; }
+      } catch { /* restarting */ }
+      timer = setTimeout(poll, 3000);
+    };
+    timer = setTimeout(poll, 4000);
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [harnessUpdate]);
+
+  useEffect(() => {
     if (wsStatus === 'connected') { setWorkspaceGone(false); return undefined; }
     let cancelled = false;
     let timer = null;
@@ -928,6 +954,25 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
   // Memoized so it's a stable prop for React.memo'd MessageBubble — otherwise a
   // new function each render would defeat the memo and every keystroke would
   // re-render the whole conversation (post-build typing lag).
+  // "Update now" on the template banner: apply the pending release directly
+  // (sync, commit, push). If the harness's own files changed the server
+  // restarts and the notice above the chat takes over until the reload.
+  const handleTemplateUpdateNow = useCallback(async () => {
+    const latest = envInfo?.templateVersion?.latest || null;
+    try {
+      const result = await triggerTemplateUpdate();
+      if (result?.restarting) {
+        setHarnessUpdate({ version: result.version || latest });
+        return;
+      }
+      if (result?.updated) {
+        getEnvironment().then(setEnvInfo).catch(() => {});
+      } else if (result?.reason === 'busy') {
+        setHarnessUpdate(null);
+      }
+    } catch { /* the banner stays; the periodic check retries later */ }
+  }, [envInfo]);
+
   const handleQuickAction = useCallback(async (prompt, displayLabel = null) => {
     if (status === 'working' || sending || !sessionId) return;
     setSending(true);
@@ -1321,6 +1366,14 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
         </div>
       </header>
 
+      {harnessUpdate && !workspaceGone && (
+        <div className="workspace-gone" role="status">
+          <div className="workspace-gone-title">
+            Updating your assistant{harnessUpdate.version ? ` to v${harnessUpdate.version}` : ''}
+          </div>
+          <p>The assistant restarts on the new version and this page reloads by itself. Your chat and app are kept.</p>
+        </div>
+      )}
       {workspaceGone ? (
         <div className="workspace-gone" role="alert">
           <div className="workspace-gone-title">Your workspace went to sleep</div>
@@ -1390,7 +1443,7 @@ export default function ChatScreen({ sessionId, mode, onReset, onOpenDrawer, sho
                 </div>
                 <button
                   className="template-update-btn"
-                  onClick={() => handleQuickAction('Run the template update script (scripts/apply-updates.sh) to update this project to the latest template version. Show me what changed.', 'Update template')}
+                  onClick={handleTemplateUpdateNow}
                   disabled={sending || isWorking}
                 >
                   Update now

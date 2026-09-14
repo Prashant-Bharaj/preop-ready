@@ -279,6 +279,11 @@ export async function refreshEnvironment() {
   return res.json();
 }
 
+export async function triggerTemplateUpdate() {
+  const res = await fetch(`${API_BASE}/environment/update`, { method: 'POST' });
+  return res.json();
+}
+
 // ── App secrets ──────────────────────────────────────────────────────────
 export async function getAppSecrets() {
   const res = await fetch(`${API_BASE}/app-secrets`);

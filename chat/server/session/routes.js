@@ -76,6 +76,11 @@ function cleanSessionId(raw) {
 }
 
 let activeSession = null;
+
+/** True while a turn or build is running for the active session. */
+export function isHarnessBusy() {
+  return Boolean(activeSession && activeSession.status === 'working');
+}
 let middlewareReady = false;
 
 

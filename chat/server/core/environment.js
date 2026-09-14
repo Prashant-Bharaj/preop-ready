@@ -3,6 +3,8 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { WORKSPACE_DIR } from './paths.js';
 import { getCachedEnvContext, refreshEnvContext } from '../agent/context/env-context.js';
+import { runTemplateUpdate, restartHarness } from './template-auto-update.js';
+import { isHarnessBusy } from '../session/routes.js';
 import { describeTemplateCheck } from './template-check.js';
 import { routeMessage } from '../agent/planner/two-agent.js';
 import { DOCKER_INFO_PROBE_MS, ENV_DETECT_MS } from '../config/defaults.js';
@@ -210,6 +212,19 @@ export function mountEnvironmentRoutes(app) {
   });
 
   // POST /api/environment/refresh — force a re-scan
+  // Apply a pending template update now (same path as the periodic check):
+  // sync, commit, push; rebuild + restart the harness if its own files changed.
+  app.post('/api/environment/update', async (_req, res) => {
+    try {
+      const result = await runTemplateUpdate({ isBusy: isHarnessBusy });
+      if (result.updated) await refreshEnvContext();
+      res.json(result);
+      if (result.restarting) restartHarness();
+    } catch (err) {
+      res.status(500).json({ error: 'Template update failed. Check chat server logs.', detail: err?.message });
+    }
+  });
+
   app.post('/api/environment/refresh', async (_req, res) => {
     try {
       await refreshEnvContext();

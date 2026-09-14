@@ -3,7 +3,8 @@ import cors from 'cors';
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { mountAuthRoutes } from './core/auth.js';
-import { mountSessionRoutes } from './session/routes.js';
+import { mountSessionRoutes, isHarnessBusy } from './session/routes.js';
+import { startTemplateAutoUpdate } from './core/template-auto-update.js';
 import { mountEnvironmentRoutes } from './core/environment.js';
 import { mountUploadRoutes } from './routes/uploads.js';
 import { mountAppSecretsRoutes } from './routes/app-secrets.js';
@@ -114,4 +115,5 @@ server.listen(PORT, () => {
   // Postgres container for a harness they never open — the gate starts it on
   // first use instead.
   if (process.env.SQL_VALIDATOR_WARMUP !== '0') startValidatorInBackground();
+  startTemplateAutoUpdate({ isBusy: isHarnessBusy });
 });

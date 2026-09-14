@@ -43,6 +43,13 @@ export function pendingPlanFromHistory(events, stillPending) {
  *     session room as `event` emissions.
  *   - A 5s git-meta broadcast is sent to every room.
  */
+let ioRef = null;
+
+/** Send an event to every connected client, whatever session it is in. */
+export function broadcastEvent(event) {
+  ioRef?.emit('event', event);
+}
+
 export function attachSocketIO(httpServer) {
   const io = new IOServer(httpServer, {
     // Same-origin in production; localhost-dev needs explicit allowlist.
@@ -92,5 +99,6 @@ export function attachSocketIO(httpServer) {
     io.emit('event', event);
   }, 5000);
 
+  ioRef = io;
   return io;
 }

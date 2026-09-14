@@ -6,6 +6,8 @@ import { MGA_PREFLIGHT_MS, MGA_VALIDATE_MS, MGA_HEALTH_PROBE_MS, DEFAULT_MODEL }
 import { logAndSwallow } from '../util/log-helpers.js';
 
 // Parsed secrets file, or null when it does not exist yet.
+const BOOT_ID = `${process.pid}-${Date.now()}`;
+
 function readSecretsFile() {
   try {
     return JSON.parse(readFileSync(SECRETS_PATH, 'utf-8'));
@@ -126,6 +128,8 @@ export function mountAuthRoutes(app) {
       portalUrl: process.env.VIBE_PORTAL_URL || null,
       // The portal uses this to land on the list with this project in focus.
       projectName: path.basename(WORKSPACE_DIR),
+      // Changes on every server start; the client compares it to notice a restart.
+      bootId: BOOT_ID,
     });
   });
 

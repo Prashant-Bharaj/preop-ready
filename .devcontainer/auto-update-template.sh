@@ -28,6 +28,69 @@ if [ -f ".template-auto-update-disabled" ]; then
   exit 0
 fi
 
+# Bring the working tree up to date with merged updates (security fixes etc.).
+# Fast-forward only, and only on the default branch — local work is never
+# overwritten; if the pull can't apply cleanly it just reports and moves on.
+# `|| true` on each of these: no remote, no network (git remote show does a
+# network round trip), a detached HEAD or a repo with no commits are all normal
+# situations here and must not abort the boot script under set -e / pipefail.
+DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p' || true)
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || true)
+if [ -n "$DEFAULT_BRANCH" ] && [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
+  BEFORE=$(git rev-parse HEAD 2>/dev/null || true)
+  if git pull --ff-only origin "$DEFAULT_BRANCH" >/dev/null 2>&1; then
+    AFTER=$(git rev-parse HEAD 2>/dev/null || true)
+    if [ "$BEFORE" != "$AFTER" ]; then
+      echo "⬇️  Pulled latest $DEFAULT_BRANCH (includes any merged dependency updates)."
+      if git diff --name-only "$BEFORE" "$AFTER" | grep -qE "package(-lock)?\.json|requirements\.txt"; then
+        echo "   Dependencies changed — rebuild before testing: docker compose build --no-cache"
+      fi
+    fi
+  else
+    echo "⚠️  Could not fast-forward $DEFAULT_BRANCH (local changes or diverged history) — ask your AI assistant to help sync."
+  fi
+fi
+
+# After the engine has synced platform files, commit and push them so the
+# project is current on its default branch without anyone typing git
+# commands. Only the files the engine changed are staged (a diff of `git
+# status` before/after the run), so work in flight stays untouched. Workflow
+# files are left out: Codespaces tokens may not push them (the engine tracks
+# those as pending_workflows). Opt out with:  touch .template-auto-commit-disabled
+auto_commit_platform_update() {
+  local from="$1" to="$2"
+  if [ -f ".template-auto-commit-disabled" ]; then
+    echo "   ⏸️  Auto-commit is disabled (.template-auto-commit-disabled exists) — synced files left for you to commit."
+    return 0
+  fi
+  if [ -z "$DEFAULT_BRANCH" ] || [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]; then
+    echo "   ℹ️  Not on $DEFAULT_BRANCH — synced files left for you to commit."
+    return 0
+  fi
+  local post changed files wf
+  post=$(git status --porcelain --untracked-files=all 2>/dev/null || true)
+  changed=$(comm -13 <(printf '%s\n' "$PRE_STATUS" | sort) <(printf '%s\n' "$post" | sort) | cut -c4- || true)
+  [ -n "$changed" ] || return 0
+  wf=$(printf '%s\n' "$changed" | grep '^\.github/workflows/' || true)
+  files=$(printf '%s\n' "$changed" | grep -v '^\.github/workflows/' || true)
+  if [ -n "$files" ]; then
+    printf '%s\n' "$files" | while IFS= read -r f; do [ -n "$f" ] && git add -- "$f" || true; done
+    if git commit -q -m "chore(template): apply platform update v$from → v$to [skip ci]" 2>/dev/null; then
+      if git push -q origin "$DEFAULT_BRANCH" >/dev/null 2>&1; then
+        echo "   ⬆️  Committed and pushed the platform update (v$from → v$to)."
+      else
+        echo "   ⚠️  Committed the platform update but could not push — run: git push"
+      fi
+    else
+      echo "   ⚠️  Could not commit the synced files — commit them by hand: git add -A && git commit"
+    fi
+  fi
+  if [ -n "$wf" ]; then
+    echo "   ℹ️  Workflow files changed too and Codespaces cannot push those — commit them from your machine:"
+    printf '%s\n' "$wf" | sed 's/^/       /'
+  fi
+}
+
 echo "🔄 Checking for template updates..."
 
 # A repo that has quietly stopped receiving template updates also stops
@@ -56,6 +119,7 @@ case "$RESULT" in
     echo "📦 Update available: $LOCAL → $LATEST"
     echo "   Applying updates..."
     ENGINE_OUT=$(mktemp)
+    PRE_STATUS=$(git status --porcelain --untracked-files=all 2>/dev/null || true)
     if bash scripts/apply-updates.sh 2>&1 | tee "$ENGINE_OUT"; then
       # A MAJOR release is not applied without opt-in (the AI rules, snippets
       # and harness would change under a project in flight); the additive
@@ -73,6 +137,7 @@ case "$RESULT" in
           echo "       TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh"
         fi
       fi
+      auto_commit_platform_update "$LOCAL" "$LATEST"
     else
       echo "❌ The update engine failed — see the output above."
       echo "   This repo is still on $LOCAL and is NOT receiving platform security fixes."
@@ -126,25 +191,3 @@ if [ -f scripts/check-dependabot-prs.sh ]; then
   bash scripts/check-dependabot-prs.sh || true
 fi
 
-# Bring the working tree up to date with merged updates (security fixes etc.).
-# Fast-forward only, and only on the default branch — local work is never
-# overwritten; if the pull can't apply cleanly it just reports and moves on.
-# `|| true` on each of these: no remote, no network (git remote show does a
-# network round trip), a detached HEAD or a repo with no commits are all normal
-# situations here and must not abort the boot script under set -e / pipefail.
-DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p' || true)
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || true)
-if [ -n "$DEFAULT_BRANCH" ] && [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
-  BEFORE=$(git rev-parse HEAD 2>/dev/null || true)
-  if git pull --ff-only origin "$DEFAULT_BRANCH" >/dev/null 2>&1; then
-    AFTER=$(git rev-parse HEAD 2>/dev/null || true)
-    if [ "$BEFORE" != "$AFTER" ]; then
-      echo "⬇️  Pulled latest $DEFAULT_BRANCH (includes any merged dependency updates)."
-      if git diff --name-only "$BEFORE" "$AFTER" | grep -qE "package(-lock)?\.json|requirements\.txt"; then
-        echo "   Dependencies changed — rebuild before testing: docker compose build --no-cache"
-      fi
-    fi
-  else
-    echo "⚠️  Could not fast-forward $DEFAULT_BRANCH (local changes or diverged history) — ask your AI assistant to help sync."
-  fi
-fi
