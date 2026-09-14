@@ -32,9 +32,17 @@
  *   Production task definitions never set it, so a header-less request in
  *   production yields 401.
  *
- *   Optional hardening: set EXPECTED_ALB_ARN to this app's load-balancer ARN to
- *   pin the token issuer — the regional key endpoint serves keys for every ALB
- *   in the region, so pinning rejects a token minted by any other ALB.
+ *   The regional key endpoint serves the signing keys of EVERY load balancer
+ *   in the region, so a signature check alone accepts a token minted by any
+ *   other ALB. The platform therefore injects two pins into every deployed
+ *   task, checked against the JWT header:
+ *
+ *       PLATFORM_ALB_ARN      the platform ALB's ARN   -> header `signer`
+ *       ALB_EXPECTED_ISSUER   the Cognito pool issuer  -> header `iss`
+ *
+ *   Never hardcode either value or remove the checks. When PLATFORM_ALB_ARN is
+ *   absent in production the middleware logs a warning at startup and falls
+ *   back to signature-only verification.
  *
  * DEPENDENCIES:
  *   None — uses built-in Node.js modules (node:crypto, global fetch on Node 18+).
@@ -81,7 +89,14 @@ interface OidcPayload {
   family_name?: string;
   picture?: string;
   exp?: number;
-  signer?: string; // ARN of the ALB that issued the token
+}
+
+// Fields the ALB puts in the JWT header (the payload carries only user claims).
+interface OidcHeader {
+  alg?: string;
+  kid?: string;
+  signer?: string; // ARN of the load balancer that signed the token
+  iss?: string; // issuer URL of the identity provider behind the ALB
 }
 
 // Augment Express Request with the typed `user` field added by the middleware.
@@ -89,6 +104,16 @@ declare module 'express-serve-static-core' {
   interface Request {
     user?: UserIdentity;
   }
+}
+
+// Platform-injected pins (see SECURITY MODEL above). Empty = not pinned.
+const EXPECTED_SIGNER = process.env.PLATFORM_ALB_ARN || '';
+const EXPECTED_ISSUER = process.env.ALB_EXPECTED_ISSUER || '';
+if (!EXPECTED_SIGNER && process.env.NODE_ENV === 'production') {
+  console.warn(
+    'OIDC verify: PLATFORM_ALB_ARN not set — accepting tokens signed by any ' +
+    'load balancer in the region (signer pinning inactive)'
+  );
 }
 
 // ALB public keys, cached per key id (keys rotate rarely).
@@ -115,10 +140,7 @@ export async function verifyOidcToken(oidcData: string): Promise<OidcPayload | n
     const parts = oidcData.split('.');
     if (parts.length !== 3) return null;
 
-    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')) as {
-      kid?: string;
-      alg?: string;
-    };
+    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')) as OidcHeader;
     const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
     if (!header.kid || !region) {
       // No key id or no region to fetch it from -> cannot verify -> reject.
@@ -146,12 +168,18 @@ export async function verifyOidcToken(oidcData: string): Promise<OidcPayload | n
     // as never-expiring. (`exp` is seconds since epoch.)
     if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
 
-    // Optional but recommended: pin the issuing load balancer. The regional key
-    // endpoint serves the signing keys for EVERY ALB in the region, so without
-    // this any ALB in the account can mint a token that verifies. Set
-    // EXPECTED_ALB_ARN to this app's ALB ARN to reject tokens signed elsewhere.
-    const expectedArn = process.env.EXPECTED_ALB_ARN;
-    if (expectedArn && payload.signer !== expectedArn) return null;
+    // Pin the signing load balancer and the identity provider behind it. Both
+    // live in the JWT HEADER (`signer`, `iss`), not the payload. The regional
+    // key endpoint serves keys for EVERY ALB in the region, so without these a
+    // token minted by another load balancer or IdP would verify.
+    if (EXPECTED_SIGNER && header.signer !== EXPECTED_SIGNER) {
+      console.error('OIDC verify: signer is not the platform load balancer');
+      return null;
+    }
+    if (EXPECTED_ISSUER && header.iss !== EXPECTED_ISSUER) {
+      console.error('OIDC verify: issuer is not the platform identity provider');
+      return null;
+    }
 
     return payload;
   } catch (error) {
