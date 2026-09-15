@@ -183,8 +183,16 @@ console.log("✅ Wrote gateway settings to " + f + (process.env.MGA_KEY ? " (wit
 
 # ─── 6. Retire claude-code-router if this Codespace still has it ────
 # The key is in settings.json now; the router config (which held it in
-# cleartext) and the daemon have no job left.
-if [ -d "$CCR_DIR" ] || command -v ccr &>/dev/null; then
+# cleartext) and the daemon have no job left — EXCEPT in a container built
+# from the old devcontainer.json: that one injects
+# ANTHROPIC_BASE_URL=http://127.0.0.1:3456 into every process (remoteEnv), so
+# a Claude Code session that is open right now still talks to the router.
+# Stopping it here froze such a session mid-conversation (observed live
+# 2026-09-15). Leave the router alone until the container is rebuilt; the
+# first start with a clean env removes it.
+STALE_ROUTER_ENV=0
+[ "${ANTHROPIC_BASE_URL:-}" = "http://127.0.0.1:3456" ] && STALE_ROUTER_ENV=1
+if [ "$STALE_ROUTER_ENV" = "0" ] && { [ -d "$CCR_DIR" ] || command -v ccr &>/dev/null; }; then
   if command -v ccr &>/dev/null; then
     ccr stop >/dev/null 2>&1 || true
     npm uninstall -g @musistudio/claude-code-router --silent >/dev/null 2>&1 || true
@@ -220,9 +228,10 @@ case "$CODE" in
   401|403) echo "⚠️  myGenAssist rejected the key (HTTP $CODE). Run 'mga-login' with a valid key." ;;
   *) echo "ℹ️  Key saved (source: $SOURCE); could not reach myGenAssist to verify (HTTP $CODE)." ;;
 esac
-if [ "${ANTHROPIC_BASE_URL:-}" = "http://127.0.0.1:3456" ]; then
-  echo "ℹ️  This Codespace still carries the old router env (remoteEnv). Rebuild the container once"
-  echo "   (Codespaces: Rebuild Container) so Claude Code reads the gateway settings cleanly."
+if [ "$STALE_ROUTER_ENV" = "1" ]; then
+  echo "ℹ️  New Claude Code sessions already use myGenAssist directly; the session open right now"
+  echo "   still goes through the old router (kept running for it). Rebuild the container once"
+  echo "   (Codespaces: Rebuild Container) when convenient — that drops the old env and the router."
 fi
 echo "   (If the Claude panel shows a model error, run 'Developer: Reload Window' once.)"
 
