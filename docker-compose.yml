@@ -34,18 +34,23 @@ services:
     build: ./backend
     ports:
       - "3000:3000"
-    # `required: false` is load-bearing: ./backend/.env is gitignored and nothing
-    # creates it, so a freshly instantiated repo has no such file. Without this,
-    # Compose hard-errors ("env file ... not found") and the very first
-    # `docker compose up` fails — at the exact moment the docs promise the user
-    # they will see their app. Needs Compose v2.24+ (Codespaces ships newer).
+    # Credentials never live in this file — it is tracked in git and the
+    # pre-commit security check blocks literal passwords. The gitignored root
+    # .env (next to this file) holds DATABASE_NAME / DATABASE_USER /
+    # DATABASE_PASSWORD; Compose reads it for the ${...} references below and
+    # the backend loads it here. The AI assistant (or the harness) creates it —
+    # see .platform-rules/scope-integration.md. backend/.env holds the app
+    # secrets; `required: false` is load-bearing there: nothing creates it on a
+    # fresh clone, and without the flag Compose hard-errors ("env file ... not
+    # found") on the very first `docker compose up`. Needs Compose v2.24+
+    # (Codespaces ships newer).
     env_file:
-      - path: ./backend/.env          # Gitignored — secrets stay private
+      - .env                          # DATABASE_* — gitignored
+      - path: ./backend/.env          # App secrets — gitignored, optional
         required: false
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=3306           # Change to 5432 for PostgreSQL
-      - DATABASE_NAME=demo
     depends_on:
       db:
         condition: service_healthy
@@ -58,10 +63,12 @@ services:
   # AI will switch to PostgreSQL if needed (replace entire db block)
   db:
     image: mysql:8.0
-    # See the note on the backend service: optional so a fresh clone starts.
-    env_file:
-      - path: ./database/.env         # Gitignored — credentials stay private
-        required: false
+    # Values come from the root .env (see the backend note) — references only.
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -81,16 +88,17 @@ services:
   # AI will uncomment this and remove MySQL if PostgreSQL is chosen:
   # db:
   #   image: postgres:15
-  #   env_file:
-  #     - path: ./database/.env       # Gitignored — credentials stay private
-  #       required: false
+  #   environment:
+  #     POSTGRES_DB: ${DATABASE_NAME}
+  #     POSTGRES_USER: ${DATABASE_USER}
+  #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
   #   ports:
   #     - "5432:5432"
   #   volumes:
   #     - db_data:/var/lib/postgresql/data
   #     - ./database/init:/docker-entrypoint-initdb.d  # Init scripts
   #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U demo_user -d demo"]
+  #     test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
   #     interval: 10s
   #     timeout: 5s
   #     retries: 5
