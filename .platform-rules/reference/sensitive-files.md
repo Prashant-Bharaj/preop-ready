@@ -87,27 +87,31 @@ git add --all
 
 ## ⛔ NEVER Put Secrets in docker-compose.yml
 
-`docker-compose.yml` is tracked in git. No passwords, API keys, or credentials — not even "local dev" ones. Use `env_file` referencing gitignored `.env` files:
+`docker-compose.yml` is tracked in git. No passwords, API keys, or credentials — not even "local dev" ones; the pre-commit security check blocks a compose file with a literal `*_PASSWORD` value. Values live in gitignored `.env` files and compose only references them:
 
 ```yaml
-# ✅ CORRECT — credentials come from gitignored .env files
+# ✅ CORRECT — values come from gitignored .env files, compose only references them
 backend:
   build: ./backend
   env_file:
-    - ./backend/.env
+    - .env                     # DATABASE_* (and VECTORDB_*, MGA_*) — next to docker-compose.yml
+    - path: backend/.env       # app secrets — optional
+      required: false
   environment:
-    - DATABASE_HOST=db
+    - DATABASE_HOST=database
     - DATABASE_PORT=5432
 
-db:
-  image: postgres:15
-  env_file:
-    - ./database/.env
+database:
+  build: ./database
+  environment:
+    POSTGRES_DB: ${DATABASE_NAME}
+    POSTGRES_USER: ${DATABASE_USER}
+    POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
   volumes:
-    - db_data:/var/lib/postgresql/data
+    - db-data:/data
 ```
 
-Setup: create `backend/.env` with the app secrets, `database/.env` with DB credentials, reference both via `env_file`. If a user asks for a password directly in docker-compose.yml, **refuse** and use `env_file`.
+Setup: create `.env` next to docker-compose.yml with `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` (the harness writes it for you; see `scope-integration.md`) and `backend/.env` with the app secrets. If a user asks for a password directly in docker-compose.yml, **refuse** and point at `.env` — the commit would be blocked anyway.
 
 ## ⛔ NEVER Hardcode Secrets
 

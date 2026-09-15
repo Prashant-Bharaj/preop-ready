@@ -79,7 +79,7 @@ MGA's `text-embedding-3-*` returns L2-normalized vectors, so cosine ≈ inner pr
 
 ## Env vars — you don't author these
 
-The integration scope writes the `VECTORDB_*` env vars into docker-compose.yml for local dev. In production they're injected by the ECS task definition. **Your job is to be reachable on `vectordb:5432` and respect `POSTGRES_DB/USER/PASSWORD`** (which the canonical Dockerfile already does). You don't write `.env` files or env-var manifests.
+The integration scope wires the vectordb service by reference (`POSTGRES_DB: ${VECTORDB_NAME}` etc. — the values live in the workspace-root `.env` the harness writes) and the backend receives `VECTORDB_*` through `env_file: .env`. In production they're injected by the ECS task definition. **Your job is to be reachable on `vectordb:5432` and respect `POSTGRES_DB/USER/PASSWORD`** (which the canonical Dockerfile already does). You don't write `.env` files or env-var manifests.
 
 ## Verify before `attempt_completion`
 

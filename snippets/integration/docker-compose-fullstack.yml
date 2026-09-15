@@ -3,10 +3,12 @@
 # description: Full-stack docker-compose (frontend + backend + PostgreSQL).
 
 # Full-stack docker-compose: frontend + backend + PostgreSQL database
-# Adapt service names, env vars, and ports to match your project.
-# CRITICAL: env var consistency — DATABASE_NAME must match POSTGRES_DB, etc.
-
-version: '3.8'
+# Adapt service names and ports to match your project.
+# CRITICAL: credential VALUES never appear in this file (it is tracked; the
+# pre-commit security check blocks literal passwords). They live in the
+# workspace-root .env — DATABASE_NAME / DATABASE_USER / DATABASE_PASSWORD,
+# written by the harness, gitignored — and are only REFERENCED here. Both
+# services read the same variables, so they cannot drift.
 
 services:
   frontend:
@@ -22,35 +24,37 @@ services:
     build: ./backend
     ports:
       - "3001:3000"
-    # Uncomment BOTH blocks below when the app uses an MGA assistant. The
-    # harness writes /workspace/.env with the three MGA_* keys at /confirm
-    # time when an AI feature is planned; compose interpolates them via
-    # ${VAR}. Without `env_file`, the .env at workspace root would still
-    # supply ${VAR} (compose's default behaviour) — but `env_file` ensures
-    # the keys also flow into the container's environment for runtime reads.
-    # env_file:
-    #   - ../.env
+    # .env sits next to docker-compose.yml (DATABASE_*, VECTORDB_*, MGA_*);
+    # backend/.env carries the app secrets (API keys) and is optional.
+    env_file:
+      - .env
+      - path: backend/.env
+        required: false
     environment:
       - NODE_ENV=development
       - PORT=3000
       - DATABASE_HOST=database
       - DATABASE_PORT=5432
-      - DATABASE_NAME=myapp
-      - DATABASE_USER=myapp_user
-      - DATABASE_PASSWORD=localdev123
-      # MGA assistant wiring (uncomment when app uses mga-* snippets):
+      # MGA assistant wiring (when the app uses mga-* snippets — one
+      # passthrough per MGA_* key the harness wrote to .env):
       # - MGA_API_KEY=${MGA_API_KEY}
       # - MGA_BASE_URL=${MGA_BASE_URL}
       # - MGA_ASSISTANT_ID=${MGA_ASSISTANT_ID}
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   database:
     build: ./database
     environment:
-      POSTGRES_DB: myapp
-      POSTGRES_USER: myapp_user
-      POSTGRES_PASSWORD: localdev123
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - db-data:/data
 

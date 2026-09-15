@@ -26,17 +26,26 @@ Core rules (routing, ports, `/health`, nginx server-block-only format) are in `.
 
 **Full-stack** (frontend + backend + database):
 
-⛔ NEVER put credentials directly in docker-compose.yml (it is tracked in git). All
-credential values live in a gitignored `.env` next to docker-compose.yml — compose
-loads it via `env_file:` and `${VAR}` substitution. Create it once:
+⛔ NEVER put credentials directly in docker-compose.yml — it is tracked in git, and the
+pre-commit security check blocks a compose file with a literal `*_PASSWORD` value. All
+credential values live in a gitignored `.env` next to docker-compose.yml: compose reads it
+for `${VAR}` substitution and the backend loads it via `env_file:`. The harness writes it
+before a build; when building by hand, create it once:
 
 ```bash
 cat > .env << 'EOF'
 DATABASE_NAME=myapp
 DATABASE_USER=myapp_user
 DATABASE_PASSWORD=localdev123
+# pgvector only:
+VECTORDB_NAME=vectors
+VECTORDB_USER=vectordb_user
+VECTORDB_PASSWORD=localdev123
 EOF
 ```
+
+App secrets (API keys, `JWT_SECRET`, …) live in `backend/.env` (see
+`reference/secrets-and-keys.md`); the backend loads both files.
 
 ```yaml
 services:
@@ -49,10 +58,14 @@ services:
   backend:
     build: ./backend
     ports: ["3000:3000"]
-    env_file: [.env]
+    env_file:
+      - .env                          # DATABASE_* / VECTORDB_* / MGA_* — never inline these
+      - path: backend/.env            # app secrets — optional
+        required: false
     environment:
       - PORT=3000
       - DATABASE_HOST=database          # MUST equal the db service name below
+      - DATABASE_PORT=5432
     depends_on: [database]
   database:
     build: ./database
@@ -60,23 +73,27 @@ services:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
     volumes: [db-data:/data]
-  # Optional vector DB (independent service):
+  # Optional vector DB (independent service; backend adds VECTORDB_HOST=vectordb
+  # and VECTORDB_PORT=5432 to its environment):
   # vectordb:
   #   build: ./vectordb
   #   environment:                      # pgvector
-  #     POSTGRES_DB: vectors
-  #     POSTGRES_USER: vectordb_user
-  #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+  #     POSTGRES_DB: ${VECTORDB_NAME}
+  #     POSTGRES_USER: ${VECTORDB_USER}
+  #     POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}
   #   volumes: [vectordb-data:/data]
 volumes:
   db-data:
   # vectordb-data:
 ```
 
-(Compose reads `${...}` values from the `.env` file automatically; the backend gets them
-via `env_file:`. The values are dev-only fakes, but the PATTERN must be env_file — a
-tracked compose file with literal credentials teaches the wrong habit and fails preflight.)
+(Compose reads `${...}` values from `.env` automatically; the backend gets the same
+variables via `env_file:`, so the two sides cannot drift. The values are dev-only fakes,
+but the PATTERN must be `.env` + references — a tracked compose file with literal
+credentials is blocked at commit time. Never create `.env.example`.)
 
 **Frontend + backend** (no database): delete the `database` service, the backend's `depends_on: [database]` and `DATABASE_*` env vars, and the `volumes:` block.
 
@@ -97,7 +114,7 @@ For frontend-only, `nginx.local.conf` must have NO proxy blocks — `cp frontend
 
 - `DATABASE_HOST` (and `VECTORDB_HOST`) must equal the compose **service name** exactly.
 - DB port is 5432 (postgres/pgvector).
-- Env var names in backend code = names in the compose `environment:` block.
+- Env var names in backend code = names in `.env` / the compose `environment:` block.
 - The `nginx.local.conf` volume mount is **REQUIRED** whenever a backend exists — without it, local `/api` calls hit the proxy-less production `nginx.conf` and 404.
 - `depends_on` chain: frontend → backend → database.
 - Keep the platform service names: `frontend`, `backend`, `db`/`database`, `vectordb`.

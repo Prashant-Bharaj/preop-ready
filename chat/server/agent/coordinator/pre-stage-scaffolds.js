@@ -45,6 +45,7 @@ import { generateDevRoleSwitcher } from './dev-role-switcher-generator.js';
 import { generateErrorBoundary } from './error-boundary-generator.js';
 import { stageFrontendKit } from './frontend-kit-generator.js';
 import { generateOidcIdentity } from './oidc-identity-generator.js';
+import { ensureWorkspaceEnv } from '../../core/workspace-env.js';
 import { LOCAL_DB_CREDENTIALS } from '../../config/defaults.js';
 
 // Project root for canonical templates — CHAT_APP_DIR is .../chat, so up one
@@ -86,6 +87,27 @@ export function preStageScaffolds({ workspaceDir, contract, isIterate, iterateDi
     uiKitStaged: false,
     scaffoldedComponents: [],
   };
+
+  // ── 0. Workspace .env — the ONLY place local credentials live ────────
+  // docker-compose.yml is tracked, so it must reference `${DATABASE_*}` /
+  // `${VECTORDB_*}` and load the file via env_file; the values are written
+  // here (fresh AND iterate, add-missing only) so the integration agent's
+  // `docker compose config` resolves and compose up never sees an empty
+  // POSTGRES_PASSWORD. Never captured into out.files: it is gitignored and
+  // later carries the MGA key. The credential validator re-checks it before
+  // every compose up.
+  try {
+    const envTasks = Array.isArray(contract?.tasks) ? contract.tasks : [];
+    const hasScope = (s) => envTasks.some((t) => t && t.scope === s);
+    const hasDatabase = hasScope('database')
+      || (Array.isArray(contract?.dataModel?.tables) && contract.dataModel.tables.length > 0);
+    const hasPgVectordb = hasScope('vectordb') && contract?.vectorEngine === 'pgvector';
+    const wdEnv = workspaceDir || WORKSPACE_DIR;
+    if (hasDatabase || hasPgVectordb || hasScope('backend') || fs.existsSync(path.join(wdEnv, 'backend'))) {
+      const env = ensureWorkspaceEnv(wdEnv, { database: hasDatabase, vectordb: hasPgVectordb });
+      if (env.added.length) tlog('[pre-stage] workspace .env: added %s', env.added.join(', '));
+    }
+  } catch (err) { logAndSwallow(err, '[pre-stage] workspace .env failed'); }
   if (isIterate) {
     const wdI = workspaceDir || WORKSPACE_DIR;
     // REGENERATE contract types + api-client from the (diff-merged) contract
@@ -491,20 +513,20 @@ function synthesizeDatabaseReport(contract, tableNames, seeded = []) {
   }
   lines.push('');
   // Database connection identity is a FIXED platform constant — NOT chosen per
-  // project. Emit the concrete values (not "set by integration" placeholders)
-  // so the integration + backend agents wire identical creds on both services.
-  // Renaming the db/user to the project name is the #1 cause of backend↔db
-  // auth failures on fresh builds. (The credential-consistency validator
-  // enforces this deterministically before compose up as a backstop.)
+  // project. The VALUES live in the workspace-root .env (written by pre-stage);
+  // compose must only REFERENCE them, never inline them: docker-compose.yml is
+  // tracked and the pre-commit security check blocks literal passwords. Both
+  // services read the same variables, so they cannot drift. (The
+  // credential-consistency validator enforces this before compose up.)
   const db = LOCAL_DB_CREDENTIALS;
-  lines.push('**Database connection — FIXED platform values. Use these EXACTLY; do NOT rename');
-  lines.push('the database or user to the project. Wire IDENTICAL values on BOTH the db');
-  lines.push('service (POSTGRES_*) and the backend service (DATABASE_*):**');
-  lines.push(`- \`DATABASE_HOST=${db.host}\``);
-  lines.push(`- \`DATABASE_PORT=${db.port}\``);
-  lines.push(`- \`DATABASE_NAME=${db.name}\`  ⇔  \`POSTGRES_DB=${db.name}\``);
-  lines.push(`- \`DATABASE_USER=${db.user}\`  ⇔  \`POSTGRES_USER=${db.user}\``);
-  lines.push(`- \`DATABASE_PASSWORD=${db.password}\`  ⇔  \`POSTGRES_PASSWORD=${db.password}\``);
+  lines.push('**Database connection — FIXED platform values, already written to the workspace-root');
+  lines.push('`.env` (gitignored) as `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`. Do NOT');
+  lines.push('rename the database or user to the project and do NOT write the values into');
+  lines.push('docker-compose.yml. Wire them by reference:**');
+  lines.push('- db service `environment:` → `POSTGRES_DB: ${DATABASE_NAME}`, `POSTGRES_USER: ${DATABASE_USER}`, `POSTGRES_PASSWORD: ${DATABASE_PASSWORD}`');
+  lines.push('- backend service → `env_file: [.env]` (the file sits next to docker-compose.yml) plus');
+  lines.push(`  \`DATABASE_HOST=${db.host}\` and \`DATABASE_PORT=${db.port}\` in \`environment:\` — nothing else`);
+  lines.push('- healthcheck: `pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}`');
   lines.push('');
   lines.push('**Ports:** `database:5432`');
   lines.push('');

@@ -4,7 +4,7 @@ This overlay layers on subagent-base.md. Your spawn dispatch includes `=== REQUI
 
 ---
 
-You're the integration phase agent. Scope: `docker-compose.yml` + `.env.example` at workspace root, plus optional patches to `frontend/nginx.local.conf` if a frontend report flags a routing gap. `checkPermissions` permits these specific cross-scope writes.
+You're the integration phase agent. Scope: `docker-compose.yml` at workspace root, plus optional patches to `frontend/nginx.local.conf` if a frontend report flags a routing gap. `checkPermissions` permits these specific cross-scope writes. You never write `.env` (the harness owns it) and never create `.env.example` (banned by the platform rules; the write is blocked).
 
 ## Sibling reports are ground truth
 
@@ -39,30 +39,44 @@ If a fetched template (`get_snippet integration/docker-compose-fullstack.yml`) i
 
 | Internal port | Healthcheck | Env passed to vectordb | Env passed to backend |
 |---|---|---|---|
-| 5432 | `pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `VECTORDB_HOST=vectordb`, `VECTORDB_PORT=5432`, `VECTORDB_USER`, `VECTORDB_PASSWORD`, `VECTORDB_NAME` |
+| 5432 | `pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}` | `POSTGRES_DB: ${VECTORDB_NAME}`, `POSTGRES_USER: ${VECTORDB_USER}`, `POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}` (references only — values live in `.env`) | `VECTORDB_HOST=vectordb`, `VECTORDB_PORT=5432` inline; `VECTORDB_NAME/USER/PASSWORD` arrive through `env_file: .env` |
 
 Volume mount: `/data` (PGDATA). Use a named volume (`pgvectordata`).
 
-## MGA env wiring
+## Workspace `.env` wiring — credential values are never written into compose
 
-When your spawn message contains `=== MGA ENV FILE ===` (the harness wrote the workspace-root `.env` with MGA credentials at `/confirm` time), you MUST wire the backend service as below — even if no sibling report mentions MGA vars. Include every var the section lists (extra assistants appear as `MGA_ASSISTANT_ID_<KEY>`).
+The harness writes the workspace-root `.env` (gitignored) BEFORE you run: `DATABASE_NAME/USER/PASSWORD` when there is a database, `VECTORDB_NAME/USER/PASSWORD` for a pgvector service, `MGA_*` when the app has an AI feature. Your spawn message lists its keys under `=== WORKSPACE ENV FILE ===`. `docker-compose.yml` is tracked in git and the pre-commit security check blocks any literal `*_PASSWORD` value in it, so compose only ever REFERENCES the file:
 
 ```yaml
 backend:
   env_file:
-    - .env  # path relative to docker-compose.yml, which sits NEXT TO .env at workspace root
+    - .env                    # path relative to docker-compose.yml, which sits NEXT TO .env
+    - path: backend/.env      # app secrets (API keys) — optional
+      required: false
   environment:
-    - MGA_API_KEY=${MGA_API_KEY}
-    - MGA_BASE_URL=${MGA_BASE_URL}
-    - MGA_ASSISTANT_ID=${MGA_ASSISTANT_ID}
+    - PORT=3000
+    - DATABASE_HOST=database  # non-secret wiring only
+    - DATABASE_PORT=5432
+    - MGA_API_KEY=${MGA_API_KEY}            # only when the section lists MGA_* keys —
+    - MGA_BASE_URL=${MGA_BASE_URL}          # one passthrough per listed var, including
+    - MGA_ASSISTANT_ID=${MGA_ASSISTANT_ID}  # MGA_ASSISTANT_ID_<KEY> extras
+database:
+  environment:
+    POSTGRES_DB: ${DATABASE_NAME}
+    POSTGRES_USER: ${DATABASE_USER}
+    POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+vectordb:                                   # pgvector only
+  environment:
+    POSTGRES_DB: ${VECTORDB_NAME}
+    POSTGRES_USER: ${VECTORDB_USER}
+    POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}
 ```
 
-Do NOT add the `env_file` entry when the `=== MGA ENV FILE ===` section is absent — the file won't exist and `compose up` fails.
+Never put a value after `POSTGRES_PASSWORD`, `DATABASE_PASSWORD` or `VECTORDB_PASSWORD` — only `${...}` references. The backend service always carries `env_file: - .env`, even for an app with no database and no AI feature (the file exists). `docker compose config` resolves the references from `.env`; a "variable is not set" warning means the harness did not write that key, not that you should inline a value.
 
 ## Deliverables
 
 - `docker-compose.yml` at workspace root — one service block per `=== COMPLETED: <SCOPE> ===` block.
-- `.env.example` at workspace root — names + placeholder values for every env var referenced in compose `environment:` blocks.
 - (Optional) patches to `frontend/nginx.local.conf` if frontend's report flagged a routing gap.
 
 ## Verify before `attempt_completion`

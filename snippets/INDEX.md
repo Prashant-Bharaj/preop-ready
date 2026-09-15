@@ -57,9 +57,11 @@ Byte-deployable Dockerfile templates per scope. Copy via `copy_template(template
 
 ### AI / LLM
 
-> Apps with AI features wire env vars from workspace root `.env` (written by
-> the harness during `/confirm`): `MGA_API_KEY`, `MGA_BASE_URL`,
-> `MGA_ASSISTANT_ID`. See `.platform-rules/mga-platform.md` for the full
+> Apps wire credentials from the workspace-root `.env` (written by the harness,
+> gitignored): `DATABASE_*`, `VECTORDB_*` and, for AI features, `MGA_API_KEY`,
+> `MGA_BASE_URL`, `MGA_ASSISTANT_ID`. Compose references them as `${VAR}` and the
+> backend loads the file via `env_file` — never a literal value in
+> docker-compose.yml. See `.platform-rules/mga-platform.md` for the full
 > capability catalog (models, tools, endpoints).
 
 | Snippet | Language | File | Description |

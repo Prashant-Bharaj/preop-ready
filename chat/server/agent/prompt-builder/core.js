@@ -34,6 +34,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { WORKSPACE_DIR } from '../../core/paths.js';
+import { readEnvFile } from '../../core/workspace-env.js';
 
 import { buildWorkspaceSnapshot } from './sections/workspace-snapshot.js';
 import { buildAttachedFilesSection } from './sections/attached-files-section.js';
@@ -698,14 +699,16 @@ export function buildSpawnUserMessage(task, envContext, {
   const requiredServicesSection = buildRequiredServicesSection(allTaskScopes, task.scope);
   if (requiredServicesSection) sections.push(requiredServicesSection);
 
-  // ── 2c. MGA env file (integration scope only) ──
+  // ── 2c. Workspace env file (integration scope only) ──
   // Runtime fact, not sibling-report faith: the harness writes the workspace
-  // .env with MGA_* vars at confirm time. When it exists, the integration
-  // agent MUST wire it into the backend service even if no sibling report
-  // mentions MGA — a backend report that omits its env vars must not be able
-  // to leave the AI endpoint unconfigured.
-  const mgaEnvSection = buildMgaEnvFileSection(task.scope);
-  if (mgaEnvSection) sections.push(mgaEnvSection);
+  // .env (DATABASE_* / VECTORDB_* at pre-stage, MGA_* at confirm time). When
+  // it exists, the integration agent MUST wire it by reference — env_file on
+  // the backend, ${VAR} on the db services — even if no sibling report
+  // mentions the vars: a report that omits them must not be able to leave
+  // the stack unconfigured, and a literal value in compose is blocked at
+  // commit time.
+  const envFileSection = buildWorkspaceEnvFileSection(task.scope);
+  if (envFileSection) sections.push(envFileSection);
 
   // ── 3. Extra hints — per-flag rules/snippets that aren't already in the
   // system prompt's baselines. The deployed subagent system prompt inlines
@@ -764,29 +767,36 @@ export function buildSpawnUserMessage(task, envContext, {
 
 /**
  * Section emitted into integration spawn messages when the harness-written
- * workspace .env (MGA credentials) exists on disk. Lists the actual var
- * names found so the wiring instruction covers namespaced assistant ids
- * (MGA_ASSISTANT_ID_<KEY>) too. Returns null for other scopes / no file.
+ * workspace .env exists on disk. Lists the actual keys (DATABASE_*,
+ * VECTORDB_*, MGA_* including namespaced assistant ids) and states how each
+ * group is wired: compose only ever REFERENCES the file — the values never
+ * appear in docker-compose.yml. Returns null for other scopes / no file /
+ * no keys.
  */
-export function buildMgaEnvFileSection(scope) {
+export function buildWorkspaceEnvFileSection(scope) {
   if (scope !== 'integration') return null;
-  const envPath = path.join(WORKSPACE_DIR, '.env');
-  if (!existsSync(envPath)) return null;
-  let varNames = [];
-  try {
-    varNames = readFileSync(envPath, 'utf-8')
-      .split('\n')
-      .map((l) => l.match(/^\s*(MGA_[A-Z0-9_]+)\s*=/)?.[1])
-      .filter(Boolean);
-  } catch { /* fall through with empty list */ }
-  if (varNames.length === 0) return null;
-  return (
-    `=== MGA ENV FILE ===\n` +
-    `The workspace-root .env exists (written by the harness at confirm time) and defines: ${varNames.join(', ')}.\n` +
-    `You MUST wire these into the backend service in docker-compose.yml — \`env_file: [.env]\` on the backend service ` +
-    `(the path is relative to docker-compose.yml, which sits next to .env at workspace root) plus explicit ` +
-    `\`environment:\` passthrough entries for each var above — even if no sibling report mentions them.`
-  );
+  const keys = Object.keys(readEnvFile(path.join(WORKSPACE_DIR, '.env')));
+  if (keys.length === 0) return null;
+  const db = keys.filter((k) => k.startsWith('DATABASE_'));
+  const vdb = keys.filter((k) => k.startsWith('VECTORDB_'));
+  const mga = keys.filter((k) => k.startsWith('MGA_'));
+  const lines = [
+    '=== WORKSPACE ENV FILE ===',
+    `The workspace-root .env exists (written by the harness, gitignored) and defines: ${keys.join(', ')}.`,
+    'It is the ONLY place credential values live. docker-compose.yml is tracked and must only reference them:',
+    '- backend service: `env_file:` listing `.env` (the path is relative to docker-compose.yml, which sits next to .env at workspace root) — always.',
+  ];
+  if (db.length) {
+    lines.push('- db service `environment:` → `POSTGRES_DB: ${DATABASE_NAME}`, `POSTGRES_USER: ${DATABASE_USER}`, `POSTGRES_PASSWORD: ${DATABASE_PASSWORD}`; the backend keeps only `DATABASE_HOST=database` and `DATABASE_PORT=5432` inline.');
+  }
+  if (vdb.length) {
+    lines.push('- vectordb service `environment:` → `POSTGRES_DB: ${VECTORDB_NAME}`, `POSTGRES_USER: ${VECTORDB_USER}`, `POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}`; the backend keeps only `VECTORDB_HOST=vectordb` and `VECTORDB_PORT=5432` inline.');
+  }
+  if (mga.length) {
+    lines.push(`- backend \`environment:\` passthrough entries for each MGA var (${mga.map((k) => `${k}=\${${k}}`).join(', ')}) — even if no sibling report mentions them.`);
+  }
+  lines.push('Never write a credential value into docker-compose.yml and never create .env.example.');
+  return lines.join('\n');
 }
 
 // ── File reading helpers ──

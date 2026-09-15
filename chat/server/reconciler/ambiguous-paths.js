@@ -21,14 +21,13 @@ const KNOWN_SCOPES = new Set([
   'vectordb',
   'integration',
   // Common workspace-root files (no scope, but unambiguous).
-  // Listed here so `docker-compose.yml`, `.env.example`, etc. don't
+  // Listed here so `docker-compose.yml`, `README.md`, etc. don't
   // generate a noisy "no scope prefix" flag.
 ]);
 
 const KNOWN_ROOT_FILES = new Set([
   'docker-compose.yml',
   'docker-compose.yaml',
-  '.env.example',
   'README.md',
 ]);
 

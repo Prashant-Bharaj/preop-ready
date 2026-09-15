@@ -4,11 +4,11 @@ services:
       context: ./database
       dockerfile: Dockerfile
     environment:
-      POSTGRES_DB: tasks
-      POSTGRES_USER: tasks_user
-      POSTGRES_PASSWORD: localdev123
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tasks_user -d tasks"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -21,12 +21,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       DATABASE_HOST: database
       DATABASE_PORT: 5432
-      DATABASE_NAME: tasks
-      DATABASE_USER: tasks_user
-      DATABASE_PASSWORD: localdev123
     ports:
       - "3000:3000"
     depends_on:

@@ -18,19 +18,18 @@
  * @returns {Promise<{ok: boolean, created: Array<{key,assistantId}>, error: string|null, skipped: boolean}>}
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { tlog } from '../util/timestamped-log.js';
 import { logAndSwallow } from '../util/log-helpers.js';
 import { WORKSPACE_DIR } from '../core/paths.js';
+import { upsertEnvFile } from '../core/workspace-env.js';
 
 function mergeEnvFile(envPath, mgaLines) {
-  let existing = [];
-  try {
-    existing = fs.readFileSync(envPath, 'utf-8').split('\n')
-      .filter((l) => l.trim() !== '' && !/^MGA_/.test(l.trim()));
-  } catch { /* no .env yet */ }
-  fs.writeFileSync(envPath, [...existing, ...mgaLines].join('\n') + '\n');
+  const entries = Object.fromEntries(mgaLines.map((l) => {
+    const eq = l.indexOf('=');
+    return [l.slice(0, eq), l.slice(eq + 1)];
+  }));
+  upsertEnvFile(envPath, entries, { dropPrefix: 'MGA_' });
 }
 
 export async function provisionMgaAssistants(session, specs, contracts, { getCredentials }) {

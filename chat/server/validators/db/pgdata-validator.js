@@ -262,8 +262,12 @@ export function scanComposeForHealthcheckUserMismatch(workspaceDir) {
     // `-U postgres` or no -U; either way, default-vs-default is fine).
     if (envUser == null && envDb == null) continue;
 
-    const userMismatch = args.user != null && envUser != null && args.user !== envUser;
-    const dbMismatch = args.db != null && envDb != null && args.db !== envDb;
+    // `$${POSTGRES_USER}` / `$${POSTGRES_DB}` expand inside the container to
+    // whatever the env block set (compose keeps the `$$` escape verbatim in
+    // the parsed string) — that is the prescribed healthcheck and can never
+    // mismatch, whatever the env value (literal or a ${DATABASE_*} reference).
+    const userMismatch = args.user != null && envUser != null && args.user !== envUser && args.user !== '$${POSTGRES_USER}';
+    const dbMismatch = args.db != null && envDb != null && args.db !== envDb && args.db !== '$${POSTGRES_DB}';
     // Also flag when env declares custom user/db but healthcheck has no
     // -U / -d (defaults to "postgres" — wrong, will fail).
     const userMissingButEnvCustom = args.user == null && envUser != null && envUser !== 'postgres';

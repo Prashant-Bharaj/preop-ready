@@ -47,9 +47,8 @@ const PROTECTED_FILE_PATTERNS = [
   { kind: 'exact',  value: '.template-manifest.yml' },
   { kind: 'exact',  value: '.gitignore' },
   // `.env`, `.env.local`, `.env.example`, etc — glob via prefix on basename.
-  // BUT: `.env.example` is template-distributable + agent-edited (snippets/integration
-  // ships one). The agent SHOULD be able to write it. Excluded from the deny
-  // list by basename match below.
+  // The harness owns the workspace .env (credential values); `.env.example`
+  // is banned by the platform rules and blocked by .gitignore.
   { kind: 'env-glob', value: '.env' },
 ];
 
@@ -77,15 +76,14 @@ const PLATFORM_LOCKED_FILES = new Set([
 // own folder. Documented in the matching chat/prompts/subagent-*.md.
 //   - vectordb writes backend/vectordb-connections.ts (connection helper
 //     consumed by backend).
-//   - integration writes workspace-root infra files (docker-compose.yml,
-//     .env.example) AND frontend/nginx.local.conf (the proxy wiring file
-//     that integration co-owns with frontend, per scope-integration.md).
+//   - integration writes the workspace-root docker-compose.yml AND
+//     frontend/nginx.local.conf (the proxy wiring file that integration
+//     co-owns with frontend, per scope-integration.md).
 const SCOPE_CROSS_WRITE_CARVEOUTS = new Map([
   ['vectordb', new Set(['backend/vectordb-connections.ts'])],
   ['integration', new Set([
     'docker-compose.yml',
     'docker-compose.yaml',
-    '.env.example',
     'frontend/nginx.conf',
     'frontend/nginx.local.conf',
   ])],
@@ -134,13 +132,10 @@ function isProtectedFile(relPath) {
         return { matched: true, pattern: rule.value };
       }
     } else if (rule.kind === 'env-glob') {
-      // `.env`, `.env.local`, `.env.production`, ... — but exempt `.env.example`
-      // (template-distributable + agent-edited).
-      if (base === '.env' || (base.startsWith('.env.') && base !== '.env.example')) {
-        // Also allow nested .env files like `backend/.env.local` if they appear,
-        // but at workspace root they're protected — both agent and human paths
-        // tend to keep the canonical .env at the root. Be conservative: protect
-        // any `.env*` write at any depth, except `.env.example`.
+      // `.env`, `.env.local`, `.env.production`, `.env.example`, ... — protect
+      // any `.env*` write at any depth: the harness writes the workspace .env
+      // itself, and `.env.example` is banned by the platform rules.
+      if (base === '.env' || base.startsWith('.env.')) {
         return { matched: true, pattern: '.env*' };
       }
     }

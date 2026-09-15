@@ -206,7 +206,7 @@ export function synthesizeVectordbReport(contract) {
     ...tableLines,
     '**Notes for siblings:**',
     `- Backend MUST query chunks through the pre-staged \`backend/src/lib/vector-search.ts\` (CHUNK_TABLE = '${init.tableNames[0]}'). Do not hand-write pgvector SQL or invent table names.`,
-    '- Integration wires the vectordb service with the VECTORDB_* environment variables.',
+    '- Integration wires the vectordb service BY REFERENCE: `POSTGRES_DB: ${VECTORDB_NAME}`, `POSTGRES_USER: ${VECTORDB_USER}`, `POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}` — the values live in the workspace-root `.env` (written by the harness, gitignored), never in docker-compose.yml. The backend gets VECTORDB_NAME/USER/PASSWORD via `env_file: [.env]` plus inline `VECTORDB_HOST=vectordb`, `VECTORDB_PORT=5432`.',
     '--- END REPORT ---',
   ].join('\n');
 }

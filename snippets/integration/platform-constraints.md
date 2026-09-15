@@ -1,6 +1,6 @@
 # Platform constraints for compose authoring
 
-These constraints apply to every `docker-compose.yml` you author for this platform. They reflect the platform runtime (EFS mounts, structural assertions) and the local-dev harness (no `.env` seeding) — generic compose practice diverges from them in ways that silently break either prod or smoke.
+These constraints apply to every `docker-compose.yml` you author for this platform. They reflect the platform runtime (EFS mounts, structural assertions) and the local-dev harness (which seeds the workspace `.env`) — generic compose practice diverges from them in ways that silently break either prod or smoke.
 
 ### Service names match scope folder names
 
@@ -27,4 +27,4 @@ Backend `depends_on: { database: { condition: service_healthy } }`. Healthchecks
 
 ### Env vars from compose's `environment:` blocks
 
-For LOCAL DEV (the harness's compose target), inline non-sensitive credentials directly in `environment:` (e.g. `DATABASE_PASSWORD: localdev123`) — **do NOT use `${VAR}` substitution**, since the smoke harness runs `docker compose up` without seeding a `.env` file and unsubstituted vars become empty strings (Postgres starts with no password → connection failures). For real secrets (production API keys, etc.), use `${VAR}` with a documented entry in `.env.example`. `.env.example` documents names; real `.env` is gitignored.
+Credential VALUES never appear in `environment:` blocks — docker-compose.yml is tracked and the pre-commit security check blocks a literal `*_PASSWORD`. They live in the workspace-root `.env` (the harness writes `DATABASE_*`, `VECTORDB_*` and `MGA_*` there before you run; gitignored). Reference them: `POSTGRES_PASSWORD: ${DATABASE_PASSWORD}` on the db service, `${VECTORDB_*}` on a pgvector service, `env_file: [.env]` on the backend plus inline non-secret entries only (`PORT`, `DATABASE_HOST`, `DATABASE_PORT`, `VECTORDB_HOST`, `VECTORDB_PORT`). `docker compose config` must resolve every `${VAR}` — an "is not set" warning means the value is missing from `.env`, never a reason to inline it. Never create `.env.example`.

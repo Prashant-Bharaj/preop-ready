@@ -3,18 +3,27 @@
 # description: docker-compose adding a pgvector service for RAG.
 
 # Vector DB addition — add this service block to docker-compose.yml
-# pgvector: POSTGRES_DB/USER/PASSWORD, port 5432
+# pgvector: POSTGRES_DB/USER/PASSWORD referenced from the workspace-root .env
+# (VECTORDB_NAME / VECTORDB_USER / VECTORDB_PASSWORD — written by the harness,
+# gitignored). Never a literal value here: docker-compose.yml is tracked and
+# the pre-commit security check blocks literal passwords.
 
   vectordb:
     build: ./vectordb
     environment:
-      POSTGRES_DB: vectors
-      POSTGRES_USER: vectordb_user
-      POSTGRES_PASSWORD: localdev123
+      POSTGRES_DB: ${VECTORDB_NAME}
+      POSTGRES_USER: ${VECTORDB_USER}
+      POSTGRES_PASSWORD: ${VECTORDB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - vectordb-data:/data
 
-# Add to backend environment:
+# The backend already loads .env via env_file (VECTORDB_NAME/USER/PASSWORD);
+# add only the non-secret wiring to its environment:
       - VECTORDB_HOST=vectordb
       - VECTORDB_PORT=5432
 

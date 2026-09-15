@@ -1,5 +1,5 @@
 // db-credential-consistency-validator.js — deterministic pre-compose enforcement
-// of the canonical local-dev DB connection identity (Layer 2 of the cred fix).
+// of the canonical local-dev credential wiring (Layer 2 of the cred fix).
 //
 // The bug this closes: on a fresh build the integration LLM agent sometimes
 // renames the database/user to the project theme (e.g. `myapp` → `tasktracker`)
@@ -8,22 +8,62 @@
 // exist → `password authentication failed` / `database "myapp" does not exist`
 // → backend container never becomes healthy → `compose up` fails.
 //
-// Layer 1 (the synthesized DB report + .platform-rules/common.md) tells the
-// agents the fixed values; this validator GUARANTEES them: it rewrites the
-// db service's POSTGRES_{DB,USER,PASSWORD} and the backend service's
-// DATABASE_{NAME,USER,PASSWORD,HOST,PORT} to one authoritative set before
-// `compose up`, regardless of what the LLM wrote. Pure JS + YAML parse, runs
-// in the existing applyAllValidators pass — no extra `compose up`, ~ms cost.
+// The wiring it guarantees — the same one .platform-rules/scope-integration.md
+// prescribes for hand-built apps, and the only one the pre-commit security
+// check lets through (docker-compose.yml is tracked; a literal `*_PASSWORD`
+// value blocks the commit):
+//   • the VALUES live in the workspace-root `.env` (gitignored):
+//     DATABASE_NAME/USER/PASSWORD and, with a pgvector service,
+//     VECTORDB_NAME/USER/PASSWORD — written add-missing, never overwritten;
+//   • the db service references them: POSTGRES_DB: ${DATABASE_NAME} …;
+//   • a pgvector vectordb service references POSTGRES_*: ${VECTORDB_*};
+//   • the backend loads the file (`env_file: - .env`), keeps DATABASE_HOST =
+//     the db service name and DATABASE_PORT, and any inline DATABASE_* /
+//     VECTORDB_* credential literal becomes the ${VAR} reference.
+// Both sides read the same variable, so they cannot drift. Layer 1 (the
+// synthesized DB report + scope-integration.md) tells the agents the same;
+// this runs in applyAllValidators before every compose up as the backstop.
 //
 // Contract matches the sibling validators (scan*(workspaceDir) → issues[],
 // apply*Fixes(workspaceDir, issues) → applied[]). Reads inline `environment:`
-// blocks (list or object form). Creds hidden in an `env_file` are out of scope
-// here (Layer 1 covers that path).
+// blocks (list or object form). A db service that loads its own env_file is
+// out of scope (older hand-built layout) and left alone.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { LOCAL_DB_CREDENTIALS } from '../../config/defaults.js';
+import {
+  canonicalEnvEntries, ensureWorkspaceEnv, readEnvFile, upsertEnvFile,
+  workspaceEnvPath, WORKSPACE_ENV_HEADER,
+} from '../../core/workspace-env.js';
+
+const DB_REFS = {
+  POSTGRES_DB: '${DATABASE_NAME}',
+  POSTGRES_USER: '${DATABASE_USER}',
+  POSTGRES_PASSWORD: '${DATABASE_PASSWORD}',
+};
+const VECTORDB_REFS = {
+  POSTGRES_DB: '${VECTORDB_NAME}',
+  POSTGRES_USER: '${VECTORDB_USER}',
+  POSTGRES_PASSWORD: '${VECTORDB_PASSWORD}',
+};
+// Backend-side credential keys that must never carry a literal value.
+const BACKEND_REFS = {
+  DATABASE_NAME: '${DATABASE_NAME}',
+  DATABASE_USER: '${DATABASE_USER}',
+  DATABASE_PASSWORD: '${DATABASE_PASSWORD}',
+  VECTORDB_NAME: '${VECTORDB_NAME}',
+  VECTORDB_USER: '${VECTORDB_USER}',
+  VECTORDB_PASSWORD: '${VECTORDB_PASSWORD}',
+};
+export const WORKSPACE_ENV_FILE = '.env';
+
+// `${VAR}`, `${VAR:-default}`, `${VAR-default}`, `${VAR:?err}` all reference VAR.
+function referencesVar(value, ref) {
+  const name = ref.slice(2, -1);
+  return new RegExp(`^\\$\\{${name}(?:[:?-][^}]*)?\\}$`).test(String(value).trim());
+}
 
 function extractEnvFromService(service) {
   // compose `environment:` accepts list-of-strings (`KEY=val`) and object form
@@ -47,6 +87,17 @@ function extractEnvFromService(service) {
     return out;
   }
   return {};
+}
+
+// env_file accepts a scalar, a list of scalars, or a list of { path, required }.
+function envFilePaths(service) {
+  const ef = service?.env_file;
+  if (ef == null) return [];
+  const list = Array.isArray(ef) ? ef : [ef];
+  return list
+    .map((e) => (typeof e === 'string' ? e : e?.path))
+    .filter((p) => typeof p === 'string')
+    .map((p) => p.replace(/^\.\//, ''));
 }
 
 function isPostgresService(name, service, env) {
@@ -88,10 +139,24 @@ function isBackendService(name, service) {
   return false;
 }
 
+// Present-but-wrong is rewritten to the reference; MISSING is added (postgres
+// refuses to initialize without POSTGRES_PASSWORD, which kills compose up
+// outright; observed live). Services that load their own env_file or use
+// trust auth keep their creds out of compose — out of scope.
+function pushPostgresRefs(rewrites, name, service, env, refs) {
+  if (envFilePaths(service).length || env.POSTGRES_HOST_AUTH_METHOD != null) return;
+  for (const [key, ref] of Object.entries(refs)) {
+    if (env[key] == null) rewrites.push({ service: name, key, from: null, to: ref, add: true });
+    else if (!referencesVar(env[key], ref)) rewrites.push({ service: name, key, from: env[key], to: ref });
+  }
+}
+
 /**
- * Find any DB-credential value that deviates from LOCAL_DB_CREDENTIALS (or where
- * the backend points at the wrong host/port). Returns a flat array of rewrites:
- *   { service, key, from, to }
+ * Find every deviation from the canonical wiring. Returns a flat array of
+ * rewrites:
+ *   { service, key, from, to [, add] }        compose environment entry
+ *   { service, key: 'env_file', to: '.env' }  backend must load the env file
+ *   { file: '.env', key, from: null, to, add } missing value in the env file
  * Empty when there's no inline db+backend pair or everything already matches.
  */
 export function scanComposeForCredentialDrift(workspaceDir) {
@@ -129,88 +194,52 @@ export function scanComposeForCredentialDrift(workspaceDir) {
   const c = LOCAL_DB_CREDENTIALS;
   const rewrites = [];
 
-  // db service: POSTGRES_* → canonical (present-but-wrong is rewritten,
-  // MISSING is added — postgres refuses to initialize without
-  // POSTGRES_PASSWORD, which kills compose up outright; observed live).
-  const dbExpect = { POSTGRES_DB: c.name, POSTGRES_USER: c.user, POSTGRES_PASSWORD: c.password };
-  for (const [key, want] of Object.entries(dbExpect)) {
-    if (dbEnv[key] != null && dbEnv[key] !== String(want)) {
-      rewrites.push({ service: dbName, key, from: dbEnv[key], to: String(want) });
-    } else if (dbEnv[key] == null && dbEnv.POSTGRES_HOST_AUTH_METHOD == null && services[dbName]?.env_file == null) {
-      // env_file-fed services keep their creds out of compose — out of scope.
-      rewrites.push({ service: dbName, key, from: null, to: String(want), add: true });
-    }
-  }
+  // db service: POSTGRES_* → ${DATABASE_*}
+  pushPostgresRefs(rewrites, dbName, services[dbName], dbEnv, DB_REFS);
 
-  // Any OTHER postgres-family service (vectordb — excluded from the primary-DB
-  // reconciliation above) is a SEPARATE store, but its container creds
-  // (POSTGRES_{DB,USER,PASSWORD}) must still match what the backend connects
-  // with (VECTORDB_{NAME,USER,PASSWORD}) — the backend is authoritative, its
-  // values come from the contract + env wiring. The integration agent sometimes
-  // copies the primary-DB creds onto the vectordb service instead of the
-  // backend's VECTORDB_* target (observed live: vectordb POSTGRES_USER=myapp_user
-  // vs backend VECTORDB_USER=vector_user → `password authentication failed for
-  // user "vector_user"` on the first embedding insert). Align the container to
-  // the backend; when the backend declares no VECTORDB_* target, fall back to
-  // just guaranteeing a password so the container can start (postgres exits(1)
-  // without POSTGRES_PASSWORD/POSTGRES_HOST_AUTH_METHOD). Postgres-family is
-  // detected from `image:` OR, for the build-based pgvector scaffold, the
-  // build-context Dockerfile's FROM.
+  // Any OTHER postgres-family service is the dedicated vector store; its
+  // container creds are a separate set (VECTORDB_*) — the integration agent
+  // sometimes copies the primary-DB creds onto it (observed live: `password
+  // authentication failed for user "vector_user"` on the first embedding
+  // insert). Postgres-family is detected from `image:` OR, for the
+  // build-based pgvector scaffold, the build-context Dockerfile's FROM.
+  let hasVectordb = false;
   for (const [name, service] of Object.entries(services)) {
     if (name === dbName || !service || typeof service !== 'object') continue;
     if (!isPostgresFamilyService(service, workspaceDir)) continue;
     const env = extractEnvFromService(service);
-    if (service.env_file != null || env.POSTGRES_HOST_AUTH_METHOD != null) continue; // creds out of scope
-    const align = {
-      POSTGRES_DB: backendEnv.VECTORDB_NAME,
-      POSTGRES_USER: backendEnv.VECTORDB_USER,
-      POSTGRES_PASSWORD: backendEnv.VECTORDB_PASSWORD || String(c.password),
-    };
-    let alignedAny = false;
-    for (const [key, want] of Object.entries(align)) {
-      if (want == null) continue; // backend didn't declare this dimension
-      alignedAny = true;
-      if (env[key] != null && env[key] !== String(want)) {
-        rewrites.push({ service: name, key, from: env[key], to: String(want) });
-      } else if (env[key] == null) {
-        rewrites.push({ service: name, key, from: null, to: String(want), add: true });
-      }
-    }
-    if (!alignedAny && env.POSTGRES_PASSWORD == null) {
-      rewrites.push({ service: name, key: 'POSTGRES_PASSWORD', from: null, to: String(c.password), add: true });
-    }
+    if (envFilePaths(service).length || env.POSTGRES_HOST_AUTH_METHOD != null) continue;
+    hasVectordb = true;
+    pushPostgresRefs(rewrites, name, service, env, VECTORDB_REFS);
   }
 
-  // backend service: DATABASE_* → canonical. HOST must equal the db service
-  // name (that's how it resolves on the compose network); others to constant.
-  const backendExpect = {
-    DATABASE_HOST: dbName,
-    DATABASE_PORT: String(c.port),
-    DATABASE_NAME: c.name,
-    DATABASE_USER: c.user,
-    DATABASE_PASSWORD: c.password,
-  };
+  // backend service: HOST must equal the db service name (that's how it
+  // resolves on the compose network), PORT the constant, and no credential
+  // literal — the values arrive through env_file.
+  const backendExpect = { DATABASE_HOST: dbName, DATABASE_PORT: String(c.port) };
   for (const [key, want] of Object.entries(backendExpect)) {
-    if (backendEnv[key] != null && backendEnv[key] !== String(want)) {
-      rewrites.push({ service: backendName, key, from: backendEnv[key], to: String(want) });
+    if (backendEnv[key] != null && backendEnv[key] !== want) {
+      rewrites.push({ service: backendName, key, from: backendEnv[key], to: want });
     }
+  }
+  for (const [key, ref] of Object.entries(BACKEND_REFS)) {
+    if (backendEnv[key] != null && !referencesVar(backendEnv[key], ref)) {
+      rewrites.push({ service: backendName, key, from: backendEnv[key], to: ref });
+    }
+  }
+  if (!envFilePaths(services[backendName]).includes(WORKSPACE_ENV_FILE)) {
+    rewrites.push({ service: backendName, key: 'env_file', from: null, to: WORKSPACE_ENV_FILE, add: true });
+  }
+
+  // The env file itself: every referenced value must exist (add-missing only).
+  const have = readEnvFile(workspaceEnvPath(workspaceDir));
+  for (const [key, value] of Object.entries(canonicalEnvEntries({ database: true, vectordb: hasVectordb }))) {
+    if (have[key] == null) rewrites.push({ file: WORKSPACE_ENV_FILE, key, from: null, to: value, add: true });
   }
 
   return rewrites;
 }
 
-/**
- * Rewrite each drifted value in docker-compose.yml to the canonical value.
- * Regex-edits the YAML source text (both `- KEY=val` and `KEY: val` forms) to
- * preserve formatting — mirrors applyEnvVarNamingFixes. The POSTGRES and
- * DATABASE keys are service-unique, so per-key replacement is unambiguous.
- */
-/**
- * Insert `KEY=value` into a service's `environment:` block, matching the
- * block's existing entry style (list vs object); creates the block right
- * after the service header when absent. Returns the new text, or null when
- * the service header can't be located.
- */
 // Locate a SERVICE block by anchoring on the `services:`-child indent, so a
 // nested key of the same name (e.g. `depends_on:\n  database:`) is never
 // mistaken for the service header. Returns { headerIdx, blockEnd, headerIndent }
@@ -244,6 +273,12 @@ function findServiceBlock(lines, serviceName) {
   return { headerIdx, blockEnd, headerIndent: serviceIndent };
 }
 
+/**
+ * Insert `KEY=value` into a service's `environment:` block, matching the
+ * block's existing entry style (list vs object); creates the block right
+ * after the service header when absent. Returns the new text, or null when
+ * the service header can't be located.
+ */
 function insertEnvEntry(text, serviceName, key, value) {
   const lines = text.split('\n');
   const blk = findServiceBlock(lines, serviceName);
@@ -259,6 +294,37 @@ function insertEnvEntry(text, serviceName, key, value) {
     return lines.join('\n');
   }
   lines.splice(headerIdx + 1, 0, `${headerIndent}  environment:`, `${headerIndent}    - ${key}=${value}`);
+  return lines.join('\n');
+}
+
+/**
+ * Make `env_file:` on a service list `item` first. Handles the three shapes
+ * compose accepts — block list (appends an item), inline flow list
+ * (`env_file: [a, b]`) and scalar (`env_file: ./a`, converted to a block
+ * list) — and creates the key right after the service header when absent.
+ * Returns the new text, or null when the service header can't be located.
+ */
+function insertEnvFileItem(text, serviceName, item) {
+  const lines = text.split('\n');
+  const blk = findServiceBlock(lines, serviceName);
+  if (!blk) return null;
+  const { headerIdx, blockEnd, headerIndent } = blk;
+  for (let i = headerIdx + 1; i < blockEnd; i++) {
+    const m = lines[i].match(/^(\s+)env_file:[ \t]*(.*)$/);
+    if (!m) continue;
+    const [, indent, rest] = m;
+    if (rest.trim() === '') {
+      const next = lines[i + 1] || '';
+      const entryIndent = next.trim().startsWith('-') ? next.match(/^(\s*)/)[1] : `${indent}  `;
+      lines.splice(i + 1, 0, `${entryIndent}- ${item}`);
+    } else if (rest.trim().startsWith('[')) {
+      lines[i] = `${indent}env_file: [${item}, ${rest.trim().slice(1).replace(/^\s*/, '')}`.replace(/\[\.env, \]$/, '[.env]');
+    } else {
+      lines.splice(i, 1, `${indent}env_file:`, `${indent}  - ${item}`, `${indent}  - ${rest.trim()}`);
+    }
+    return lines.join('\n');
+  }
+  lines.splice(headerIdx + 1, 0, `${headerIndent}  env_file:`, `${headerIndent}    - ${item}`);
   return lines.join('\n');
 }
 
@@ -281,6 +347,11 @@ function replaceEnvEntryInService(text, serviceName, key, value) {
   return { text: lines.join('\n'), changed };
 }
 
+/**
+ * Apply the rewrites: regex-edit the compose YAML source text (both
+ * `- KEY=val` and `KEY: val` forms) to preserve formatting — mirrors
+ * applyEnvVarNamingFixes — and add the missing values to the env file.
+ */
 export function applyCredentialConsistencyFixes(workspaceDir, rewrites) {
   if (!rewrites.length) return [];
   const composePath = path.join(workspaceDir, 'docker-compose.yml');
@@ -293,7 +364,15 @@ export function applyCredentialConsistencyFixes(workspaceDir, rewrites) {
 
   const applied = [];
   let modified = text;
+  const envEntries = {};
+  let envFileAdded = false;
   for (const r of rewrites) {
+    if (r.file === WORKSPACE_ENV_FILE) { envEntries[r.key] = r.to; applied.push(r); continue; }
+    if (r.key === 'env_file') {
+      const next = insertEnvFileItem(modified, r.service, r.to);
+      if (next != null) { modified = next; applied.push(r); envFileAdded = true; }
+      continue;
+    }
     if (r.add) {
       const next = insertEnvEntry(modified, r.service, r.key, r.to);
       if (next != null) { modified = next; applied.push(r); }
@@ -307,6 +386,11 @@ export function applyCredentialConsistencyFixes(workspaceDir, rewrites) {
 
   if (modified !== text) {
     fs.writeFileSync(composePath, modified, 'utf-8');
+  }
+  if (Object.keys(envEntries).length) {
+    upsertEnvFile(workspaceEnvPath(workspaceDir), envEntries, { header: WORKSPACE_ENV_HEADER });
+  } else if (envFileAdded) {
+    ensureWorkspaceEnv(workspaceDir); // the file must exist for compose to load it
   }
   return applied;
 }

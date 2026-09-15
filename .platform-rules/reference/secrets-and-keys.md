@@ -25,7 +25,7 @@ EOF
 
 Then tell the user: "Open backend/.env and fill in your keys. It's gitignored — never uploaded to GitHub."
 
-For local database credentials, use `env_file` in docker-compose pointing to a gitignored `.env` (see `reference/sensitive-files.md` — never put credentials directly in docker-compose.yml).
+For local database credentials, the root `.env` next to docker-compose.yml holds `DATABASE_*` (and `VECTORDB_*`); compose references them as `${VAR}` and the backend loads the file via `env_file` (see `scope-integration.md` — never put credentials directly in docker-compose.yml).
 
 **Sharing config with teammates:** each teammate creates their own `.env` (document the
 required variable NAMES in a README with placeholder values); production values live only

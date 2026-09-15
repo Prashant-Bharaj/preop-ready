@@ -169,7 +169,6 @@ function buildIntegrationStructure() {
   return {
     required_files: [
       'docker-compose.yml',
-      '.env.example',
     ],
   };
 }

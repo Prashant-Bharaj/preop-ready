@@ -453,7 +453,7 @@ Write the React + Vite + TypeScript app from scratch. Components: one file per u
 
 **Integration:**
 ```
-Wire <list scopes>. Backend env: DATABASE_HOST=database, DATABASE_PORT=5432, DATABASE_NAME=<short_name>, DATABASE_USER=<short_name>_user, DATABASE_PASSWORD=localdev123. nginx.local.conf proxy /api→backend:3000. depends_on chain. Healthchecks. Volumes per service.
+Wire <list scopes>. Backend service: env_file [.env] (the workspace-root .env the harness writes — DATABASE_*, VECTORDB_*, MGA_*) plus inline DATABASE_HOST=database, DATABASE_PORT=5432 only. Database service: POSTGRES_DB=${DATABASE_NAME}, POSTGRES_USER=${DATABASE_USER}, POSTGRES_PASSWORD=${DATABASE_PASSWORD} — references, never literal values (docker-compose.yml is tracked; literal passwords are blocked at commit). nginx.local.conf proxy /api→backend:3000. depends_on chain. Healthchecks. Volumes per service.
 ```
 
 **Vectordb:**

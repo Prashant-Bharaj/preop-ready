@@ -372,26 +372,30 @@ async function applyAllValidators(session) {
   }
 
   // DB credential consistency. Runs AFTER env-var-naming so the backend's keys
-  // are already canonical (DATABASE_*). Enforces ONE authoritative credential
-  // set (LOCAL_DB_CREDENTIALS) across the db service (POSTGRES_*) and the
-  // backend service (DATABASE_*): the integration agent sometimes renames the
-  // database/user to the project theme and applies it to one service but not
-  // the other, so the backend authenticates against a database/user that
-  // doesn't exist → backend container never goes healthy → compose up fails.
-  // Layer 1 (synthesized DB report + common.md) tells the agents the fixed
-  // values; this is the deterministic backstop that guarantees them.
+  // are already canonical (DATABASE_*). Enforces the ONE credential wiring:
+  // values in the workspace-root `.env`, `${DATABASE_*}` / `${VECTORDB_*}`
+  // references on the db/vectordb services, `env_file: .env` on the backend.
+  // The integration agent sometimes inlines literal values (which the
+  // pre-commit security check would block) or renames the database/user to
+  // the project theme on one service but not the other, so the backend
+  // authenticates against a database/user that doesn't exist → backend never
+  // goes healthy → compose up fails. Layer 1 (synthesized DB report +
+  // scope-integration.md) tells the agents the same; this is the
+  // deterministic backstop that guarantees it.
   try {
     const credIssues = scanComposeForCredentialDrift(WORKSPACE_DIR);
     if (credIssues.length) {
       const credFixes = applyCredentialConsistencyFixes(WORKSPACE_DIR, credIssues);
       if (credFixes.length) {
         tlog('[session] Auto-start: applied %d DB-credential-consistency fix(es) before compose up', credFixes.length);
-        const lines = credFixes.map((f) =>
-          `- \`docker-compose.yml\` (service \`${f.service}\`): \`${f.key}\` \`${f.from}\` → \`${f.to}\``
-        );
+        const lines = credFixes.map((f) => {
+          if (f.file === '.env') return `- \`.env\`: added \`${f.key}\``;
+          if (f.key === 'env_file') return `- \`docker-compose.yml\` (service \`${f.service}\`): added \`env_file: .env\``;
+          return `- \`docker-compose.yml\` (service \`${f.service}\`): \`${f.key}\` \`${f.from}\` → \`${f.to}\``;
+        });
         const text =
           `Pre-start auto-correction in docker-compose.yml DB credentials:\n${lines.join('\n')}\n\n` +
-          `The database and backend services disagreed on the connection credentials (or diverged from the fixed local-dev values). The backend connects to the db service by these exact values, so a mismatch makes the backend unable to authenticate. Reconciled both services to the canonical local-dev credentials.`;
+          `Local credentials live in the gitignored workspace \`.env\` and docker-compose.yml only references them (\`\${DATABASE_*}\`, \`\${VECTORDB_*}\`, \`env_file: .env\` on the backend) — a tracked compose file with literal passwords is blocked at commit time, and both services reading the same variable cannot drift. Rewired to that layout.`;
         const fixEvent = appendEvent(session.id, 'cline', { say: 'text', text });
         sessionEvents.emit('event', session.id, fixEvent);
       }

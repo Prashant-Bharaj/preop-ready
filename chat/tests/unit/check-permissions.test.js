@@ -169,15 +169,15 @@ test('Gate (b) protected: .env.local is denied (env-glob pattern)', async () => 
   }
 });
 
-test('Gate (b) protected EXEMPTION: .env.example is allowed (template-distributable)', async () => {
+test('Gate (b) protected: .env.example is denied (banned by the platform rules, gitignored)', async () => {
   const ws = await createTestWorkspace({ scope: 'check-perm', scenarioName: 'env-example' });
   try {
     const r = checkWritePermission(
       path.join(ws.dir, '.env.example'),
       { workspaceDir: ws.dir, scope: 'integration' },
     );
-    // integration scope has .env.example in its carve-out set, so it should allow.
-    assert.equal(r.verdict, 'allow', '.env.example is template-distributable + scope-carved');
+    assert.equal(r.verdict, 'deny', '.env.example must never be written — .env is the only env file');
+    assert.match(r.reason, /\.env\*/);
   } finally {
     await ws.cleanup();
   }

@@ -363,6 +363,17 @@ export const LOCAL_DB_CREDENTIALS = {
   password: 'localdev123',
 };
 
+// Same contract for the dedicated pgvector store (VECTORDB_* on the backend,
+// POSTGRES_* on the vectordb container). Written to the workspace .env by
+// pre-stage / the credential validator; compose references them as ${VAR}.
+export const LOCAL_VECTORDB_CREDENTIALS = {
+  host: 'vectordb',
+  port: 5432,
+  name: 'vectors',
+  user: 'vectordb_user',
+  password: 'localdev123',
+};
+
 // The platform's embedding identity — the ONE model the pre-staged embed
 // helper calls (MGA_EMBEDDING_MODEL is not wired by compose generation, so
 // this is what every generated app actually gets at runtime) and its vector

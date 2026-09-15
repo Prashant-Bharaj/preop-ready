@@ -46,5 +46,5 @@ Visual scan + `IF NOT EXISTS` discipline are sufficient. Don't run `psql -f init
 
 Per subagent-base.md format. Your `Contracts for sibling scopes` section must list:
 - Tables — `<name>` with key columns and types.
-- Connection env vars the backend wires into compose: `DATABASE_HOST=database` (service name = folder name), `DATABASE_PORT=5432`, `DATABASE_NAME=...`, `DATABASE_USER=...`, `DATABASE_PASSWORD=...`.
+- Connection env vars: `DATABASE_HOST=database` (service name = folder name), `DATABASE_PORT=5432`; `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` live in the workspace-root `.env` the harness writes — compose references them as `${DATABASE_*}`, never as literal values.
 - Listening port: `database:5432`.

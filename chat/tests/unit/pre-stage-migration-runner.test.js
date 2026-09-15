@@ -83,3 +83,33 @@ test('Dockerfile.node template ships migrations/ into the runtime stage', () => 
   assert.match(df, /RUN npm run build && mkdir -p migrations/);
   assert.match(df, /COPY --from=builder --chown=appuser:appgroup \/app\/migrations \.\/migrations/);
 });
+
+// ── workspace .env (the only place local credential values live) ────────────
+
+test('pre-stage writes the workspace .env with DATABASE_* (and VECTORDB_* for pgvector), never into out.files', () => {
+  const wd = tmp();
+  try {
+    const out = preStageScaffolds({ workspaceDir: wd, contract: contract(), isIterate: false });
+    const env = fs.readFileSync(path.join(wd, '.env'), 'utf-8');
+    assert.match(env, /^DATABASE_NAME=myapp$/m);
+    assert.match(env, /^DATABASE_PASSWORD=localdev123$/m);
+    assert.doesNotMatch(env, /VECTORDB_/);
+    assert.ok(!out.filesEmitted.includes('.env'), '.env is gitignored and later carries the MGA key — never a staged file');
+    // iterate keeps a hand-edited value and only adds what is missing
+    fs.writeFileSync(path.join(wd, '.env'), 'DATABASE_PASSWORD=mine\n');
+    preStageScaffolds({ workspaceDir: wd, contract: contract({ vectorEngine: 'pgvector', tasks: [...contract().tasks, { scope: 'vectordb', dockerfile: 'Dockerfile.pgvector' }] }), isIterate: true });
+    const after = fs.readFileSync(path.join(wd, '.env'), 'utf-8');
+    assert.match(after, /^DATABASE_PASSWORD=mine$/m);
+    assert.match(after, /^DATABASE_NAME=myapp$/m);
+    assert.match(after, /^VECTORDB_USER=vectordb_user$/m);
+  } finally { fs.rmSync(wd, { recursive: true, force: true }); }
+});
+
+test('backend without a database still gets an (empty) .env for env_file to load', () => {
+  const wd = tmp();
+  try {
+    preStageScaffolds({ workspaceDir: wd, contract: contract({ dataModel: null, tasks: [{ scope: 'backend', dockerfile: 'Dockerfile.node' }] }), isIterate: false });
+    const env = fs.readFileSync(path.join(wd, '.env'), 'utf-8');
+    assert.doesNotMatch(env, /DATABASE_|VECTORDB_/);
+  } finally { fs.rmSync(wd, { recursive: true, force: true }); }
+});

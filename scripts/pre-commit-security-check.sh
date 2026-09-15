@@ -173,7 +173,9 @@ while IFS= read -r file; do
         *)
             case "$basename" in
                 docker-compose*.yml|docker-compose*.yaml|compose*.yml|compose*.yaml)
-                    if echo "$content" | grep -qiE '_PASSWORD[=:][[:space:]]*[^$\{]'; then
+                    # A value that starts with `$` is a ${VAR} reference (the prescribed
+                    # pattern); anything else after the separator is a literal.
+                    if echo "$content" | grep -qiE '_PASSWORD[=:][[:space:]]*[^$\{[:space:]]'; then
                         WARNED_FILES+=("$file|Contains inline password values. Use env_file to reference a gitignored .env file instead of hardcoding credentials in docker-compose.")
                     fi
                     ;;

@@ -208,7 +208,9 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
 fixed local values are what the backend connects with; renaming them is the #1 cause of the
 backend failing to reach its own database.
 
-Local dev: create `backend/.env` directly (gitignored). Never `.env.example`.
+Local dev: app secrets go in `backend/.env`, database credentials in the root `.env` that
+docker-compose reads (both gitignored, created directly — see `scope-integration.md`).
+Never `.env.example`.
 
 ## /data Persistence (EFS)
 
