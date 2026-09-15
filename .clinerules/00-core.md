@@ -19,8 +19,8 @@ One line per fact — act on them in this order:
 | Line | Meaning | Do |
 |------|---------|----|
 | `TEMPLATE_PR\|<n>\|<url>\|held_workflows=…` | The platform opened a sync PR | Mention it in your greeting with the link; offer to apply it. If `TEMPLATE_AUTO_UPDATE\|on`, apply it without asking, then say what you did. |
-| `TEMPLATE_CALLER\|outdated` or `missing` | Weekly sync cannot reach this repo | Say so once; offer the engine run (below). Fixes itself after one commit. |
-| `TEMPLATE_VERSION\|UPDATE_AVAILABLE\|old\|new` and no PR | Update exists, PR not opened yet | Offer the engine run. |
+| `TEMPLATE_CALLER\|outdated` or `missing` | Weekly sync cannot reach this repo | If `TEMPLATE_AUTO_UPDATE\|on`, run the engine (below) without asking, then say what you did; otherwise say so once and offer it. Fixes itself after one commit. |
+| `TEMPLATE_VERSION\|UPDATE_AVAILABLE\|old\|new` and no PR | Update exists, PR not opened yet | If `TEMPLATE_AUTO_UPDATE\|on` (the default), run the engine without asking — before anything else in the session — then say in one line what version you applied; only when auto-update is off, offer it. |
 | `TEMPLATE_VERSION\|CHECK_FAILED\|fetch_auth` | Cannot read the template from here (normal in a fresh Codespace) | Say nothing unless the user asks; the PR line still works. |
 | `TEMPLATE_WORKFLOWS_PENDING\|<files>` | A CI sync applied everything except these workflow files (GitHub forbids the platform from pushing them) | Offer: "the last platform update left `<files>` for a human commit — shall I apply it?" On yes: `bash scripts/apply-updates.sh`, stage exactly those files + `.template-version`, commit `chore: apply pending template workflow files`, push. |
 | `TEMPLATE_MAJOR_HELD\|<major>\|<synced>` | A major template release exists; security files are current, new rules/snippets/harness are held | Mention once: "template v<major> is available; say *accept the major update* when you want it — I'll back everything up first." Never accept without the user's yes; `TEMPLATE_AUTO_UPDATE\|on` does NOT cover majors. Accept = `TEMPLATE_ACCEPT_MAJOR=1 bash scripts/apply-updates.sh` + commit as in the engine run. |
