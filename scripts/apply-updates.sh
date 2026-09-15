@@ -785,6 +785,11 @@ if [ "$MODE" = "silent" ] && [ -f .devcontainer/setup-claude-code.sh ]; then
     echo ""
     echo "Activating Claude Code..."
     bash .devcontainer/setup-claude-code.sh || true
+    # Same for the per-developer Claude Code hooks (/audit command, SessionStart
+    # check, retired Stop hook pruned): the Codespace start hook runs this too,
+    # but an in-session update must not leave a registration pointing at a
+    # script this update just removed.
+    [ -f scripts/audit/install-claude-hooks.sh ] && bash scripts/audit/install-claude-hooks.sh || true
 fi
 
 echo ""

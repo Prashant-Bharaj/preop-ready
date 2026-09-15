@@ -1836,65 +1836,96 @@ export async function runSmokeAndPrompt(session, envContext, routerContracts = {
  * Reviews the source, AUTO-FIXES Critical/High (one round per scope, modeled on
  * the authz gate), and reports the rest. Non-blocking — findings never stop the
  * build. Sets session.securitySummary for the app-ready line + run summary.
- * Off by default (cost/latency on every build); SECURITY_REVIEW=1 enables it.
+ * On by default; SECURITY_REVIEW=0 turns it off. Loops fix → re-review until
+ * only Low findings remain (stall guard; optional SECURITY_REVIEW_MAX_ROUNDS).
  */
 async function runSecurityReviewAndFix(session, scopeCounters, routerContracts) {
-  if (process.env.SECURITY_REVIEW !== '1') return;
+  if (process.env.SECURITY_REVIEW === '0') return;
   const scopes = Array.isArray(routerContracts?.tasks)
     ? [...new Set(routerContracts.tasks.map((t) => t && t.scope).filter(Boolean))]
     : [];
   try {
     emitVerifyStep(session.id, 'security-review', 'start');
-    const { reviewGeneratedApp, partitionFindings, formatSecurityFixDirective } =
+    const { reviewGeneratedApp, partitionFindings, formatSecurityFixDirective, findingKey } =
       await import('../reconciler/security-review.js');
-    const result = await reviewGeneratedApp({ workspaceDir: WORKSPACE_DIR, scopes });
-    if (result.skipped) { emitVerifyStep(session.id, 'security-review', 'done', 'skipped'); return; }
 
-    const findings = result.findings || [];
-    const { criticalHigh, reportOnly, byScope } = partitionFindings(findings);
-
-    let fixedCount = 0;
-    const stillOpen = [];
-    for (const [scope, scopeFindings] of byScope) {
-      const counter = scopeCounters.get(scope) || {};
-      if (counter.securityFixAttempts) { stillOpen.push(...scopeFindings); continue; } // budget: 1/scope/build
-      counter.securityFixAttempts = 1;
-      scopeCounters.set(scope, counter);
-      const ev = appendEvent(session.id, 'security_fix_dispatch', { scope, count: scopeFindings.length, findings: scopeFindings });
-      sessionEvents.emit('event', session.id, ev);
-      try {
-        const { buildFixDirective, pushAutoRecoveryRecord } = await import('./auto-recovery.js');
-        pushAutoRecoveryRecord(session, { scope, attemptN: 1, triggeredBy: 'security-review', failureSummary: `${scopeFindings.length} security finding(s)`, exhausted: false });
-        const formatted = formatSecurityFixDirective(scope, scopeFindings);
-        const directive = buildFixDirective(scope, [{ source: 'security', formatted }]);
-        const { runCustomAgent } = await import('../agent/agent.js');
-        const { PHASES } = await import('../agent/loop/phase.js');
-        const agentResult = await runCustomAgent(session.id, directive, { conversationId: null, scope, phase: PHASES.SUBAGENT, priorTokenTotals: session.coderTokenTotals || null });
-        accumulateAgentTotals(session, agentResult);
-        fixedCount += scopeFindings.length; // dispatched; the ensuing build + verify re-check the code
-      } catch (err) {
-        logAndSwallow(err, '[security-review] fix dispatch threw');
-        stillOpen.push(...scopeFindings);
+    // Review → fix everything above Low → review again, until a round comes
+    // back with only Low findings. No round cap (the user's decision): the
+    // loop ends on a clean round or on a STALL — a round whose fixable set is
+    // identical to the previous one, i.e. the fix agents changed nothing that
+    // the reviewer accepts. What is left then is reported, not retried.
+    // SECURITY_REVIEW_MAX_ROUNDS=<n> caps it for cost-sensitive runs.
+    const maxRounds = Number(process.env.SECURITY_REVIEW_MAX_ROUNDS) || 0;
+    let round = 0;
+    let totalFixed = 0;
+    let prevKeys = null;
+    let stalled = false;
+    let capped = false;
+    let lastFindings = [];
+    let fixable = [];
+    let reportOnly = [];
+    let byScope = new Map();
+    for (;;) {
+      round += 1;
+      const result = await reviewGeneratedApp({ workspaceDir: WORKSPACE_DIR, scopes });
+      if (result.skipped) {
+        if (round === 1) { emitVerifyStep(session.id, 'security-review', 'done', 'skipped'); return; }
+        break; // a later review call failed: keep the last verdict we have
+      }
+      lastFindings = result.findings || [];
+      ({ fixable, reportOnly, byScope } = partitionFindings(lastFindings));
+      if (fixable.length === 0) break;
+      const keys = fixable.map(findingKey).sort().join('\n');
+      if (keys === prevKeys) { stalled = true; break; }
+      prevKeys = keys;
+      if (maxRounds && round > maxRounds) { capped = true; break; }
+      emitVerifyStep(session.id, 'security-review', 'fixing', `round ${round}: ${fixable.length} finding(s) to fix`);
+      for (const [scope, scopeFindings] of byScope) {
+        const counter = scopeCounters.get(scope) || {};
+        counter.securityFixAttempts = (counter.securityFixAttempts || 0) + 1;
+        scopeCounters.set(scope, counter);
+        const ev = appendEvent(session.id, 'security_fix_dispatch', { scope, round, count: scopeFindings.length, findings: scopeFindings });
+        sessionEvents.emit('event', session.id, ev);
+        try {
+          const { buildFixDirective, pushAutoRecoveryRecord } = await import('./auto-recovery.js');
+          pushAutoRecoveryRecord(session, { scope, attemptN: counter.securityFixAttempts, triggeredBy: 'security-review', failureSummary: `${scopeFindings.length} security finding(s), round ${round}`, exhausted: false });
+          const formatted = formatSecurityFixDirective(scope, scopeFindings);
+          const directive = buildFixDirective(scope, [{ source: 'security', formatted }]);
+          const { runCustomAgent } = await import('../agent/agent.js');
+          const { PHASES } = await import('../agent/loop/phase.js');
+          const agentResult = await runCustomAgent(session.id, directive, { conversationId: null, scope, phase: PHASES.SUBAGENT, priorTokenTotals: session.coderTokenTotals || null });
+          accumulateAgentTotals(session, agentResult);
+          totalFixed += scopeFindings.length;
+        } catch (err) {
+          logAndSwallow(err, '[security-review] fix dispatch threw');
+        }
       }
     }
 
+    const stillOpen = fixable; // non-empty only when stalled / capped
     session.securitySummary = {
-      reviewed: findings.length,
-      critical: findings.filter((f) => f.severity === 'Critical').length,
-      high: findings.filter((f) => f.severity === 'High').length,
-      fixed: fixedCount,
+      rounds: round,
+      reviewed: lastFindings.length,
+      critical: lastFindings.filter((f) => f.severity === 'Critical').length,
+      high: lastFindings.filter((f) => f.severity === 'High').length,
+      medium: lastFindings.filter((f) => f.severity === 'Medium').length,
+      fixed: totalFixed,
       stillOpen: stillOpen.length,
       reportOnly: reportOnly.length,
+      stalled,
     };
-    const detail = findings.length === 0
-      ? 'no issues'
-      : `${criticalHigh.length} critical/high (${fixedCount} auto-fixed${stillOpen.length ? `, ${stillOpen.length} open` : ''}), ${reportOnly.length} lower`;
+    const detail = stillOpen.length
+      ? `${stillOpen.length} unresolved after ${round} round(s)${stalled ? ' (no further progress)' : capped ? ' (round cap)' : ''}, ${reportOnly.length} low`
+      : `clean after ${round} round(s)${totalFixed ? ` (${totalFixed} fixed)` : ''}${reportOnly.length ? `, ${reportOnly.length} low` : ''}`;
     emitVerifyStep(session.id, 'security-review', stillOpen.length ? 'warn' : 'done', detail);
 
     const notable = [...stillOpen, ...reportOnly];
     if (notable.length) {
       const lines = notable.map((f) => `  [${f.severity}] ${f.summary}${f.file ? ` (${f.file}${f.line ? `:${f.line}` : ''})` : ''}`);
-      const msg = `Security review — ${fixedCount ? `auto-fixed ${fixedCount} critical/high issue(s); ` : ''}${notable.length} item(s) to review:\n\n${lines.join('\n')}\n\nAsk me to fix any of these.`;
+      const head = stillOpen.length
+        ? `Security review — fixed ${totalFixed} issue(s) over ${round} round(s); ${stillOpen.length} could not be resolved automatically and need you:`
+        : `Security review — clean after ${round} round(s)${totalFixed ? ` (${totalFixed} fixed)` : ''}; ${reportOnly.length} low-severity note(s):`;
+      const msg = `${head}\n\n${lines.join('\n')}\n\nAsk me to fix any of these.`;
       const warnEv = appendEvent(session.id, 'cline', { say: 'text', text: msg });
       sessionEvents.emit('event', session.id, warnEv);
     }

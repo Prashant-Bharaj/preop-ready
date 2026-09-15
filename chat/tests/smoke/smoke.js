@@ -657,6 +657,9 @@ async function bootSpikeServer({ workspaceDir, port, label, portOffset = 0 }) {
     // get the env var name (the AI feature won't actually work at runtime,
     // but smoke doesn't reach the chat call anyway).
     MGA_SKIP_PRESTAGE: 'true',
+    // The build-time security review loop is on by default; smoke asserts
+    // harness MECHANICS, so keep it off here (the bench keeps it on).
+    SECURITY_REVIEW: '0',
   };
   // Use `smoke:server` (no --watch) so file writes inside chat/server/ during a
   // smoke run can't trigger a `node --watch` restart of the chat backend.

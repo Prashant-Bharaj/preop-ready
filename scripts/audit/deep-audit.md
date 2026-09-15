@@ -1,10 +1,12 @@
-# Deep audit — in-session orchestration playbook
+# Deep audit — in-session orchestration playbook (audit → fix → re-audit)
 
 This is the procedure the agent runs **in-session** (via the Agent/Task tool) to
-perform the deep security/performance/style audit and record an attestation the
-pre-push hook can trust. It is invoked by the `/audit` command or the `audit` skill,
-and auto-triggered by the Stop hook only when the automatic gate is enabled
-(`AUDIT_AUTO=1` or a `.audit-auto` marker at the repo root; off by default).
+get the changed code security-clean before it is pushed, and to record an
+attestation the pre-push gate can trust. It is invoked by the `/audit` command
+or the `audit` skill, and triggered automatically by the pre-push gate
+(`scripts/pre-push-review.sh`, on by default) when a push carries code without a
+fresh attestation. When the gate holds a push, run this playbook, commit the
+fixes, then repeat the same `git push`.
 
 Do NOT spawn `claude -p` for this — it refuses to run nested in a live session.
 Use the Agent tool (subagents) for the fan-out, exactly as below.
@@ -17,9 +19,9 @@ git diff --name-only "$BASE"...HEAD ; git diff --name-only   # committed + worki
 ```
 Filter to reviewable code (drop `docs/**` and `*.md`). Call this the CHANGED SET.
 
-- **Empty CHANGED SET** → nothing to review. Record PASS (`audit_write_state PASS 0 0 "no code changes vs $BASE"`) and stop.
+- **Empty CHANGED SET** → nothing to review. Record PASS (`audit_write_state PASS 0 0 0 "no code changes vs $BASE"`) and stop.
 - **Large CHANGED SET** (> ~40 files, e.g. a big integration branch) → a single
-  in-session pass can't do it justice. Record a skip (`audit_write_state SKIPPED 0 0 "diff too large (<n> files) — audited manually"`) and tell the user to scope it or audit by area. (The pre-push hook treats a non-PASS/FAIL attestation as stale → fail-open.)
+  in-session pass can't do it justice. Record a skip (`audit_write_state SKIPPED 0 0 0 "diff too large (<n> files) — audit by area"`) and tell the user to scope it or audit by area. (The gate treats a non-PASS/FAIL attestation as stale → fail-open.)
 
 ## 2. Fan out review subagents (Agent tool, in parallel)
 
@@ -35,31 +37,43 @@ scoped to its slice. Typical slices:
 Give each subagent the exact file list for its slice and the calibration from the
 rubric (harness = local dev tool; `snippets/**` = production bar).
 
-## 3. Verify surviving Critical/High (Agent tool)
+## 3. Verify surviving Critical/High/Medium (Agent tool)
 
-For each Critical or High a review subagent reports, launch a **separate** verify
-subagent that adversarially tries to REFUTE it against the real file (this is how
-we catch both false positives and superficial fixes). Only findings that survive
-refutation count toward the gate. (This step is why the audit is multi-agent, not
-a single pass — the independent cross-check matters.)
+For each Critical, High or Medium a review subagent reports, launch a **separate**
+verify subagent that adversarially tries to REFUTE it against the real file (this
+is how we catch both false positives and superficial fixes). Only findings that
+survive refutation count. (This step is why the audit is multi-agent, not a
+single pass — the independent cross-check matters.)
 
-## 4. Consolidate + record the attestation
+## 4. Fix, then go back to step 2
 
-Count the surviving **Critical** and **High** findings. Then:
+Fix every surviving Critical/High/Medium yourself (or through one fix subagent
+per area), following `.platform-rules/02-security.md`. Do not add features or
+change behaviour beyond closing the finding; keep each fix minimal. Then run
+**steps 1–3 again on the same scope**. Repeat until a round ends with only Low
+findings. There is no round limit, but STOP when a round returns the same
+surviving set as the previous round (nothing you changed convinced the verify
+pass): that is a stall, not progress — record FAIL in step 5 with what is left.
+
+Low findings are never fixed by this loop; they are listed for the user.
+
+## 5. Record the attestation
 
 ```
 . scripts/audit/lib.sh
-audit_write_state PASS 0 0 "clean"                 # if 0 critical AND 0 high
-# or
-audit_write_state FAIL <critical> <high> "<n> unresolved"
+audit_write_state PASS 0 0 0 "clean after <n> round(s), <k> fixed"   # only Low left
+# or, on a stall
+audit_write_state FAIL <critical> <high> <medium> "<n> unresolved after <r> round(s)"
 ```
-Write the full report (executive summary, findings table, detailed findings with
-What/Why/Fix, strengths) to the path from `audit_report_file`.
+Write the full report (rounds, what was fixed, remaining findings with
+What/Why/Fix, Low notes, strengths) to the path from `audit_report_file`.
 
 `audit_write_state` stamps the attestation with the CURRENT tree hash, so the
-pre-push hook allows the push iff the tree is unchanged since this PASS.
+pre-push gate allows the push iff the tree is unchanged since this PASS — commit
+the fixes BEFORE recording, or the attestation is stale immediately.
 
-## 5. Surface to the user
+## 6. Surface to the user
 
-Print a short summary: verdict, counts, the 2–3 findings that matter, and the
-report path. Do not modify any reviewed code (NO FIXES) unless the user then asks.
+Print a short summary: rounds, what was fixed, the verdict, the Low notes and
+the report path. If the loop stalled, say exactly which findings remain and why
+the fix did not satisfy the verifier.

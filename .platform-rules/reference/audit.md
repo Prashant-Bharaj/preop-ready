@@ -1,34 +1,47 @@
 ---
-description: "Run the deep security, performance and style audit of changed code on demand and record its attestation; the automatic every-turn gate is off unless enabled"
-triggers: ["audit", "security audit", "deep audit", "review my code", "review the changes for security", "attestation", "is my code safe"]
+description: "Security audit loop before every push: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on by default"
+triggers: ["audit", "security audit", "deep audit", "review my code", "review the changes for security", "attestation", "is my code safe", "push held", "push blocked"]
 globs: []
 ---
 
-# Deep Audit (on demand)
+# Deep Audit (before every push)
 
 The audit reviews the code changed against `origin/master` (plus uncommitted work) for
-security, performance and style, verifies every Critical/High finding with a second
-adversarial pass, and records an attestation for the exact tree it reviewed.
+security, performance and style, verifies every Critical/High/Medium finding with a second
+adversarial pass, **fixes what survives, and audits again until only Low findings remain**.
+It then records an attestation for the exact tree it reviewed. Low findings are reported,
+never fixed by the loop.
+
+## When it runs
+
+The pre-push git hook (`scripts/pre-push-review.sh`) is **on by default**. A push whose code
+has no fresh attestation is held:
+
+- In Claude Code the hook prints the instruction and exits 1. Run this audit loop, commit the
+  fixes, and repeat the same `git push`. Never bypass it with `--no-verify`.
+- In a plain terminal `scripts/audit/run.sh` runs the loop headless before the push.
+- Automation (scripts, CI, the platform update commits) is allowed through with a warning.
+
+A PASS attestation for the current tree lets the push through instantly; a FAIL (the loop
+could not get the tree clean) blocks it until the remaining findings are fixed. Docs-only
+pushes never gate. Opt out per project with a gitignored `.audit-off` file or `AUDIT_AUTO=0`.
 
 ## Run it
 
-Follow `scripts/audit/deep-audit.md` exactly (fan out review subagents per
-`scripts/audit/reviewer-prompt.md`, verify, then record with
-`source scripts/audit/lib.sh; audit_write_state <PASS|FAIL> <critical> <high> "<note>"`).
-In Claude Code the `/audit` command does the same. Outside a session:
-`bash scripts/audit/run.sh`.
+Follow `scripts/audit/deep-audit.md` exactly: fan out review subagents per
+`scripts/audit/reviewer-prompt.md`, verify, fix every Critical/High/Medium, re-audit, and
+record with `source scripts/audit/lib.sh; audit_write_state <PASS|FAIL> <critical> <high>
+<medium> "<note>"`. In Claude Code the `/audit` command does the same. Commit the fixes
+before recording — the attestation is bound to the tree hash.
 
-Do NOT fix anything unless the user asks. End with the verdict, the counts, the findings
-that matter most and the report path (`audit_report_file`).
+Stop when a round returns the same surviving findings as the round before: that is a stall,
+record FAIL with what is left and tell the user which findings the fixes did not satisfy.
 
-## Automatic gate (off by default)
+End with the rounds, what was fixed, the verdict, the Low notes and the report path
+(`audit_report_file`).
 
-The Stop hook that demands an audit after every turn with code changes, and the pre-push
-attestation check, are inert unless the developer enables them:
+## The harness does the same at build time
 
-```bash
-touch .audit-auto          # per developer, gitignored
-# or start the tool with AUDIT_AUTO=1
-```
-
-With the gate off, nothing runs on its own: the audit happens only when asked for.
+Apps built in the harness get the same loop before their containers build: the security
+review fixes every Critical/High/Medium and re-reviews until only Low remain; what could not
+be resolved is listed in the app-ready message. `SECURITY_REVIEW=0` turns it off.

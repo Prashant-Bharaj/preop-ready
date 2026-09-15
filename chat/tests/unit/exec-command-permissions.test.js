@@ -37,3 +37,13 @@ test("observed live: schema proof with 2>/dev/null is allowed; real writes outsi
     fs.rmSync(wd, { recursive: true, force: true });
   }
 });
+
+test('agents may not commit or push: git push / git commit are denied, other git verbs allowed', () => {
+  const ctx = { workspaceDir: os.tmpdir(), scope: 'backend' };
+  for (const c of ['git push', 'git push origin master', 'cd backend && git commit -m "x"', 'git -C /w commit -am fix', 'git -c user.name=x push --no-verify']) {
+    assert.equal(toolExecuteCommand.checkPermissions({ command: c }, ctx).verdict, 'deny', c);
+  }
+  for (const c of ['git status', 'git diff --stat', 'git log --oneline -3', 'grep -rn "git push" docs/', 'echo "git commit"']) {
+    assert.equal(toolExecuteCommand.checkPermissions({ command: c }, ctx).verdict, 'allow', c);
+  }
+});

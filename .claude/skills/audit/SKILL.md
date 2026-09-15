@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Run the deep security, performance and style audit of changed code on demand and record its attestation; the automatic every-turn gate is off unless enabled
+description: Security audit loop before every push: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on by default
 ---
 
 Read `.platform-rules/reference/audit.md` and follow it exactly. It is the canonical platform rule

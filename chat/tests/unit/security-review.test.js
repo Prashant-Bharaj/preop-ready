@@ -16,6 +16,7 @@ import path from 'node:path';
 import {
   parseSecurityFindings,
   partitionFindings,
+  findingKey,
   collectReviewFiles,
   formatSecurityFixDirective,
   SYSTEM_PROMPT,
@@ -49,19 +50,26 @@ test('parseSecurityFindings: garbage / empty → []', () => {
   assert.deepEqual(parseSecurityFindings('prefix {"findings":[{"severity":"High","scope":"backend","summary":"y"}]} suffix').map(x => x.summary), ['y']);
 });
 
-test('partitionFindings: Critical/High grouped by scope; Medium/Low + scope-less → report-only', () => {
+test('partitionFindings: Critical/High/Medium grouped by scope; Low + scope-less → report-only', () => {
   const findings = [
-    { severity: 'Critical', scope: 'backend', summary: 'a' },
-    { severity: 'High', scope: 'backend', summary: 'b' },
-    { severity: 'High', scope: 'frontend', summary: 'c' },
-    { severity: 'Medium', scope: 'backend', summary: 'd' },
-    { severity: 'Critical', scope: null, summary: 'e' },   // no scope → can't auto-fix
+    { severity: 'Critical', scope: 'backend', file: 'backend/a.ts', summary: 'sqli' },
+    { severity: 'High', scope: 'backend', file: 'backend/b.ts', summary: 'idor' },
+    { severity: 'Medium', scope: 'frontend', file: 'frontend/c.tsx', summary: 'cors' },
+    { severity: 'Low', scope: 'backend', file: 'backend/d.ts', summary: 'hygiene' },
+    { severity: 'High', scope: null, file: '', summary: 'no scope' },
   ];
-  const { criticalHigh, reportOnly, byScope } = partitionFindings(findings);
-  assert.equal(criticalHigh.length, 3);
-  assert.equal(reportOnly.length, 2);                       // the Medium + the scope-less Critical
-  assert.deepEqual([...byScope.keys()].sort(), ['backend', 'frontend']);
+  const { fixable, reportOnly, byScope } = partitionFindings(findings);
+  assert.equal(fixable.length, 3, 'Medium is fixed too — the loop runs until only Low remains');
+  assert.deepEqual(reportOnly.map((f) => f.summary), ['hygiene', 'no scope']);
+  assert.deepEqual([...byScope.keys()], ['backend', 'frontend']);
   assert.equal(byScope.get('backend').length, 2);
+});
+
+test('findingKey: stable across rounds, insensitive to whitespace/case in the summary', () => {
+  const a = { severity: 'High', scope: 'backend', file: 'backend/a.ts', summary: 'Missing  authz on DELETE /x' };
+  const b = { severity: 'High', scope: 'backend', file: 'backend/a.ts', summary: 'missing authz on delete /x' };
+  assert.equal(findingKey(a), findingKey(b));
+  assert.notEqual(findingKey(a), findingKey({ ...a, file: 'backend/b.ts' }));
 });
 
 test('collectReviewFiles: collects source, skips node_modules + lockfiles, honors scopes', async () => {

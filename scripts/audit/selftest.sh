@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Hermetic self-test for the audit PLUMBING: lib.sh attestation, the pre-push
-# gate decisions, the Stop-hook trigger logic, and the .claude installer merge.
+# gate decisions (default on, opt-out, Claude Code hold, automation fail-open),
+# and the .claude installer merge.
 # Builds a throwaway git repo so it never touches your real attestation, hooks,
 # or remotes. Does NOT run the LLM audit itself — that is exercised live via
 # /audit. Exit 0 = all plumbing tests pass.
@@ -13,45 +14,47 @@ ok()  { echo "  ✓ $1"; }
 bad() { echo "  ✗ $1"; fail=1; }
 
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-cd "$T"
+cd "$T" || exit 1
 git init -q; git config user.email t@t; git config user.name t
 git commit -q --allow-empty -m base
 git update-ref refs/remotes/origin/master HEAD     # fake origin/master = base
 mkdir -p scripts/audit
-cp "$AUDIT_DIR/lib.sh" "$AUDIT_DIR/stop-hook.sh" "$AUDIT_DIR/install-claude-hooks.sh" scripts/audit/
+cp "$AUDIT_DIR/lib.sh" "$AUDIT_DIR/install-claude-hooks.sh" scripts/audit/
 cp "$REPO_ROOT/scripts/pre-push-review.sh" scripts/
 echo "console.log(1)" > app.js; git add app.js; git commit -q -m change   # reviewable diff vs origin/master
 . scripts/audit/lib.sh
+# The gate must never reach the "run the audit inline" branch here: stderr is
+# redirected (not a tty) and CLAUDECODE is cleared unless a test sets it.
+prepush() { env -u CLAUDECODE "$@" bash scripts/pre-push-review.sh >/dev/null 2>&1; }
 
-echo "automatic gate off (default):"
-rm -f .audit-auto; audit_write_state FAIL 1 0 t
-bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "FAIL attestation but gate off → allow" || bad "gate off allow"
-out=$(printf '{"stop_hook_active":false}' | bash scripts/audit/stop-hook.sh); [ -z "$out" ] && ok "changed + gate off → allow stop" || bad "gate off stop"
-rm -f "$(audit_state_file)"
-out=$(printf '{"stop_hook_active":false}' | AUDIT_AUTO=1 bash scripts/audit/stop-hook.sh); printf '%s' "$out" | grep -q '"decision":"block"' && ok "AUDIT_AUTO=1 enables the gate" || bad "env enable"
-touch .audit-auto   # enable the gate for the tests below
+echo "attestation:"
+audit_write_state FAIL 1 2 3 "n"; [ "$(audit_json_get "$(audit_state_file)" medium)" = "3" ] && ok "medium count recorded (4-arg numeric form)" || bad "medium"
+audit_write_state PASS 0 0 "legacy note"; [ "$(audit_json_get "$(audit_state_file)" note)" = "legacy note" ] && [ "$(audit_json_get "$(audit_state_file)" medium)" = "0" ] && ok "legacy 4th-arg note still works" || bad "legacy note"
 
-echo "pre-push gate:"
+echo "opt-out:"
 rm -f "$(audit_state_file)"
-bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "no attestation → fail-open allow" || bad "fail-open allow"
-audit_write_state FAIL 1 0 t; bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 1 ] && ok "FAIL attestation → block" || bad "FAIL block"
-audit_write_state PASS 0 0 t; bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "PASS attestation → allow" || bad "PASS allow"
-echo "x" >> app.js; bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "tree changed after PASS → stale → fail-open allow" || bad "stale allow"; git checkout -q app.js
+prepush AUDIT_AUTO=0 CLAUDECODE=1; [ $? -eq 0 ] && ok "AUDIT_AUTO=0 → push allowed without attestation" || bad "env opt-out"
+touch .audit-off; prepush CLAUDECODE=1; [ $? -eq 0 ] && ok ".audit-off marker → push allowed" || bad "marker opt-out"; rm -f .audit-off
 
-echo "Stop-hook trigger:"
+echo "pre-push gate (default on):"
 rm -f "$(audit_state_file)"
-out=$(printf '{"stop_hook_active":true}'  | bash scripts/audit/stop-hook.sh); [ -z "$out" ] && ok "loop guard (active=true) → allow stop" || bad "loop guard"
-out=$(printf '{"stop_hook_active":false}' | bash scripts/audit/stop-hook.sh); printf '%s' "$out" | grep -q '"decision":"block"' && ok "changed + no attestation → block (trigger audit)" || bad "trigger"
-audit_write_state PASS 0 0 t
-out=$(printf '{"stop_hook_active":false}' | bash scripts/audit/stop-hook.sh); [ -z "$out" ] && ok "current tree attested → allow stop" || bad "attested allow"
+prepush CLAUDECODE=1; [ $? -eq 1 ] && ok "no attestation in Claude Code → push held (trigger audit loop)" || bad "claude hold"
+prepush; [ $? -eq 0 ] && ok "no attestation, automation (no tty, no session) → fail-open allow" || bad "automation allow"
+audit_write_state FAIL 0 0 1 t; prepush CLAUDECODE=1; [ $? -eq 1 ] && ok "FAIL attestation (medium left) → block" || bad "FAIL block"
+audit_write_state PASS 0 0 0 t; prepush CLAUDECODE=1; [ $? -eq 0 ] && ok "PASS attestation → allow" || bad "PASS allow"
+echo "x" >> app.js; git add app.js; git commit -q -m more; prepush CLAUDECODE=1; [ $? -eq 1 ] && ok "tree changed after PASS → stale → held again" || bad "stale hold"
+git checkout -q HEAD~1 -- app.js; git commit -q -am docs-revert >/dev/null 2>&1 || true
+rm -f "$(audit_state_file)"; git checkout -q -b docsonly; git update-ref refs/remotes/origin/master HEAD; echo d > README.md; git add README.md; git commit -q -m docs
+prepush CLAUDECODE=1; [ $? -eq 0 ] && ok "docs-only diff vs base → allow" || bad "docs-only allow"
 
 echo ".claude installer:"
 mkdir -p .claude
-printf '{"hooks":{"PostToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"echo hi"}]}]},"model":"opus"}' > .claude/settings.json
+printf '{"hooks":{"PostToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"echo hi"}]}],"Stop":[{"hooks":[{"type":"command","command":"\\"${CLAUDE_PROJECT_DIR}\\"/scripts/audit/stop-hook.sh"}]}]},"model":"opus"}' > .claude/settings.json
 bash scripts/audit/install-claude-hooks.sh >/dev/null 2>&1
-node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json"));process.exit(s.hooks.PostToolUse&&s.model==="opus"&&s.hooks.Stop?.[0]?.hooks?.[0]?.command?.includes("stop-hook.sh")?0:1)' && ok "merges (preserves PostToolUse + model, adds Stop)" || bad "merge"
+node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json"));process.exit(s.hooks.PostToolUse&&s.model==="opus"&&s.hooks.SessionStart?.[0]?.hooks?.[0]?.command?.includes("check-template-pr.sh")?0:1)' && ok "merges (preserves PostToolUse + model, adds SessionStart)" || bad "merge"
+node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json"));process.exit(s.hooks.Stop===undefined?0:1)' && ok "retires the legacy audit Stop hook" || bad "retire Stop"
 bash scripts/audit/install-claude-hooks.sh >/dev/null 2>&1
-node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json"));process.exit(s.hooks.Stop.length===1?0:1)' && ok "idempotent (1 Stop entry after re-run)" || bad "idempotent"
+node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json"));process.exit(s.hooks.SessionStart.length===1?0:1)' && ok "idempotent (1 SessionStart entry after re-run)" || bad "idempotent"
 
 echo ""
 [ $fail -eq 0 ] && echo "ALL PLUMBING TESTS PASSED ✓" || echo "SOME TESTS FAILED ✗"

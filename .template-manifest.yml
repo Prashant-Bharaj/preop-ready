@@ -135,9 +135,9 @@ auto_update:
   - path: "scripts/detect-stack.sh"
     description: "Stack detection (backend/frontend/db/vectordb + retired layers) for the major gate and the migration skill"
   - path: "scripts/pre-push-review.sh"
-    description: "Pre-push audit attestation gate"
+    description: "Pre-push audit gate (on by default): runs the audit loop before code leaves the machine"
   - path: "scripts/audit/"
-    description: "Deep-audit playbook, reviewer prompt, Stop hook, per-dev Claude hook installer"
+    description: "Deep-audit playbook (audit → fix → re-audit), reviewer prompt, runner, per-dev Claude hook installer"
     is_directory: true
 
 # -----------------------------------------------------------------------------
@@ -269,6 +269,9 @@ ignore:
 # These were previously part of the template but have been deprecated
 # -----------------------------------------------------------------------------
 cleanup:
+  - path: "scripts/audit/stop-hook.sh"
+    type: "file"
+    reason: "Audit trigger moved from the Claude Code Stop hook to the pre-push gate"
   - path: "docs/CODESPACE_CLAUDE_CODE_SETUP.md"
     type: "file"
     reason: "Setup is automatic; the short version lives in README.md"

@@ -9,10 +9,11 @@
  *
  * Findings anchor to `.platform-rules/02-security.md` — the same rules the coder
  * was built under — so an auto-fix directive can reference them (and the coder
- * can `get_rules("security")`). Critical/High are auto-fixed (one round per
- * scope, orchestrated in docker-orchestration.js); Medium/Low are reported.
+ * can `get_rules("security")`). Critical/High/Medium are auto-fixed and the
+ * review re-runs until only Low findings remain (orchestrated as a loop in
+ * docker-orchestration.js, with a stall guard); Low is reported.
  *
- * Off unless SECURITY_REVIEW=1 (cost/latency control: it runs on every build).
+ * On by default (it runs on every build); SECURITY_REVIEW=0 turns it off.
  * Every failure path degrades to "skipped", never an error.
  */
 
@@ -184,23 +185,28 @@ export function parseSecurityFindings(content) {
 }
 
 /**
- * Split findings into the auto-fix set (Critical/High, grouped by scope) and
- * the report-only set (Medium/Low). Findings with no resolvable scope can't be
- * auto-fixed, so they fall to report-only. Pure — unit-tested.
+ * Split findings into the auto-fix set (Critical/High/Medium, grouped by
+ * scope) and the report-only set (Low). Findings with no resolvable scope
+ * can't be auto-fixed, so they fall to report-only. Pure — unit-tested.
  */
 export function partitionFindings(findings) {
-  const criticalHigh = [];
+  const fixable = [];
   const reportOnly = [];
   for (const f of findings || []) {
-    if ((f.severity === 'Critical' || f.severity === 'High') && f.scope) criticalHigh.push(f);
+    if (f.severity !== 'Low' && f.scope) fixable.push(f);
     else reportOnly.push(f);
   }
   const byScope = new Map();
-  for (const f of criticalHigh) {
+  for (const f of fixable) {
     if (!byScope.has(f.scope)) byScope.set(f.scope, []);
     byScope.get(f.scope).push(f);
   }
-  return { criticalHigh, reportOnly, byScope };
+  return { fixable, reportOnly, byScope };
+}
+
+/** Stable identity of a finding across review rounds (stall detection). */
+export function findingKey(f) {
+  return `${f.severity}|${f.scope || ''}|${f.file || ''}|${String(f.summary || '').toLowerCase().replace(/\s+/g, ' ').slice(0, 120)}`;
 }
 
 /** Human-readable finding line for chat summaries + fix directives. */
@@ -229,7 +235,7 @@ export function formatSecurityFixDirective(scope, findings) {
  * { skipped } or { findings: [...normalized] }. Never throws.
  */
 export async function reviewGeneratedApp({ workspaceDir, scopes }) {
-  if (process.env.SECURITY_REVIEW !== '1') return { skipped: 'env' };
+  if (process.env.SECURITY_REVIEW === '0') return { skipped: 'env' };
   const files = collectReviewFiles(workspaceDir, scopes);
   if (files.length === 0) return { skipped: 'no-files' };
 

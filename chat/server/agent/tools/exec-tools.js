@@ -233,6 +233,15 @@ toolExecuteCommand.checkPermissions = function (params, ctx) {
   const cmd = params.command;
   const workspaceDir = (ctx && ctx.workspaceDir) || WORKSPACE_DIR;
 
+  // Agents never commit or push. Deploying IS the user's `git push` (files
+  // staged by name), and the pre-push audit gate treats a push with no
+  // terminal and no Claude Code session as automation and lets it through —
+  // an agent-driven push would slip past the audit that gates every human
+  // push. Same belt-and-braces posture as the destructive gate below.
+  if (/(^|[\s&|;(])git\s+(?:-C\s+\S+\s+)?(?:-c\s+\S+\s+)*(push|commit)\b/.test(stripQuoted(cmd))) {
+    return { verdict: 'deny', reason: 'execute_command: agents do not commit or push — the user deploys with git push (the pre-push audit runs there)' };
+  }
+
   // Apply destructive-pattern detection on the QUOTE-STRIPPED command, so
   // a `>` or `rm` inside a quoted string (e.g., `grep "</div>"` or
   // `grep "rm -rf"`) is treated as data, not a shell operator.

@@ -139,8 +139,8 @@ context/*
 !context/.gitkeep
 
 # ==========================================================
-# AUDIT — per-developer switch for the automatic audit gate
-.audit-auto
+# AUDIT — per-project opt-out of the pre-push audit loop
+.audit-off
 
 # ==========================================================
 # HARNESS RUNTIME ARTIFACTS — regenerated on every build; the durable

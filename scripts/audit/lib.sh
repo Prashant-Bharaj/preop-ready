@@ -2,9 +2,10 @@
 # Shared helpers for the audit attestation flow (sourced by pre-push-review.sh
 # and the on-demand runner). No side effects on source.
 #
-# The model: the deep audit runs DURING development (Stop-hook-triggered,
-# in-session) and records an attestation for the exact tree it reviewed. The
-# push then just checks that attestation instead of re-auditing.
+# The model: the deep audit runs BEFORE A PUSH (pre-push-triggered, or on
+# demand), fixes and re-audits until only Low findings remain, and records an
+# attestation for the exact tree it reviewed. The push then just checks that
+# attestation instead of re-auditing.
 
 # State lives in the git dir (never committed, worktree-scoped) so there are no
 # .gitignore concerns and each worktree keeps its own attestation.
@@ -47,12 +48,15 @@ audit_json_get() {
   ' "$file" "$key" 2>/dev/null
 }
 
-# Write the attestation atomically. Args: <verdict> <critical> <high> [note]
+# Write the attestation atomically. Args: <verdict> <critical> <high> [medium] [note]
+# (a numeric 4th argument is the medium count; a non-numeric one is the note —
+# older callers passed the note as the 4th argument)
 # Uses printf (not node) to write the JSON — a multi-line `node -e` script is
 # mangled by Git Bash → node.exe on Windows ("stdout is not a tty", empty file),
 # whereas printf is pure-bash and cross-platform.
 audit_write_state() {
-  local verdict="$1" critical="${2:-0}" high="${3:-0}" note="${4:-}"
+  local verdict="$1" critical="${2:-0}" high="${3:-0}" medium=0 note=""
+  if [ "${4:-}" != "" ] && [ "${4}" -eq "${4}" ] 2>/dev/null; then medium="$4"; note="${5:-}"; else note="${4:-}"; fi
   local dir; dir="$(audit_state_dir)" || return 1
   mkdir -p "$dir"
   local hash ts tmp
@@ -61,6 +65,6 @@ audit_write_state() {
   # JSON-escape backslashes and double-quotes in the free-text note.
   note="${note//\\/\\\\}"; note="${note//\"/\\\"}"
   tmp="$dir/state.json.tmp.$$"
-  printf '{\n  "verdict": "%s",\n  "critical": %s,\n  "high": %s,\n  "treeHash": "%s",\n  "note": "%s",\n  "timestamp": "%s"\n}\n' \
-    "$verdict" "$critical" "$high" "$hash" "$note" "$ts" > "$tmp" && mv "$tmp" "$dir/state.json"
+  printf '{\n  "verdict": "%s",\n  "critical": %s,\n  "high": %s,\n  "medium": %s,\n  "treeHash": "%s",\n  "note": "%s",\n  "timestamp": "%s"\n}\n' \
+    "$verdict" "$critical" "$high" "$medium" "$hash" "$note" "$ts" > "$tmp" && mv "$tmp" "$dir/state.json"
 }

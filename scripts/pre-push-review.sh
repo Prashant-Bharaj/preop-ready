@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Pre-push audit gate — ATTESTATION CHECK (fail-open)
+# Pre-push audit gate — the deep audit runs BEFORE code leaves the machine
 # ----------------------------------------------------------------------------
-# The deep security/perf/style audit runs DURING development (on demand via
-# /audit or the `audit` skill; Stop-hook triggered only when the automatic
-# gate is enabled — see scripts/audit/) and records an attestation for the
-# exact tree it reviewed. This hook does NOT re-audit; it just checks that
-# attestation, and only when the automatic gate is enabled (AUDIT_AUTO=1 or a
-# .audit-auto marker at the repo root). Otherwise it allows silently.
+# ON BY DEFAULT. The audit (scripts/audit/) reviews the code changed vs
+# origin/master, fixes every Critical/High/Medium finding, re-audits, and
+# repeats until only Low findings remain; then it records an attestation for
+# the exact tree it reviewed. This hook checks that attestation and, when
+# there is none, triggers the audit:
 #
-#   • PASS attestation matches the tree being pushed  → allow instantly.
-#   • FAIL attestation (Critical/High unresolved)     → BLOCK (git push --no-verify to override).
-#   • stale / missing attestation                     → WARN + allow (fail-open).
+#   • PASS attestation for the current tree  → allow instantly.
+#   • FAIL attestation for the current tree  → BLOCK (git push --no-verify to override).
+#   • no / stale attestation:
+#       inside Claude Code (CLAUDECODE set)  → hold the push and ask the agent to run
+#                                              the audit loop (/audit), then push again.
+#       interactive terminal with `claude`   → run scripts/audit/run.sh now, then re-check.
+#       automation (no terminal, no claude)  → WARN + allow (fail-open) — never runs an
+#                                              LLM pass from a script or CI (the platform
+#                                              update commits push this way).
 #
-# On-demand run:  scripts/audit/run.sh    (or /audit inside Claude Code)
+# Opt out per project with a `.audit-off` file at the repo root (gitignored) or
+# AUDIT_AUTO=0. Docs/markdown-only pushes never gate.
 # Installed as .git/hooks/pre-push by scripts/install-hooks.sh.
 # ============================================================================
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
-if [ "${AUDIT_AUTO:-0}" != "1" ] && [ ! -f "$REPO_ROOT/.audit-auto" ]; then
-  exit 0   # automatic gate off — audit on demand only
+if [ "${AUDIT_AUTO:-1}" = "0" ] || [ -f "$REPO_ROOT/.audit-off" ]; then
+  exit 0   # opted out — audit on demand only
 fi
 # shellcheck source=scripts/audit/lib.sh
 . "$REPO_ROOT/scripts/audit/lib.sh" 2>/dev/null || { echo "[pre-push audit] lib missing — skipping."; exit 0; }
@@ -39,29 +45,59 @@ fi
 STATE="$(audit_state_file)"
 CUR="$(audit_tree_hash)"
 
-if [ -f "$STATE" ]; then
-  ATT_HASH="$(audit_json_get "$STATE" treeHash)"
-  VERDICT="$(audit_json_get "$STATE" verdict)"
-  if [ "$ATT_HASH" = "$CUR" ]; then
-    case "$VERDICT" in
-      PASS)
-        echo "[pre-push audit] ✅ attestation PASS for the tree you're pushing — allow."
-        exit 0 ;;
-      FAIL)
-        C="$(audit_json_get "$STATE" critical)"; H="$(audit_json_get "$STATE" high)"
-        echo ""
-        echo "[pre-push audit] ❌ BLOCKED — last audit FAILED for THIS tree (${C:-?} critical, ${H:-?} high)."
-        echo "   Report: $(audit_report_file)"
-        echo "   Fix the findings and re-audit (/audit), or override: git push --no-verify"
-        exit 1 ;;
-    esac
-  fi
+# Verdict recorded for the CURRENT tree: PASS, FAIL, or NONE (missing/stale/skipped).
+attested_verdict() {
+  [ -f "$STATE" ] || { echo NONE; return; }
+  [ "$(audit_json_get "$STATE" treeHash)" = "$CUR" ] || { echo NONE; return; }
+  case "$(audit_json_get "$STATE" verdict)" in
+    PASS) echo PASS ;;
+    FAIL) echo FAIL ;;
+    *)    echo NONE ;;
+  esac
+}
+
+block_on_fail() {
+  local c h m
+  c="$(audit_json_get "$STATE" critical)"; h="$(audit_json_get "$STATE" high)"; m="$(audit_json_get "$STATE" medium)"
+  echo ""
+  echo "[pre-push audit] ❌ BLOCKED — the audit could not get this tree clean (${c:-?} critical, ${h:-?} high, ${m:-?} medium left)."
+  echo "   Report: $(audit_report_file)"
+  echo "   Fix the remaining findings and re-run /audit, or override: git push --no-verify"
+  exit 1
+}
+
+case "$(attested_verdict)" in
+  PASS) echo "[pre-push audit] ✅ attestation PASS for the tree you're pushing — allow."; exit 0 ;;
+  FAIL) block_on_fail ;;
+esac
+
+# No fresh attestation → trigger the audit loop.
+if [ -n "${CLAUDECODE:-}" ]; then
+  # A git hook can't launch the audit inside a live session (claude -p refuses
+  # to nest), so hold the push and hand the job to the agent that ran it.
+  echo ""
+  echo "[pre-push audit] ⛔ Push held: the code being pushed has no audit attestation."
+  echo "   Run the deep audit now, in-session: follow scripts/audit/deep-audit.md (the /audit command) —"
+  echo "   review, fix every Critical/High/Medium finding, re-audit until only Low remain, record the"
+  echo "   verdict with 'source scripts/audit/lib.sh; audit_write_state PASS 0 0 0 \"<note>\"', commit the"
+  echo "   fixes, then run the same git push again. Do not bypass it with --no-verify."
+  exit 1
 fi
 
-# Stale or missing attestation → FAIL-OPEN (warn, allow).
+if [ -t 2 ] && command -v claude >/dev/null 2>&1; then
+  echo "[pre-push audit] Running the deep audit before this push (scripts/audit/run.sh)…"
+  bash "$REPO_ROOT/scripts/audit/run.sh" || true
+  case "$(attested_verdict)" in
+    PASS) echo "[pre-push audit] ✅ audit PASS — allow."; exit 0 ;;
+    FAIL) block_on_fail ;;
+  esac
+  echo "[pre-push audit] ⚠️  The audit recorded no PASS/FAIL for this tree (skipped or diff too large) — allowing (fail-open)."
+  echo "   Note: if the audit committed fixes, push again to include them."
+  exit 0
+fi
+
 echo ""
-echo "[pre-push audit] ⚠️  No fresh audit attestation for the tree you're pushing."
-echo "   The code changed since the last recorded audit (or none exists yet)."
-echo "   Recommended: run /audit in Claude Code (or scripts/audit/run.sh) before pushing."
+echo "[pre-push audit] ⚠️  No fresh audit attestation for the code you're pushing."
+echo "   Run /audit in Claude Code (or scripts/audit/run.sh) and push again to record one."
 echo "   Allowing the push (fail-open)."
 exit 0

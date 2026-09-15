@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Register the audit Stop hook + /audit command in the developer's (gitignored)
-# .claude/ config. The Stop hook is inert until the automatic gate is enabled
-# (AUDIT_AUTO=1 or a .audit-auto marker at the repo root); /audit and the
-# `audit` skill run the audit on demand. Tracked in the repo so every clone gets the trigger at setup
-# WITHOUT committing personal .claude/ files. Idempotent and non-destructive:
-# it MERGES into an existing .claude/settings.json (never clobbers other hooks)
-# and no-ops if our hook is already present. Called from devcontainer.json's
-# postStartCommand after install-hooks.sh.
+# Register the /audit command + the SessionStart hook in the developer's
+# (gitignored) .claude/ config, and retire the old audit Stop hook. The audit's
+# automatic trigger is the pre-push gate (scripts/pre-push-review.sh, on by
+# default; opt out with a .audit-off marker at the repo root); /audit and the
+# `audit` skill run it on demand. Tracked in the repo so every clone
+# gets the same setup WITHOUT committing personal .claude/ files. Idempotent
+# and non-destructive: it MERGES into an existing .claude/settings.json (never
+# clobbers other hooks) and no-ops when nothing changes. Called from
+# devcontainer.json's postStartCommand after install-hooks.sh.
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -16,26 +17,16 @@ command -v node >/dev/null 2>&1 || { echo "[audit-setup] node not found — skip
 mkdir -p .claude/commands
 
 # 1) Merge our hooks into .claude/settings.json (create if missing):
-#    - Stop: audit attestation gate
 #    - SessionStart: platform template status (open sync PR / outdated sync
 #      workflow / version) printed into Claude's context so the first reply
 #      can act on it — the same check the rules ask every AI tool to run.
+#    - Retired: the audit Stop hook (scripts/audit/stop-hook.sh) — the audit is
+#      now triggered by the pre-push gate, so any old registration is removed.
 node - <<'NODE'
 const fs = require('fs');
 const path = '.claude/settings.json';
 
 const WANTED = [
-  {
-    event: 'Stop',
-    matcher: undefined,
-    marker: 'scripts/audit/stop-hook.sh',
-    hook: {
-      type: 'command',
-      command: '"${CLAUDE_PROJECT_DIR}"/scripts/audit/stop-hook.sh',
-      timeout: 30,
-      statusMessage: 'Checking audit attestation…',
-    },
-  },
   {
     event: 'SessionStart',
     matcher: 'startup|resume|clear',
@@ -48,6 +39,7 @@ const WANTED = [
     },
   },
 ];
+const RETIRED = ['scripts/audit/stop-hook.sh'];
 
 let settings = {};
 if (fs.existsSync(path)) {
@@ -60,14 +52,22 @@ if (fs.existsSync(path)) {
 }
 settings.hooks = settings.hooks || {};
 
+const usesMarker = (entry, marker) =>
+  Array.isArray(entry?.hooks) &&
+  entry.hooks.some((h) => typeof h?.command === 'string' && h.command.includes(marker));
+
 let changed = false;
+for (const event of Object.keys(settings.hooks)) {
+  const list = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
+  const kept = list.filter((entry) => !RETIRED.some((m) => usesMarker(entry, m)));
+  if (kept.length === list.length) continue;
+  if (kept.length) settings.hooks[event] = kept; else delete settings.hooks[event];
+  changed = true;
+  console.log(`[audit-setup] Removed the retired audit ${event} hook from .claude/settings.json.`);
+}
 for (const w of WANTED) {
   const list = Array.isArray(settings.hooks[w.event]) ? settings.hooks[w.event] : [];
-  const already = list.some((entry) =>
-    Array.isArray(entry?.hooks) &&
-    entry.hooks.some((h) => typeof h?.command === 'string' && h.command.includes(w.marker))
-  );
-  if (already) {
+  if (list.some((entry) => usesMarker(entry, w.marker))) {
     console.log(`[audit-setup] ${w.event} hook already registered — no change.`);
     continue;
   }
@@ -85,18 +85,19 @@ NODE
 if [ ! -f .claude/commands/audit.md ]; then
   cat > .claude/commands/audit.md <<'CMD'
 ---
-description: Run the deep security/performance/style audit on changed code and record the attestation
+description: Audit the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation
 ---
-Run the deep audit now, in-session, using the Agent tool. Follow the playbook in
-@scripts/audit/deep-audit.md exactly:
+Run the deep audit loop now, in-session, using the Agent tool. Follow the playbook
+in @scripts/audit/deep-audit.md exactly:
 
 - Scope to code changed vs `origin/master` (plus uncommitted), dropping `docs/**` and `*.md`.
 - Fan out review subagents by area/dimension, each following @scripts/audit/reviewer-prompt.md.
-- Verify each surviving Critical/High with a separate adversarial subagent (this is how false positives get caught).
-- Record the verdict: `source scripts/audit/lib.sh; audit_write_state <PASS|FAIL> <critical> <high> "<note>"`, and write the full report to the path from `audit_report_file`.
+- Verify each surviving Critical/High/Medium with a separate adversarial subagent (this is how false positives get caught).
+- Fix every finding that survives, commit the fixes (files by name), and audit again — repeat until a round leaves only Low findings, or stop when a round makes no progress.
+- Record the verdict: `source scripts/audit/lib.sh; audit_write_state <PASS|FAIL> <critical> <high> <medium> "<note>"`, and write the full report to the path from `audit_report_file`.
 
-Do NOT fix anything unless I ask. End with a short summary: verdict, counts, the
-findings that matter most, and the report path.
+End with a short summary: rounds, what was fixed, the verdict, the Low notes, and
+the report path.
 
 $ARGUMENTS
 CMD
