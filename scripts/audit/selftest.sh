@@ -31,12 +31,13 @@ echo "attestation:"
 audit_write_state FAIL 1 2 3 "n"; [ "$(audit_json_get "$(audit_state_file)" medium)" = "3" ] && ok "medium count recorded (4-arg numeric form)" || bad "medium"
 audit_write_state PASS 0 0 "legacy note"; [ "$(audit_json_get "$(audit_state_file)" note)" = "legacy note" ] && [ "$(audit_json_get "$(audit_state_file)" medium)" = "0" ] && ok "legacy 4th-arg note still works" || bad "legacy note"
 
-echo "opt-out:"
-rm -f "$(audit_state_file)"
-prepush AUDIT_AUTO=0 CLAUDECODE=1; [ $? -eq 0 ] && ok "AUDIT_AUTO=0 → push allowed without attestation" || bad "env opt-out"
-touch .audit-off; prepush CLAUDECODE=1; [ $? -eq 0 ] && ok ".audit-off marker → push allowed" || bad "marker opt-out"; rm -f .audit-off
+echo "gate off by default:"
+rm -f "$(audit_state_file)" .audit-auto
+prepush CLAUDECODE=1; [ $? -eq 0 ] && ok "no attestation, no opt-in → push allowed (gate off)" || bad "default off"
+prepush AUDIT_AUTO=1 CLAUDECODE=1; [ $? -eq 1 ] && ok "AUDIT_AUTO=1 enables the gate" || bad "env opt-in"
+touch .audit-auto   # enable the gate for the tests below
 
-echo "pre-push gate (default on):"
+echo "pre-push gate (opted in):"
 rm -f "$(audit_state_file)"
 prepush CLAUDECODE=1; [ $? -eq 1 ] && ok "no attestation in Claude Code → push held (trigger audit loop)" || bad "claude hold"
 prepush; [ $? -eq 0 ] && ok "no attestation, automation (no tty, no session) → fail-open allow" || bad "automation allow"

@@ -2,7 +2,8 @@
 # ============================================================================
 # Pre-push audit gate — the deep audit runs BEFORE code leaves the machine
 # ----------------------------------------------------------------------------
-# ON BY DEFAULT. The audit (scripts/audit/) reviews the code changed vs
+# OPT-IN (off by default until the reviewers are bounded in time and tokens).
+# The audit (scripts/audit/) reviews the code changed vs
 # origin/master, fixes every Critical/High/Medium finding, re-audits, and
 # repeats until only Low findings remain; then it records an attestation for
 # the exact tree it reviewed. This hook checks that attestation and, when
@@ -18,15 +19,15 @@
 #                                              LLM pass from a script or CI (the platform
 #                                              update commits push this way).
 #
-# Opt out per project with a `.audit-off` file at the repo root (gitignored) or
-# AUDIT_AUTO=0. Docs/markdown-only pushes never gate.
+# Enable per project with a `.audit-auto` file at the repo root (gitignored) or
+# AUDIT_AUTO=1. Docs/markdown-only pushes never gate.
 # Installed as .git/hooks/pre-push by scripts/install-hooks.sh.
 # ============================================================================
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
-if [ "${AUDIT_AUTO:-1}" = "0" ] || [ -f "$REPO_ROOT/.audit-off" ]; then
-  exit 0   # opted out — audit on demand only
+if [ "${AUDIT_AUTO:-0}" != "1" ] && [ ! -f "$REPO_ROOT/.audit-auto" ]; then
+  exit 0   # gate off (default) — audit on demand via /audit
 fi
 # shellcheck source=scripts/audit/lib.sh
 . "$REPO_ROOT/scripts/audit/lib.sh" 2>/dev/null || { echo "[pre-push audit] lib missing — skipping."; exit 0; }

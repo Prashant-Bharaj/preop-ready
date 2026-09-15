@@ -135,7 +135,7 @@ auto_update:
   - path: "scripts/detect-stack.sh"
     description: "Stack detection (backend/frontend/db/vectordb + retired layers) for the major gate and the migration skill"
   - path: "scripts/pre-push-review.sh"
-    description: "Pre-push audit gate (on by default): runs the audit loop before code leaves the machine"
+    description: "Pre-push audit gate (opt-in): runs the audit loop before code leaves the machine"
   - path: "scripts/audit/"
     description: "Deep-audit playbook (audit → fix → re-audit), reviewer prompt, runner, per-dev Claude hook installer"
     is_directory: true

@@ -1836,11 +1836,11 @@ export async function runSmokeAndPrompt(session, envContext, routerContracts = {
  * Reviews the source, AUTO-FIXES Critical/High (one round per scope, modeled on
  * the authz gate), and reports the rest. Non-blocking — findings never stop the
  * build. Sets session.securitySummary for the app-ready line + run summary.
- * On by default; SECURITY_REVIEW=0 turns it off. Loops fix → re-review until
+ * Off by default; SECURITY_REVIEW=1 turns it on. Loops fix → re-review until
  * only Low findings remain (stall guard; optional SECURITY_REVIEW_MAX_ROUNDS).
  */
 async function runSecurityReviewAndFix(session, scopeCounters, routerContracts) {
-  if (process.env.SECURITY_REVIEW === '0') return;
+  if (process.env.SECURITY_REVIEW !== '1') return;
   const scopes = Array.isArray(routerContracts?.tasks)
     ? [...new Set(routerContracts.tasks.map((t) => t && t.scope).filter(Boolean))]
     : [];

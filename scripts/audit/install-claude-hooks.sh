@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Register the /audit command + the SessionStart hook in the developer's
 # (gitignored) .claude/ config, and retire the old audit Stop hook. The audit's
-# automatic trigger is the pre-push gate (scripts/pre-push-review.sh, on by
-# default; opt out with a .audit-off marker at the repo root); /audit and the
+# automatic trigger is the pre-push gate (scripts/pre-push-review.sh, opt-in
+# with a .audit-auto marker at the repo root or AUDIT_AUTO=1); /audit and the
 # `audit` skill run it on demand. Tracked in the repo so every clone
 # gets the same setup WITHOUT committing personal .claude/ files. Idempotent
 # and non-destructive: it MERGES into an existing .claude/settings.json (never

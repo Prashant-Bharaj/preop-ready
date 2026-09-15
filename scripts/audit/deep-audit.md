@@ -4,8 +4,8 @@ This is the procedure the agent runs **in-session** (via the Agent/Task tool) to
 get the changed code security-clean before it is pushed, and to record an
 attestation the pre-push gate can trust. It is invoked by the `/audit` command
 or the `audit` skill, and triggered automatically by the pre-push gate
-(`scripts/pre-push-review.sh`, on by default) when a push carries code without a
-fresh attestation. When the gate holds a push, run this playbook, commit the
+(`scripts/pre-push-review.sh`, opt-in: `.audit-auto` marker or `AUDIT_AUTO=1`) when a
+push carries code without a fresh attestation. When the gate holds a push, run this playbook, commit the
 fixes, then repeat the same `git push`.
 
 Do NOT spawn `claude -p` for this — it refuses to run nested in a live session.

@@ -1,5 +1,5 @@
 ---
-description: "Security audit loop before every push: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on by default"
+description: "Security audit loop: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on demand via /audit, or automatically before every push when a project opts in"
 triggers: ["audit", "security audit", "deep audit", "review my code", "review the changes for security", "attestation", "is my code safe", "push held", "push blocked"]
 globs: []
 ---
@@ -15,8 +15,11 @@ never fixed by the loop.
 
 ## When it runs
 
-The pre-push git hook (`scripts/pre-push-review.sh`) is **on by default**. A push whose code
-has no fresh attestation is held:
+On demand: `/audit` in Claude Code, or `bash scripts/audit/run.sh` in a terminal.
+
+Automatically before every push when the project opts in (`touch .audit-auto`, gitignored, or
+`AUDIT_AUTO=1`) — off by default for now. With the gate on, a push whose code has no fresh
+attestation is held:
 
 - In Claude Code the hook prints the instruction and exits 1. Run this audit loop, commit the
   fixes, and repeat the same `git push`. Never bypass it with `--no-verify`.
@@ -25,7 +28,7 @@ has no fresh attestation is held:
 
 A PASS attestation for the current tree lets the push through instantly; a FAIL (the loop
 could not get the tree clean) blocks it until the remaining findings are fixed. Docs-only
-pushes never gate. Opt out per project with a gitignored `.audit-off` file or `AUDIT_AUTO=0`.
+pushes never gate.
 
 ## Run it
 
@@ -43,6 +46,7 @@ End with the rounds, what was fixed, the verdict, the Low notes and the report p
 
 ## The harness does the same at build time
 
-Apps built in the harness get the same loop before their containers build: the security
-review fixes every Critical/High/Medium and re-reviews until only Low remain; what could not
-be resolved is listed in the app-ready message. `SECURITY_REVIEW=0` turns it off.
+Apps built in the harness get the same loop before their containers build when the harness
+runs with `SECURITY_REVIEW=1` (off by default for now): the security review fixes every
+Critical/High/Medium and re-reviews until only Low remain; what could not be resolved is
+listed in the app-ready message.

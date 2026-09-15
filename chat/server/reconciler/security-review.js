@@ -13,7 +13,7 @@
  * review re-runs until only Low findings remain (orchestrated as a loop in
  * docker-orchestration.js, with a stall guard); Low is reported.
  *
- * On by default (it runs on every build); SECURITY_REVIEW=0 turns it off.
+ * Off by default (cost/latency on every build); SECURITY_REVIEW=1 turns it on.
  * Every failure path degrades to "skipped", never an error.
  */
 
@@ -235,7 +235,7 @@ export function formatSecurityFixDirective(scope, findings) {
  * { skipped } or { findings: [...normalized] }. Never throws.
  */
 export async function reviewGeneratedApp({ workspaceDir, scopes }) {
-  if (process.env.SECURITY_REVIEW === '0') return { skipped: 'env' };
+  if (process.env.SECURITY_REVIEW !== '1') return { skipped: 'env' };
   const files = collectReviewFiles(workspaceDir, scopes);
   if (files.length === 0) return { skipped: 'no-files' };
 

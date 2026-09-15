@@ -1,5 +1,5 @@
 ---
-description: Security audit loop before every push: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on by default
+description: Security audit loop: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on demand via /audit, or automatically before every push when a project opts in
 alwaysApply: false
 ---
 

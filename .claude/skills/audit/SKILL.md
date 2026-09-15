@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Security audit loop before every push: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on by default
+description: Security audit loop: review the changed code, fix every Critical/High/Medium finding, re-audit until only Low remain, record the attestation; on demand via /audit, or automatically before every push when a project opts in
 ---
 
 Read `.platform-rules/reference/audit.md` and follow it exactly. It is the canonical platform rule
