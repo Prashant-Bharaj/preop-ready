@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  upsertEnvFile, readEnvFile, ensureWorkspaceEnv, canonicalEnvEntries, WORKSPACE_ENV_HEADER,
+  upsertEnvFile, readEnvFile, ensureWorkspaceEnv, canonicalEnvEntries, WORKSPACE_ENV_HEADER, workspaceDbCredentials,
 } from '../../server/core/workspace-env.js';
 import { LOCAL_DB_CREDENTIALS, LOCAL_VECTORDB_CREDENTIALS } from '../../server/config/defaults.js';
 
@@ -55,4 +55,12 @@ test('ensureWorkspaceEnv adds missing keys only and always leaves a file behind'
   const empty = ensureWorkspaceEnv(tmp());
   assert.deepEqual(empty.added, []);
   assert.ok(fs.existsSync(empty.path), 'a backend-only app still gets the file env_file points at');
+});
+
+test('workspaceDbCredentials prefers the .env values, falls back to canonical', () => {
+  const dir = tmp();
+  assert.deepEqual(workspaceDbCredentials(dir), LOCAL_DB_CREDENTIALS);
+  fs.writeFileSync(path.join(dir, '.env'), 'DATABASE_NAME=cockpit\nDATABASE_USER=cockpit_user\n');
+  const c = workspaceDbCredentials(dir);
+  assert.equal(c.name, 'cockpit'); assert.equal(c.user, 'cockpit_user'); assert.equal(c.password, LOCAL_DB_CREDENTIALS.password); assert.equal(c.host, 'database');
 });

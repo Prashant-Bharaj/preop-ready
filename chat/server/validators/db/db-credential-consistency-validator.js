@@ -142,13 +142,20 @@ function isBackendService(name, service) {
 // Present-but-wrong is rewritten to the reference; MISSING is added (postgres
 // refuses to initialize without POSTGRES_PASSWORD, which kills compose up
 // outright; observed live). Services that load their own env_file or use
-// trust auth keep their creds out of compose — out of scope.
+// trust auth keep their creds out of compose — out of scope. Returns the
+// literal values found ({ VAR: value }) so the env file can be seeded with
+// what the database volume was actually initialised with.
 function pushPostgresRefs(rewrites, name, service, env, refs) {
-  if (envFilePaths(service).length || env.POSTGRES_HOST_AUTH_METHOD != null) return;
+  const literals = {};
+  if (envFilePaths(service).length || env.POSTGRES_HOST_AUTH_METHOD != null) return literals;
   for (const [key, ref] of Object.entries(refs)) {
     if (env[key] == null) rewrites.push({ service: name, key, from: null, to: ref, add: true });
-    else if (!referencesVar(env[key], ref)) rewrites.push({ service: name, key, from: env[key], to: ref });
+    else if (!referencesVar(env[key], ref)) {
+      rewrites.push({ service: name, key, from: env[key], to: ref });
+      if (!/^\$\{/.test(String(env[key])) && String(env[key]).trim() !== '') literals[ref.slice(2, -1)] = String(env[key]).trim();
+    }
   }
+  return literals;
 }
 
 /**
@@ -195,7 +202,7 @@ export function scanComposeForCredentialDrift(workspaceDir) {
   const rewrites = [];
 
   // db service: POSTGRES_* → ${DATABASE_*}
-  pushPostgresRefs(rewrites, dbName, services[dbName], dbEnv, DB_REFS);
+  const literals = pushPostgresRefs(rewrites, dbName, services[dbName], dbEnv, DB_REFS);
 
   // Any OTHER postgres-family service is the dedicated vector store; its
   // container creds are a separate set (VECTORDB_*) — the integration agent
@@ -210,7 +217,7 @@ export function scanComposeForCredentialDrift(workspaceDir) {
     const env = extractEnvFromService(service);
     if (envFilePaths(service).length || env.POSTGRES_HOST_AUTH_METHOD != null) continue;
     hasVectordb = true;
-    pushPostgresRefs(rewrites, name, service, env, VECTORDB_REFS);
+    Object.assign(literals, pushPostgresRefs(rewrites, name, service, env, VECTORDB_REFS));
   }
 
   // backend service: HOST must equal the db service name (that's how it
@@ -225,6 +232,10 @@ export function scanComposeForCredentialDrift(workspaceDir) {
   for (const [key, ref] of Object.entries(BACKEND_REFS)) {
     if (backendEnv[key] != null && !referencesVar(backendEnv[key], ref)) {
       rewrites.push({ service: backendName, key, from: backendEnv[key], to: ref });
+      // A db-side literal is only trusted when the backend carried the SAME
+      // value — that pair was actually working. A disagreement is the drift
+      // bug itself (db renamed, backend not): fall back to the canonical value.
+      if (literals[key] != null && String(backendEnv[key]).trim() !== literals[key]) delete literals[key];
     }
   }
   if (!envFilePaths(services[backendName]).includes(WORKSPACE_ENV_FILE)) {
@@ -232,9 +243,13 @@ export function scanComposeForCredentialDrift(workspaceDir) {
   }
 
   // The env file itself: every referenced value must exist (add-missing only).
+  // A literal that was just turned into a reference wins over the canonical
+  // value: an existing database volume was initialised with it, and switching
+  // the value would break authentication on the next start (hand-built apps
+  // adopting the layout; harness apps already carry the canonical values).
   const have = readEnvFile(workspaceEnvPath(workspaceDir));
   for (const [key, value] of Object.entries(canonicalEnvEntries({ database: true, vectordb: hasVectordb }))) {
-    if (have[key] == null) rewrites.push({ file: WORKSPACE_ENV_FILE, key, from: null, to: value, add: true });
+    if (have[key] == null) rewrites.push({ file: WORKSPACE_ENV_FILE, key, from: null, to: literals[key] ?? value, add: true });
   }
 
   return rewrites;

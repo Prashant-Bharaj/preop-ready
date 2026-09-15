@@ -120,7 +120,10 @@ services:
   assert.match(out, /- POSTGRES_DB=\$\{DATABASE_NAME\}/);
   assert.match(out, /- POSTGRES_PASSWORD=\$\{DATABASE_PASSWORD\}/);
   assert.doesNotMatch(out, /tasktracker|hunter2/);
-  assertCanonical(dir);
+  // both services agreed on these values → the env file keeps them (an existing
+  // volume was initialised with them); only a disagreement falls back to canonical
+  assert.deepEqual(env(dir), { DATABASE_NAME: 'tasktracker', DATABASE_USER: 'tasktracker_user', DATABASE_PASSWORD: 'hunter2' });
+  assert.deepEqual(scanComposeForCredentialDrift(dir), []);
 });
 
 test('already-canonical compose + .env → zero fixes', () => {
@@ -479,4 +482,28 @@ services:
   const issues = scanComposeForCredentialDrift(dir);
   assert.ok(!issues.some((i) => i.service === 'worker'), 'a node service must never get a POSTGRES_PASSWORD');
   assert.ok(!issues.some((i) => i.file === '.env' && i.key.startsWith('VECTORDB_')), 'no vectordb → no VECTORDB_* in .env');
+});
+
+test('a hand-built app keeps its own credential values: .env is seeded from the compose literals', () => {
+  const dir = tmpWorkspace(`
+services:
+  backend:
+    depends_on: [database]
+    environment:
+      DATABASE_HOST: database
+      DATABASE_NAME: cockpit
+      DATABASE_USER: cockpit_user
+      DATABASE_PASSWORD: secret42
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cockpit
+      POSTGRES_USER: cockpit_user
+      POSTGRES_PASSWORD: secret42
+`);
+  fixAll(dir);
+  const out = read(dir);
+  assert.doesNotMatch(out, /secret42|cockpit_user/, 'compose holds references only');
+  assert.deepEqual(env(dir), { DATABASE_NAME: 'cockpit', DATABASE_USER: 'cockpit_user', DATABASE_PASSWORD: 'secret42' });
+  assert.deepEqual(scanComposeForCredentialDrift(dir), []);
 });

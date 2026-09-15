@@ -114,3 +114,19 @@ export function ensureWorkspaceEnv(workspaceDir, { database = false, vectordb = 
   if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, `${WORKSPACE_ENV_HEADER}\n`, { mode: 0o600 });
   return { path: filePath, added };
 }
+
+/**
+ * The credentials the app's database container was actually started with:
+ * the workspace `.env` values, falling back to the canonical ones for any key
+ * it lacks. Harness code that runs `psql` inside that container must use
+ * this, not the constants — a hand-built app keeps its own values.
+ */
+export function workspaceDbCredentials(workspaceDir) {
+  const env = readEnvFile(workspaceEnvPath(workspaceDir));
+  return {
+    ...LOCAL_DB_CREDENTIALS,
+    name: env.DATABASE_NAME || LOCAL_DB_CREDENTIALS.name,
+    user: env.DATABASE_USER || LOCAL_DB_CREDENTIALS.user,
+    password: env.DATABASE_PASSWORD || LOCAL_DB_CREDENTIALS.password,
+  };
+}

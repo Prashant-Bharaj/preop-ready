@@ -7,6 +7,7 @@ import { accumulateAgentTotals } from './lifecycle.js';
 import { tlog } from '../util/timestamped-log.js';
 import { logAndSwallow } from '../util/log-helpers.js';
 import { WORKSPACE_DIR } from '../core/paths.js';
+import { workspaceDbCredentials } from '../core/workspace-env.js';
 import { detectPortConflicts } from '../util/port-conflicts.js';
 import { scanComposeForBadDirectives, applyStrategyAFixes } from '../validators/docker/directive-validator.js';
 import { scanComposeForHealthcheckConsistency, applyHealthcheckConsistencyFixes } from '../validators/docker/healthcheck-consistency-validator.js';
@@ -41,7 +42,6 @@ import {
   MAX_FIX_ATTEMPTS_PER_SCOPE,
   MAX_RECOVERY_TOKENS_PER_BUILD,
   MAX_PROBE_FIX_ATTEMPTS_PER_SCOPE,
-  LOCAL_DB_CREDENTIALS,
 } from '../config/defaults.js';
 import {
   probeApiEndpoints,
@@ -1430,7 +1430,7 @@ function applyReferenceDataFile() {
   const file = path.join(WORKSPACE_DIR, REFERENCE_DATA_FILE);
   if (!existsSync(file)) return false;
   try {
-    const db = LOCAL_DB_CREDENTIALS;
+    const db = workspaceDbCredentials(WORKSPACE_DIR);
     execSync(`docker compose exec -T database psql -v ON_ERROR_STOP=1 -U ${db.user} -d ${db.name}`, {
       cwd: WORKSPACE_DIR,
       input: readFileSync(file, 'utf-8'),
@@ -1929,7 +1929,7 @@ function emitVerifyStep(sessionId, step, status, detail = '') {
  */
 function checkMigrationsApplied() {
   return verifyMigrationsApplied(WORKSPACE_DIR, () => {
-    const db = LOCAL_DB_CREDENTIALS;
+    const db = workspaceDbCredentials(WORKSPACE_DIR);
     const out = execFileSync('docker', [
       'compose', 'exec', '-T', 'database',
       'psql', '-U', db.user, '-d', db.name, '-t', '-A', '-c',
@@ -2093,7 +2093,7 @@ export async function tryAutoStartApp(session, envContext, routerContracts = {})
           // additionally identifier-validated above before reaching the SQL.
           live = execFileSync('docker', [
             'compose', 'exec', '-T', 'database',
-            'psql', '-U', LOCAL_DB_CREDENTIALS.user, '-d', LOCAL_DB_CREDENTIALS.name,
+            'psql', '-U', workspaceDbCredentials(WORKSPACE_DIR).user, '-d', workspaceDbCredentials(WORKSPACE_DIR).name,
             '-t', '-A', '-c',
             `SELECT column_name FROM information_schema.columns WHERE table_name='${t.name}'`,
           ], { cwd: WORKSPACE_DIR, stdio: 'pipe', timeout: 15_000 }).toString();
