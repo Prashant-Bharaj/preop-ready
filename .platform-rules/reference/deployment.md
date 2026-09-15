@@ -31,7 +31,7 @@ If it fails, fix the reported issues before proceeding. Never skip.
 Add specific files by name — **never `git add .`** (protected-files rule in the always-on core):
 
 ```bash
-git add <changed files>
+git add <changed files>      # + .harness/contracts.json state.md built.json decisions.md notes.md for harness-built apps
 git commit -m "feat: description"
 git push
 ```

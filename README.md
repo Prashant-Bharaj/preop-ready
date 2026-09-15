@@ -151,8 +151,8 @@ When you open Claude Code, just say: **"I'm a developer"** - it'll skip the hand
 
 Look for the **Claude Code** extension in the sidebar (🤖).
 
-*(First time in a Codespace, it asks for your myGenAssist API key — paste it
-and you're connected. See [docs/CODESPACE_CLAUDE_CODE_SETUP.md](./docs/CODESPACE_CLAUDE_CODE_SETUP.md).)*
+*(First time in a Codespace, the terminal asks for your myGenAssist API key — paste it
+and you're connected. Set the Codespaces secret `MYGENASSIST_API_KEY` to skip the prompt.)*
 
 Click on it and say something like:
 

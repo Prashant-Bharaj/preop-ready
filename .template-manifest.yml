@@ -118,9 +118,6 @@ auto_update:
   - path: ".devcontainer/auto-update-template.sh"
     description: "Auto-check and apply template updates on Codespace start"
     
-  # Documentation
-  - path: "docs/CODESPACE_CLAUDE_CODE_SETUP.md"
-    description: "How Claude Code connects to myGenAssist in a Codespace"
 
   # Scripts
   - path: "scripts/sync-from-template.sh"
@@ -272,6 +269,18 @@ ignore:
 # These were previously part of the template but have been deprecated
 # -----------------------------------------------------------------------------
 cleanup:
+  - path: "docs/CODESPACE_CLAUDE_CODE_SETUP.md"
+    type: "file"
+    reason: "Setup is automatic; the short version lives in README.md"
+  - path: "docs/RULES_EVAL.md"
+    type: "file"
+    reason: "Maintainer-only rules evaluation checklist — not for projects"
+  - path: "docs/testing/TESTER_GUIDE_CLAUDE_CODE.md"
+    type: "file"
+    reason: "Platform 1.4.0 tester guide — obsolete"
+  - path: "docs/testing/TESTER_GUIDE_CURSOR.md"
+    type: "file"
+    reason: "Platform 1.4.0 tester guide — obsolete"
   - path: ".devcontainer/install-cline.sh"
     type: "file"
     reason: "Replaced by setup-claude-router.sh (Cline → Claude Code)"

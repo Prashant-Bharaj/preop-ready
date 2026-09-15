@@ -15,6 +15,14 @@ Read it before greeting: `cat docs/PROJECT_STATUS.md 2>/dev/null`
 - **In progress** → greet with context: "Welcome back! Last time we [summary]. We completed [X] and discussed [Y] next. Ready to continue?"
 - **Fresh project** → normal welcome flow (experience level → fresh/migrated check).
 
+## Harness memory travels with the repo
+
+Apps built in the harness keep their contract in `.harness/` — `contracts.json`, `state.md`,
+`built.json`, `decisions.md`, `notes.md`. Commit these five files by name together with
+`docs/PROJECT_STATUS.md` after a build or iterate; without them a fresh clone or a new
+Codespace forgets the app's shape and the harness starts it as a new project. The other
+files under `.harness/` (logs, verdicts, port offsets) are gitignored — leave them.
+
 ## When to Update
 
 1. Completing any task (feature, fix, configuration)
