@@ -143,6 +143,17 @@ context/*
 .audit-auto
 
 # ==========================================================
+# HARNESS RUNTIME ARTIFACTS — regenerated on every build; the durable
+# project memory (.harness/contracts.json, state.md, built.json, decisions.md,
+# notes.md) is NOT listed here on purpose
+# ==========================================================
+.harness/*.jsonl
+.harness/*.jsonl.*
+.harness/*.log
+.harness/port-offset.json
+.harness/authz-matrix.json
+
+# ==========================================================
 # AI TOOL DATA — Claude settings (skills are platform-shipped)
 # ==========================================================
 .claude/*
