@@ -42,8 +42,9 @@
 #                               TypeScript layout (.platform-rules/scope-typescript.md).
 #                               Omitted while a major is held or after
 #                               `.template-ts-migration-declined` exists.
-#   TEMPLATE_AUTO_UPDATE|on|off  A tracked file `.template-auto-update` means the
-#                               team opted in to applying updates without asking.
+#   TEMPLATE_AUTO_UPDATE|on|off  Updates are applied without asking unless the
+#                               team opted out with `.template-auto-update-disabled`
+#                               (the same switch the Codespace start hook honours).
 #
 # The PR check only needs read access to THIS repo, so it works in Codespaces
 # without a gh login; the version check needs template access and may report
@@ -137,11 +138,11 @@ if [ -z "$HELD_MAJOR" ] && [ ! -f .template-ts-migration-declined ] && [ -f scri
     [ -n "$JS_LAYERS" ] && echo "TEMPLATE_TS_MIGRATION|${JS_LAYERS}"
 fi
 
-# ── 4. Team opt-in to hands-off updates ───────────────────────────────────────
-if [ -f .template-auto-update ]; then
-    echo "TEMPLATE_AUTO_UPDATE|on"
-else
+# ── 4. Hands-off updates (default on; same opt-out as the Codespace hook) ─────
+if [ -f .template-auto-update-disabled ]; then
     echo "TEMPLATE_AUTO_UPDATE|off"
+else
+    echo "TEMPLATE_AUTO_UPDATE|on"
 fi
 
 exit 0
