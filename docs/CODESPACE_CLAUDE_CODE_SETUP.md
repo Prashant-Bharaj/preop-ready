@@ -76,8 +76,11 @@ late for provider detection), the file persists across stop/start, and the key n
 tracked file.
 
 Codespaces created before this change ran a local `claude-code-router` proxy. The setup migrates
-the key out of its config, removes the router, and asks for one **Rebuild Container** so the old
-`remoteEnv` pointing at `127.0.0.1:3456` disappears.
+the key out of its config; new Claude Code sessions use the gateway right away (the user-level
+settings win over the old `remoteEnv` still injected into the container). The session that was
+open during the update keeps talking to the router, which is left running for it. **Rebuild
+Container** once when convenient: the first start after that drops the old env and removes the
+router.
 
 ## Models
 
@@ -113,8 +116,9 @@ block (Claude Code then runs in first-party mode and only accepts native Anthrop
 **Settings edits do nothing.** Claude Code reads `~/.claude/settings.json` at session start —
 **Developer: Reload Window** (extension) or restart `claude` (terminal).
 
-**A Codespace created before the gateway switch still talks to `127.0.0.1:3456`.** Its
-container env carries the old `remoteEnv`; run **Codespaces: Rebuild Container** once.
+**A session opened before the gateway switch hangs.** It was started through the router; open a
+new conversation (it uses the gateway) and run **Codespaces: Rebuild Container** once when
+convenient.
 
 ## Existing repos: migrating from Cline
 
