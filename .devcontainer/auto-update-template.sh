@@ -20,12 +20,11 @@ set -euo pipefail
 # On existing (Cline-era) repos the new devcontainer.json postStartCommand only
 # takes effect after a container rebuild — but THIS script is invoked by path,
 # so its updated content runs on the next start. Running the setup here brings
-# Claude Code + claude-code-router up without waiting for a rebuild. Kept ABOVE
+# Claude Code (myGenAssist gateway) up without waiting for a rebuild. Kept ABOVE
 # the auto-update-disabled check so disabling updates doesn't disable Claude
-# Code. Idempotent — safe on every start. (A rebuild is still recommended so the
-# devcontainer remoteEnv applies cleanly.)
-if [ -f .devcontainer/setup-claude-router.sh ]; then
-  bash .devcontainer/setup-claude-router.sh || true
+# Code. Idempotent — safe on every start.
+if [ -f .devcontainer/setup-claude-code.sh ]; then
+  bash .devcontainer/setup-claude-code.sh || true
 fi
 
 # Allow users to disable auto-updates by creating this file:

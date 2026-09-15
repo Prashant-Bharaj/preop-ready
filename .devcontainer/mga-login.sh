@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Interactive: connect Claude Code to Bayer myGenAssist.
-# Prompts for your API key (shown as ***), then hands off to setup-claude-router.sh
-# which writes the config and starts the router. Run it any time to re-enter a key
+# Prompts for your API key (shown as ***), then hands off to setup-claude-code.sh
+# which writes ~/.claude/settings.json. Run it any time to re-enter a key
 # (e.g. after a Codespace rebuild or a key rotation).
 #
-#   mga-login                        (alias registered by setup-claude-router.sh)
+#   mga-login                        (alias registered by setup-claude-code.sh)
 #   bash .devcontainer/mga-login.sh  (equivalent)
 
 # Fail fast — this script handles an API key. The read loop below is the only
@@ -38,4 +38,4 @@ if [ -z "$MYGENASSIST_API_KEY" ]; then
 fi
 
 export MYGENASSIST_API_KEY
-bash "$SCRIPT_DIR/setup-claude-router.sh"
+bash "$SCRIPT_DIR/setup-claude-code.sh"

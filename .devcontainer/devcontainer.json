@@ -16,8 +16,8 @@
         // 📁 Better file icons
         "vscode-icons-team.vscode-icons",
 
-        // 🤖 Claude Code — AI coding assistant (routed to Bayer myGenAssist
-        //    via claude-code-router; see .devcontainer/setup-claude-router.sh)
+        // 🤖 Claude Code — AI coding assistant, connected to Bayer myGenAssist's
+        //    Anthropic-compatible gateway (see .devcontainer/setup-claude-code.sh)
         "Anthropic.claude-code"
       ],
       
@@ -54,19 +54,14 @@
   // any repo permissions, so it can't trigger a permission-authorization wall.
   "secrets": {
     "MYGENASSIST_API_KEY": {
-      "description": "Bayer myGenAssist API key — powers Claude Code via claude-code-router. Set it in Codespaces Settings to auto-configure on start, or leave unset and run `mga-login` in the terminal. See docs/CODESPACE_CLAUDE_CODE_SETUP.md"
+      "description": "Bayer myGenAssist API key — powers Claude Code (myGenAssist gateway). Set it in Codespaces Settings to auto-configure on start, or leave unset and run `mga-login` in the terminal. See docs/CODESPACE_CLAUDE_CODE_SETUP.md"
     }
   },
 
-  // Point Claude Code at the local router from first launch (no reload needed).
-  // Non-secret + Codespace-only (does NOT affect maintainers' local Claude Code).
-  // The real API key lives in the CCR config, not here.
-  "remoteEnv": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:3456",
-    "ANTHROPIC_AUTH_TOKEN": "dummy",
-    "ANTHROPIC_MODEL": "myGenAssist,claude-sonnet-5",
-    "ANTHROPIC_SMALL_FAST_MODEL": "myGenAssist,claude-sonnet-4.5-azure"
-  },
+  // No remoteEnv for Claude Code on purpose: the gateway settings (base URL,
+  // gateway flags, default models) and the key live in ~/.claude/settings.json,
+  // written by setup-claude-code.sh — user-level, persistent across stop/start,
+  // and never in a tracked file.
 
   // The default image bundles the git-lfs feature with autoPull=true; its
   // post-create step runs `git lfs install`, which refuses to overwrite our
@@ -80,7 +75,7 @@
     "ghcr.io/devcontainers/features/git-lfs:1": { "autoPull": false }
   },
 
-  "onCreateCommand": "bash .devcontainer/setup-claude-router.sh",
+  "onCreateCommand": "bash .devcontainer/setup-claude-code.sh",
   // In Codespaces the harness (chat/) is also STARTED here, in the background
   // (log: /tmp/harness.log), so a restarted codespace comes back with the UI
   // on 5050 without anyone typing `npm start`. Guarded against double starts;
@@ -118,7 +113,6 @@
     "5050": { "label": "Harness (chat UI + API)", "onAutoForward": "notify" },
     "8080": { "label": "Generated app", "onAutoForward": "notify" },
     "3000": { "label": "Generated app backend", "onAutoForward": "silent" },
-    "5173": { "label": "Vite (frontend-only projects)", "onAutoForward": "notify" },
-    "3456": { "label": "Claude Code Router", "onAutoForward": "silent" }
+    "5173": { "label": "Vite (frontend-only projects)", "onAutoForward": "notify" }
   }
 }

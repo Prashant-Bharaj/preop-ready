@@ -109,8 +109,10 @@ auto_update:
   # Development environment
   - path: ".devcontainer/devcontainer.json"
     description: "Codespaces/devcontainer configuration"
+  - path: ".devcontainer/setup-claude-code.sh"
+    description: "Installs Claude Code and connects it to the myGenAssist gateway (~/.claude/settings.json)"
   - path: ".devcontainer/setup-claude-router.sh"
-    description: "Installs Claude Code + claude-code-router, connects to myGenAssist"
+    description: "Compatibility shim for un-synced update scripts — forwards to setup-claude-code.sh"
   - path: ".devcontainer/mga-login.sh"
     description: "Interactive myGenAssist key prompt for Claude Code"
   - path: ".devcontainer/auto-update-template.sh"

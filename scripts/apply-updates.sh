@@ -778,12 +778,13 @@ if [ "$MODE" = "dry-run" ]; then
 fi
 
 # Activate Claude Code if the template ships it — idempotent: installs only
-# what's missing, then starts the router. Runs here so a template update takes
-# effect immediately (same session), not just on the next Codespace start.
-if [ "$MODE" = "silent" ] && [ -f .devcontainer/setup-claude-router.sh ]; then
+# what's missing, then writes the gateway settings. Runs here so a template
+# update takes effect immediately (same session), not just on the next
+# Codespace start.
+if [ "$MODE" = "silent" ] && [ -f .devcontainer/setup-claude-code.sh ]; then
     echo ""
     echo "Activating Claude Code..."
-    bash .devcontainer/setup-claude-router.sh || true
+    bash .devcontainer/setup-claude-code.sh || true
 fi
 
 echo ""
