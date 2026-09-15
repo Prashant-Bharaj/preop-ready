@@ -15,9 +15,17 @@ Use the Agent tool (subagents) for the fan-out, exactly as below.
 
 ```
 BASE=${AUDIT_BASE:-origin/master}
-git diff --name-only "$BASE"...HEAD ; git diff --name-only   # committed + working
+. scripts/audit/lib.sh
+{ git diff --name-only "$BASE"...HEAD ; git diff --name-only ; } | sort -u | audit_reviewable
 ```
-Filter to reviewable code (drop `docs/**` and `*.md`). Call this the CHANGED SET.
+That is the CHANGED SET: committed + working changes, minus `docs/**`, markdown and —
+in a project — every platform-owned file (harness under `chat/`, `scripts/`, rules,
+snippets, devcontainer, workflows; anything `.template-manifest.yml` syncs). A platform
+update commit is NOT the project's code and is never re-audited here; it was audited in
+the template repository. In the template repository itself nothing is excluded.
+
+Review by READING. Never run exploit probes, test markers or other experiments inside the
+workspace to "verify" a finding — verification is a second reading by a separate subagent.
 
 - **Empty CHANGED SET** → nothing to review. Record PASS (`audit_write_state PASS 0 0 0 "no code changes vs $BASE"`) and stop.
 - **Large CHANGED SET** (> ~40 files, e.g. a big integration branch) → a single

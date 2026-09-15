@@ -68,3 +68,49 @@ audit_write_state() {
   printf '{\n  "verdict": "%s",\n  "critical": %s,\n  "high": %s,\n  "medium": %s,\n  "treeHash": "%s",\n  "note": "%s",\n  "timestamp": "%s"\n}\n' \
     "$verdict" "$critical" "$high" "$medium" "$hash" "$note" "$ts" > "$tmp" && mv "$tmp" "$dir/state.json"
 }
+
+# True in the platform template repository itself (where the platform files ARE
+# the code under review). Mirrors scripts/check-template-pr.sh.
+audit_is_template_repo() {
+  case "$(git remote get-url origin 2>/dev/null || true)" in
+    *bayer-int/dd-template-repository*) return 0 ;;
+  esac
+  return 1
+}
+
+# Filter a file list (stdin) down to what the audit reviews in THIS repo:
+# drops docs/** and markdown, and — outside the template repo — every
+# platform-owned path (synced from the template per .template-manifest.yml,
+# including the version/manifest files). Those files are audited where they
+# are written; a project's gate must only cover the project's own code, or a
+# platform update commit would be re-audited in every project on the fleet.
+audit_reviewable() {
+  local patterns=""
+  if ! audit_is_template_repo && [ -f .template-manifest.yml ]; then
+    patterns=$(awk '
+      /^auto_update:|^auto_update_major:|^merge_update:/ { in_section=1; next }
+      /^[a-zA-Z_]+:/ && !/^auto_update:|^auto_update_major:|^merge_update:/ { in_section=0 }
+      in_section && /^  - path:/ {
+        line=$0
+        sub(/^  - path:[[:space:]]*/, "", line); gsub(/"/, "", line); sub(/[[:space:]]*#.*$/, "", line)
+        print line
+      }' .template-manifest.yml 2>/dev/null || true)
+  fi
+  local f pat owned
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in docs/*|*.md) continue ;; esac
+    owned=0
+    if [ -n "$patterns" ]; then
+      case "$f" in .template-version|.template-manifest.yml) owned=1 ;; esac
+      while IFS= read -r pat; do
+        [ -n "$pat" ] || continue
+        case "$pat" in
+          */) [ "${f#$pat}" != "$f" ] && { owned=1; break; } ;;
+          *)  [ "$f" = "$pat" ] && { owned=1; break; } ;;
+        esac
+      done <<< "$patterns"
+    fi
+    [ "$owned" = "1" ] || printf '%s\n' "$f"
+  done
+}

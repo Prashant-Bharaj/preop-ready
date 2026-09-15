@@ -47,6 +47,16 @@ git checkout -q HEAD~1 -- app.js; git commit -q -am docs-revert >/dev/null 2>&1 
 rm -f "$(audit_state_file)"; git checkout -q -b docsonly; git update-ref refs/remotes/origin/master HEAD; echo d > README.md; git add README.md; git commit -q -m docs
 prepush CLAUDECODE=1; [ $? -eq 0 ] && ok "docs-only diff vs base → allow" || bad "docs-only allow"
 
+echo "scope:"
+printf 'auto_update:\n  - path: "scripts/"\n    is_directory: true\n  - path: "chat/"\n  - path: "scripts/only.sh"\nauto_update_major:\n  - path: ".platform-rules/"\ncleanup:\n  - path: "old"\n' > .template-manifest.yml
+git remote add origin https://github.com/bayer-int/dd-my-project.git
+out=$(printf 'backend/src/a.ts\nchat/server/x.js\nscripts/only.sh\n.platform-rules/y.md\ndocs/z.txt\nREADME.md\n.template-version\nfrontend/App.tsx\n' | audit_reviewable | tr '\n' ' ')
+[ "$out" = "backend/src/a.ts frontend/App.tsx " ] && ok "project: platform-owned + docs dropped, app code kept ($out)" || bad "project scope: $out"
+git remote set-url origin https://github.com/bayer-int/dd-template-repository.git
+out=$(printf 'chat/server/x.js\nscripts/only.sh\nREADME.md\n' | audit_reviewable | tr '\n' ' ')
+[ "$out" = "chat/server/x.js scripts/only.sh " ] && ok "template repo: platform files are the code under review ($out)" || bad "template scope: $out"
+git remote remove origin; rm -f .template-manifest.yml
+
 echo ".claude installer:"
 mkdir -p .claude
 printf '{"hooks":{"PostToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"echo hi"}]}],"Stop":[{"hooks":[{"type":"command","command":"\\"${CLAUDE_PROJECT_DIR}\\"/scripts/audit/stop-hook.sh"}]}]},"model":"opus"}' > .claude/settings.json

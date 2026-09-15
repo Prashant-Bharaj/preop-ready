@@ -35,10 +35,12 @@ BASE="${AUDIT_BASE:-origin/master}"
 git rev-parse --verify "$BASE" >/dev/null 2>&1 || BASE="master"
 git rev-parse --verify "$BASE" >/dev/null 2>&1 || { echo "[pre-push audit] no base ref — skipping."; exit 0; }
 
-# Nothing reviewable? (docs/markdown-only diffs don't gate.)
-CHANGED="$(git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -vaE '^docs/|\.md$' || true)"
+# Nothing reviewable? Docs/markdown-only diffs don't gate, and neither do the
+# platform-owned files a template update commits (audit_reviewable drops them
+# outside the template repo — they are audited where they are written).
+CHANGED="$(git diff --name-only "$BASE"...HEAD 2>/dev/null | audit_reviewable || true)"
 if [ -z "$CHANGED" ]; then
-  echo "[pre-push audit] no reviewable code changes vs $BASE — allow."
+  echo "[pre-push audit] no reviewable project code changes vs $BASE — allow."
   exit 0
 fi
 

@@ -6,8 +6,9 @@ globs: []
 
 # Deep Audit (before every push)
 
-The audit reviews the code changed against `origin/master` (plus uncommitted work) for
-security, performance and style, verifies every Critical/High/Medium finding with a second
+The audit reviews the project's own code changed against `origin/master` (plus uncommitted
+work) — never the platform-owned files a template update commits, those are audited in the
+template repository — for security, performance and style, verifies every Critical/High/Medium finding with a second
 adversarial pass, **fixes what survives, and audits again until only Low findings remain**.
 It then records an attestation for the exact tree it reviewed. Low findings are reported,
 never fixed by the loop.
