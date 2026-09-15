@@ -139,6 +139,10 @@ context/*
 !context/.gitkeep
 
 # ==========================================================
+# AUDIT — per-developer switch for the automatic audit gate
+.audit-auto
+
+# ==========================================================
 # AI TOOL DATA — Claude settings (skills are platform-shipped)
 # ==========================================================
 .claude/*
