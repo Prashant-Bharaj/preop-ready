@@ -12,9 +12,8 @@
  * can `get_rules("security")`). Critical/High are auto-fixed (one round per
  * scope, orchestrated in docker-orchestration.js); Medium/Low are reported.
  *
- * SECURITY_REVIEW_SKIP=true → skipped silently (A/B + cost control), matching
- * ENDPOINT_PROBE_SKIP / UI_SANITY_SKIP. Every failure path degrades to
- * "skipped", never an error.
+ * Off unless SECURITY_REVIEW=1 (cost/latency control: it runs on every build).
+ * Every failure path degrades to "skipped", never an error.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -230,7 +229,7 @@ export function formatSecurityFixDirective(scope, findings) {
  * { skipped } or { findings: [...normalized] }. Never throws.
  */
 export async function reviewGeneratedApp({ workspaceDir, scopes }) {
-  if (process.env.SECURITY_REVIEW_SKIP === 'true') return { skipped: 'env' };
+  if (process.env.SECURITY_REVIEW !== '1') return { skipped: 'env' };
   const files = collectReviewFiles(workspaceDir, scopes);
   if (files.length === 0) return { skipped: 'no-files' };
 

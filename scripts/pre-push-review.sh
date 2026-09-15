@@ -2,10 +2,12 @@
 # ============================================================================
 # Pre-push audit gate — ATTESTATION CHECK (fail-open)
 # ----------------------------------------------------------------------------
-# The deep security/perf/style audit runs DURING development (Stop-hook
-# triggered, in-session — see .claude/commands/audit.md + scripts/audit/) and
-# records an attestation for the exact tree it reviewed. This hook does NOT
-# re-audit; it just checks that attestation:
+# The deep security/perf/style audit runs DURING development (on demand via
+# /audit or the `audit` skill; Stop-hook triggered only when the automatic
+# gate is enabled — see scripts/audit/) and records an attestation for the
+# exact tree it reviewed. This hook does NOT re-audit; it just checks that
+# attestation, and only when the automatic gate is enabled (AUDIT_AUTO=1 or a
+# .audit-auto marker at the repo root). Otherwise it allows silently.
 #
 #   • PASS attestation matches the tree being pushed  → allow instantly.
 #   • FAIL attestation (Critical/High unresolved)     → BLOCK (git push --no-verify to override).
@@ -17,6 +19,9 @@
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+if [ "${AUDIT_AUTO:-0}" != "1" ] && [ ! -f "$REPO_ROOT/.audit-auto" ]; then
+  exit 0   # automatic gate off — audit on demand only
+fi
 # shellcheck source=scripts/audit/lib.sh
 . "$REPO_ROOT/scripts/audit/lib.sh" 2>/dev/null || { echo "[pre-push audit] lib missing — skipping."; exit 0; }
 

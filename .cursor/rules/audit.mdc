@@ -1,0 +1,9 @@
+---
+description: Run the deep security, performance and style audit of changed code on demand and record its attestation; the automatic every-turn gate is off unless enabled
+alwaysApply: false
+---
+
+@.platform-rules/reference/audit.md
+
+Follow `.platform-rules/reference/audit.md` (inlined above) exactly for this area. The always-on
+core rules still apply and win on conflict.

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Register the audit Stop hook + /audit command in the developer's (gitignored)
-# .claude/ config. Tracked in the repo so every clone gets the trigger at setup
+# .claude/ config. The Stop hook is inert until the automatic gate is enabled
+# (AUDIT_AUTO=1 or a .audit-auto marker at the repo root); /audit and the
+# `audit` skill run the audit on demand. Tracked in the repo so every clone gets the trigger at setup
 # WITHOUT committing personal .claude/ files. Idempotent and non-destructive:
 # it MERGES into an existing .claude/settings.json (never clobbers other hooks)
 # and no-ops if our hook is already present. Called from devcontainer.json's

@@ -23,6 +23,14 @@ cp "$REPO_ROOT/scripts/pre-push-review.sh" scripts/
 echo "console.log(1)" > app.js; git add app.js; git commit -q -m change   # reviewable diff vs origin/master
 . scripts/audit/lib.sh
 
+echo "automatic gate off (default):"
+rm -f .audit-auto; audit_write_state FAIL 1 0 t
+bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "FAIL attestation but gate off → allow" || bad "gate off allow"
+out=$(printf '{"stop_hook_active":false}' | bash scripts/audit/stop-hook.sh); [ -z "$out" ] && ok "changed + gate off → allow stop" || bad "gate off stop"
+rm -f "$(audit_state_file)"
+out=$(printf '{"stop_hook_active":false}' | AUDIT_AUTO=1 bash scripts/audit/stop-hook.sh); printf '%s' "$out" | grep -q '"decision":"block"' && ok "AUDIT_AUTO=1 enables the gate" || bad "env enable"
+touch .audit-auto   # enable the gate for the tests below
+
 echo "pre-push gate:"
 rm -f "$(audit_state_file)"
 bash scripts/pre-push-review.sh >/dev/null 2>&1; [ $? -eq 0 ] && ok "no attestation → fail-open allow" || bad "fail-open allow"

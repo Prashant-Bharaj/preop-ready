@@ -419,6 +419,7 @@ Java-deserialization patterns in a body are blocked everywhere with no exemption
 | verify, check everything, before deploy, after building | `.platform-rules/verify-checklist.md` |
 | add AI, chatbot, LLM, GPT, call a model, summarize with AI, assistant, embeddings, semantic search, RAG, chat with my documents, knowledge base, analyze documents with AI, which models | `.platform-rules/reference/ai-features.md` |
 | deploy, go live, push, production, is my site live, make it live, publish | `.platform-rules/reference/deployment.md` |
+| audit, security audit, deep audit, review my code, review the changes for security, attestation, is my code safe | `.platform-rules/reference/audit.md` |
 | upload, import file, CSV, PDF, save files, share a file with you, analyze this file | `.platform-rules/reference/file-handling.md` |
 | session start, new user, welcome, what should we build, migrated code, getting started, start a project | `.platform-rules/reference/journey.md` |
 | SharePoint, OneDrive, Teams, calendar, Outlook, read my mail, send an email to a colleague, free/busy, people search, org chart, my manager, Graph API, Microsoft 365, M365, meeting | `.platform-rules/reference/microsoft-365.md` |

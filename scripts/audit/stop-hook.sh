@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Claude Code Stop hook — the "after every relevant action" audit trigger.
 #
-# When a turn ends and tracked CODE changed since the last audit attestation,
-# ask the agent (via a block decision) to run the deep audit before stopping.
-# Otherwise let it stop. Fast + read-only; safe to run on every turn.
+# OFF by default: the automatic gate only runs when AUDIT_AUTO=1 is set or the
+# marker file .audit-auto exists at the repo root (per-developer, gitignored).
+# The audit itself stays available on demand: /audit in Claude Code, the
+# `audit` skill, or scripts/audit/run.sh.
+#
+# When enabled and a turn ends with tracked CODE changed since the last audit
+# attestation, ask the agent (via a block decision) to run the deep audit
+# before stopping. Otherwise let it stop. Fast + read-only.
 #
 # Registered per-developer in .claude/settings.json (gitignored). The SCRIPT is
 # tracked so the whole team shares one implementation; only the registration is
@@ -18,6 +23,9 @@ if printf '%s' "$INPUT" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*tr
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+if [ "${AUDIT_AUTO:-0}" != "1" ] && [ ! -f "$REPO_ROOT/.audit-auto" ]; then
+  exit 0   # automatic gate off — audit on demand only
+fi
 # shellcheck source=scripts/audit/lib.sh
 . "$REPO_ROOT/scripts/audit/lib.sh" 2>/dev/null || exit 0
 

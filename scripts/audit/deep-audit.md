@@ -2,8 +2,9 @@
 
 This is the procedure the agent runs **in-session** (via the Agent/Task tool) to
 perform the deep security/performance/style audit and record an attestation the
-pre-push hook can trust. It is invoked by the `/audit` command and auto-triggered
-by the Stop hook when tracked code changed since the last attestation.
+pre-push hook can trust. It is invoked by the `/audit` command or the `audit` skill,
+and auto-triggered by the Stop hook only when the automatic gate is enabled
+(`AUDIT_AUTO=1` or a `.audit-auto` marker at the repo root; off by default).
 
 Do NOT spawn `claude -p` for this — it refuses to run nested in a live session.
 Use the Agent tool (subagents) for the fan-out, exactly as below.
