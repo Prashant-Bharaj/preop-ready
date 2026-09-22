@@ -285,7 +285,8 @@ The proxy enforces **two gates** on every `/platform/graph/<op>` call:
    platform-owned consent screen; redirected back, the original call
    replays via the `stateBag` argument to `callGraph()`. Consent records
    are stored in DynamoDB with a 30-day TTL. Users can revoke at
-   `https://api.vibe.intranet.cnb/platform/me/permissions?sid=<sid>`.
+   `https://api.vibe.intranet.cnb/platform/me/permissions` (the browser's
+   platform session cookie signs them in; never put the sid in the URL).
 
 User apps MUST handle these two response shapes:
 
