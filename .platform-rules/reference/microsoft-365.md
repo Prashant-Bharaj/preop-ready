@@ -33,5 +33,5 @@ platform session), consent, and token refresh — apps just name an operation.
 - "Chat with my SharePoint documents" (AI over document content) → that's the
   myGenAssist Knowledge Base with OneDrive sync, not raw Graph — see
   `.platform-rules/reference/ai-features.md`.
-- Sending notification email from the app (not as the user) → Bayer SMTP,
-  `snippets/email/smtp-client.{js,py}` — no Graph involved.
+- Sending notification email from the app (not as the user) → Bayer EBR SMTP relay,
+  `snippets/email/smtp-client.{ts,py}` — no Graph involved, no credentials needed.

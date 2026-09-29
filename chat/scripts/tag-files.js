@@ -233,13 +233,13 @@ const TAGS = {
   },
 
   // ─── snippets/email/ ────────────────────────────────────────────────
-  'snippets/email/smtp-client.js': {
+  'snippets/email/smtp-client.ts': {
     scopes: ['backend'], flags: ['notifications-email'],
-    description: 'SMTP client for sending transactional email via the corp relay.',
+    description: 'SMTP client (TypeScript) for sending email via Bayer EBR (ebr.bayer.com:2525) — no credentials.',
   },
   'snippets/email/smtp-client.py': {
     scopes: ['backend'], flags: ['notifications-email'],
-    description: 'SMTP client (Python) for transactional email.',
+    description: 'SMTP client (Python) for sending email via Bayer EBR (ebr.bayer.com:2525).',
   },
 
   // ─── snippets/file-handling/ ────────────────────────────────────────

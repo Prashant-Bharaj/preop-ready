@@ -154,7 +154,7 @@ If the user insists on another library that's fine — these are defaults, not h
 | Input validation, sanitize middleware, safe SQL | `snippets/security/*` |
 | Logged-in user from OIDC headers | `snippets/auth/user-identity.ts` / `.py` / `.rs` |
 | LLM chat / MGA assistant | `snippets/llm/*` |
-| Send email via Bayer SMTP | `snippets/email/*` |
+| Send email via Bayer EBR (no credentials, `@bayer.com` sender) | `snippets/email/smtp-client.ts` / `.py` |
 | WebSocket (Socket.IO) server + client | `snippets/realtime/*` |
 
 Deployment, testing, and secrets depth: `.platform-rules/reference/*.md`.

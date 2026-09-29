@@ -95,8 +95,8 @@ Byte-deployable Dockerfile templates per scope. Copy via `copy_template(template
 
 | Snippet | Language | File | Description |
 |---------|----------|------|-------------|
-| SMTP Client | TS | `email/smtp-client.ts` | Send emails via Bayer's internal SMTP server |
-| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer SMTP (built-in smtplib) |
+| SMTP Client | TS | `email/smtp-client.ts` | Send emails via Bayer EBR (ebr.bayer.com:2525, no credentials, sender must be @bayer.com) |
+| SMTP Client | Python | `email/smtp-client.py` | Send emails via Bayer EBR (built-in smtplib, no credentials, sender must be @bayer.com) |
 
 ### UI Components
 

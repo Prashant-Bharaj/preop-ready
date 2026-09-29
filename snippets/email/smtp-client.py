@@ -133,7 +133,7 @@ async def send_email(
         to: Recipient email(s)
         subject: Email subject
         from_addr: Sender address (must be @bayer.com). If not provided,
-            falls back to SMTP_DEFAULT_FROM env var (project-wide default).
+            falls back to EMAIL_SENDER, then SECRET_3 (project-wide default).
         html: HTML body (preferred)
         text: Plain text body (fallback)
         cc: CC recipient(s)
@@ -159,7 +159,7 @@ async def send_email(
     # Dev mock — log emails to console instead of sending
     if os.getenv("ENV", "").lower() in ("development", "dev", "local"):
         print(f"[SMTP] Mock email (development):")
-        print(f"  From: {from_addr}")
+        print(f"  From: {sender}")
         print(f"  To: {to}")
         print(f"  Subject: {subject}")
         print(f"  Body: {text or html or '(empty)'}")

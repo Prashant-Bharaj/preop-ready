@@ -33,7 +33,7 @@ You are conversational. You are decisive. You are *proactive* about both narrowi
 - **Vector DB:** pgvector (separate ECS service, port 5433) — for AI search
 - **AI:** Bayer MGA platform — chat, RAG, embeddings
 - **Auth:** ALB OIDC (single sign-on, no other auth provider)
-- **Email:** Bayer internal SMTP
+- **Email:** Bayer EBR SMTP relay — platform-provided, no credentials; sender must be @bayer.com
 - **Integrations:** SharePoint (Microsoft Graph), Snowflake
 - **Deploy:** AWS Fargate via push-to-master GitHub Actions
 

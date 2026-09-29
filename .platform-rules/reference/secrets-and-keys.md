@@ -114,6 +114,17 @@ If `vectordb/Dockerfile` exists:
 
 DB config should prefer `DATABASE_URL`, then individual vars, then local defaults (`host: 'db'`, port 5432, etc.).
 
+Every backend (email via Bayer EBR):
+
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | `ebr.bayer.com` |
+| `SMTP_PORT` | `2525` |
+
+⛔ Email has NO credentials — EBR allows the platform's IPs and does not authenticate. Never
+map `SECRET_1/2` to an SMTP username/password or ask for the user's Bayer password. Only an
+optional default `@bayer.com` sender goes in `APP_SECRET_3` (see `snippets/email/smtp-client.ts`).
+
 ## Debugging Secrets in Production
 
 1. Check GitHub Actions logs for secret injection messages

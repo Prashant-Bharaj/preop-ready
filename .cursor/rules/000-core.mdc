@@ -202,6 +202,10 @@ stripped in the container. Users CANNOT add custom secret names; repurpose `SECR
   `DATABASE_PASSWORD`, `DATABASE_URL`
 - If `vectordb/Dockerfile` exists: `VECTORDB_HOST`, `VECTORDB_PORT`, and (pgvector only)
   `VECTORDB_NAME`, `VECTORDB_USER`, `VECTORDB_PASSWORD`
+- Every backend: `SMTP_HOST` (`ebr.bayer.com`), `SMTP_PORT` (`2525`) — Bayer EBR mail relay.
+  ⛔ Email needs NO credentials: EBR allows the platform's IPs, there is no SMTP username or
+  password. Never add `SMTP_USER`/`SMTP_PASSWORD` or ask the user for their Bayer password.
+  The only requirement is a `@bayer.com` sender. Copy `snippets/email/smtp-client.{ts,py}`.
 
 ⛔ **Keep the platform's DB/user names — do NOT rename the database or user to your project**
 (e.g. inventing `myproject_db` / `myproject_user`). The injected `DATABASE_*` (prod) and the

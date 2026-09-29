@@ -1,13 +1,14 @@
 /**
  * scopes: [backend]
  * flags: [notifications-email]
- * description: SMTP client (TypeScript) for sending transactional email via the corp relay.
+ * description: SMTP client (TypeScript) for sending email via Bayer EBR (ebr.bayer.com:2525) — no credentials.
  */
 
 /**
- * SMTP Email Client (Bayer Internal) — TypeScript
+ * SMTP Email Client (Bayer EBR) — TypeScript
  *
- * Sends emails via Bayer's internal SMTP relay (exsmtp.na.bayer.cnb).
+ * Sends emails via Bayer's External Bayer Relay (ebr.bayer.com:2525), the
+ * approved way to send @bayer.com email from the platform's AWS account.
  * Supports plain text, HTML, attachments, and template-based emails.
  * In development mode, emails are logged to the console instead of sent.
  *
@@ -15,22 +16,52 @@
  *   npm install nodemailer
  *   npm install -D @types/nodemailer
  *
- * Environment variables (GitHub Secrets -> Container):
- *   SMTP_USER       — Bayer email (first.last@bayer.com)
- *   SMTP_PASSWORD   — Bayer network password
+ * NO SMTP CREDENTIALS — none exist, do not ask the user for any:
+ *   EBR allows the platform's outbound IPs; it does not authenticate.
+ *   Never add SMTP_USER / SMTP_PASSWORD or put a personal Bayer password
+ *   in a GitHub Secret for this.
  *
- *   Map APP_SECRET_1/2 (or 3/4) -> SECRET_1/2 -> SMTP_USER/SMTP_PASSWORD in your stack config:
- *     environment:
- *       SMTP_USER: ${SECRET_1}
- *       SMTP_PASSWORD: ${SECRET_2}
+ * Environment variables:
+ *   SMTP_HOST = ebr.bayer.com   (auto-injected into every backend container)
+ *   SMTP_PORT = 2525            (auto-injected)
+ *
+ *   Default sender (optional):
+ *     Local dev: EMAIL_SENDER in backend/.env.
+ *     Production: add GitHub Secret APP_SECRET_3 with a @bayer.com address;
+ *     it becomes SECRET_3 in the container.
+ *   Resolution order: explicit `from` → EMAIL_SENDER → SECRET_3.
+ *
+ * Sender address — MUST be @bayer.com (EBR rejects anything else):
+ *   1. Send as the logged-in user (user-triggered email): use `req.user.email`
+ *      from snippets/auth/user-identity.ts. No setup.
+ *   2. Send from a shared mailbox (notifications, cron jobs): e.g.
+ *      noreply-<project>@bayer.com, requested once from the Bayer Messaging
+ *      team via ServiceNow (Order Something → Messaging Engineer/Analyst).
+ *
+ * TLS: EBR requires StartTLS, TLSv1.2 or higher.
  *
  * Local development:
- *   When NODE_ENV=development, emails are NOT sent. Instead, the full email
- *   payload is logged so you can verify content without SMTP credentials.
+ *   When NODE_ENV=development, emails are NOT sent — the full payload is
+ *   logged. EBR only accepts the platform's AWS IPs, so real sends only
+ *   work from the deployed app.
  *
  * Example:
  *   import { sendEmail, sendTemplateEmail } from './smtp-client.js';
- *   await sendEmail({ to: 'a@bayer.com', subject: 'Hello', text: 'hi' });
+ *
+ *   await sendEmail({
+ *     from: req.user.email,
+ *     to: 'colleague@bayer.com',
+ *     subject: 'Hello',
+ *     text: 'hi',
+ *   });
+ *
+ *   await sendTemplateEmail({
+ *     from: 'noreply-myproject@bayer.com',
+ *     to: 'team@bayer.com',
+ *     subject: 'Weekly report',
+ *     templateFn: (d: { title: string }) => `<h1>${d.title}</h1>`,
+ *     data: { title: 'Sprint 42' },
+ *   });
  */
 
 import nodemailer, {
@@ -43,10 +74,11 @@ import nodemailer, {
 // Configuration
 // ---------------------------------------------------------------------------
 const SMTP_CONFIG = {
-  host: 'exsmtp.na.bayer.cnb',
-  port: 25,
-  secure: false, // Bayer internal SMTP — no TLS required
-  tls: { rejectUnauthorized: false },
+  host: process.env.SMTP_HOST || 'ebr.bayer.com',
+  port: parseInt(process.env.SMTP_PORT || '2525', 10),
+  secure: false,
+  requireTLS: true,
+  tls: { minVersion: 'TLSv1.2' },
 } as const;
 
 export type EmailAddress = string | string[];
@@ -58,11 +90,20 @@ export interface SendEmailOptions {
   text?: string;
   cc?: EmailAddress;
   bcc?: EmailAddress;
+  /** Sender — must be @bayer.com. Falls back to EMAIL_SENDER, then SECRET_3. */
   from?: string;
   attachments?: SendMailOptions['attachments'];
 }
 
 export type EmailTemplateFn<T> = (data: T) => string;
+
+export interface SendTemplateEmailOptions<T> {
+  to: EmailAddress;
+  subject: string;
+  templateFn: EmailTemplateFn<T>;
+  data: T;
+  from?: string;
+}
 
 // Mock transport returns a partial of SentMessageInfo — keep the shape compatible.
 interface MockSentMessageInfo {
@@ -121,44 +162,44 @@ export function createTransporter(): MaybeTransporter {
   }
 
   // -------------------------------------------------------------------------
-  // Production transporter
+  // Production transporter — EBR, no auth
   // -------------------------------------------------------------------------
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASSWORD;
-
-  if (!user || !pass) {
-    throw new Error(
-      'SMTP credentials not configured. Set SMTP_USER and SMTP_PASSWORD environment variables. ' +
-        'See the snippet header for GitHub Secrets setup instructions.'
-    );
-  }
-
-  _transporter = nodemailer.createTransport({
-    ...SMTP_CONFIG,
-    auth: { user, pass },
-  });
-
+  _transporter = nodemailer.createTransport(SMTP_CONFIG);
   return _transporter;
 }
 
 /**
- * Sends an email via Bayer's internal SMTP server.
+ * Sends an email via Bayer's External Bayer Relay (EBR).
  */
 export async function sendEmail(
   options: SendEmailOptions
 ): Promise<SentMessageInfo | MockSentMessageInfo> {
   const { to, subject, html, text, cc, bcc, from, attachments } = options;
 
+  // Sender resolution order: explicit arg -> local-dev env var -> platform secret slot
+  const sender = from || process.env.EMAIL_SENDER || process.env.SECRET_3;
+  if (!sender) {
+    throw new Error(
+      'sendEmail: sender required (must be a @bayer.com address). ' +
+        'Pass `from` per-call, set EMAIL_SENDER in backend/.env for local dev, ' +
+        'or add APP_SECRET_3 (@bayer.com address) in GitHub Secrets for prod.'
+    );
+  }
   if (!to) throw new Error('sendEmail: "to" is required.');
   if (!subject) throw new Error('sendEmail: "subject" is required.');
   if (!html && !text) {
     throw new Error('sendEmail: provide at least "html" or "text" body.');
   }
+  if (!sender.toLowerCase().endsWith('@bayer.com')) {
+    throw new Error(
+      `sendEmail: sender must be a @bayer.com address (got "${sender}"). EBR rejects other senders.`
+    );
+  }
 
   const transporter = createTransporter();
 
   const mailOptions: SendMailOptions = {
-    from: from || process.env.SMTP_USER,
+    from: sender,
     to,
     subject,
     ...(text && { text }),
@@ -170,11 +211,11 @@ export async function sendEmail(
 
   try {
     const result = await transporter.sendMail(mailOptions);
-    console.log(`[SMTP] Email sent to ${to} — messageId: ${result.messageId}`);
+    console.log(`[SMTP] Email sent — messageId: ${result.messageId}`);
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[SMTP] Failed to send email to ${to}:`, message);
+    console.error('[SMTP] Failed to send email:', message);
     throw new Error(`Failed to send email: ${message}`);
   }
 }
@@ -182,12 +223,10 @@ export async function sendEmail(
 /**
  * Sends an HTML email built from a template function.
  */
-export async function sendTemplateEmail<T extends object>(
-  to: EmailAddress,
-  subject: string,
-  templateFn: EmailTemplateFn<T>,
-  data: T
+export async function sendTemplateEmail<T>(
+  options: SendTemplateEmailOptions<T>
 ): Promise<SentMessageInfo | MockSentMessageInfo> {
+  const { from, to, subject, templateFn, data } = options;
   if (typeof templateFn !== 'function') {
     throw new Error(
       'sendTemplateEmail: templateFn must be a function that returns an HTML string.'
@@ -195,5 +234,5 @@ export async function sendTemplateEmail<T extends object>(
   }
 
   const html = templateFn(data);
-  return sendEmail({ to, subject, html });
+  return sendEmail({ from, to, subject, html });
 }
