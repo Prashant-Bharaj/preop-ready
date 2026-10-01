@@ -92,10 +92,12 @@
   // that matches the server also matches the hook (skipped every boot until
   // 2026-09-11).
   // The sysctl keeps same-bridge container traffic out of iptables. The default
-  // Codespaces image moved to Docker 29.x (2026-09), whose bridge firewall rules
-  // fail to install inside the nested kernel: containers stay "healthy" (localhost
-  // works) but frontend->backend and backend->database TCP silently hang.
-  // Verified fix 2026-09-10; harmless where the rules install correctly.
+  // Codespaces image moved to Docker 29.x (2026-09): containers stay "healthy"
+  // (localhost works) but frontend->backend and backend->database TCP silently
+  // hang. Root cause (found 2026-10-01): a stale iptables-legacy FORWARD DROP
+  // that also blocks container->internet. The complete fix is the networking
+  // block at the top of auto-update-template.sh; the sysctl stays as a second
+  // layer and is harmless where the legacy rule set is absent.
   "postStartCommand": "sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1 || true; bash .devcontainer/auto-update-template.sh; bash scripts/install-hooks.sh; bash scripts/audit/install-claude-hooks.sh; [ -f chat/package.json ] && (cd chat && npm ci --no-audit --no-fund --loglevel=error && npm run build --silent) || true; echo \"autostart check: codespaces=$([ -d /.codespaces ] && echo y || echo n) optout=${HARNESS_AUTOSTART:-unset} dist=$([ -f chat/dist/index.html ] && echo y || echo n) running=$(curl -s -o /dev/null -m 2 http://localhost:5050/health && echo y || echo n)\" > /tmp/harness-hook.log; [ -d /.codespaces ] && [ \"${HARNESS_AUTOSTART:-1}\" != \"0\" ] && [ ! -f .chat/no-autostart ] && [ -f chat/dist/index.html ] && ! curl -s -o /dev/null -m 2 http://localhost:5050/health && (cd chat && SQL_VALIDATOR_WARMUP=0 setsid nohup sh -c 'sleep 4; exec node server/index.js' > /tmp/harness.log 2>&1 < /dev/null &) && echo \"started harness (node=$(command -v node))\" >> /tmp/harness-hook.log; sleep 8; echo \"after 8s: health=$(curl -s -m 2 -o /dev/null -w %{http_code} http://localhost:5050/health) log_bytes=$(wc -c < /tmp/harness.log 2>/dev/null)\" >> /tmp/harness-hook.log || true",
 
   // Pre-forwarded on purpose: GitHub registers ports on its proxy only when

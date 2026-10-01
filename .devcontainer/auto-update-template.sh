@@ -16,6 +16,34 @@ fi
 # failure should stop here rather than half-update the repo.
 set -euo pipefail
 
+# ─── Container networking in Codespaces ─────────────────────────────
+# The Codespaces image runs Docker 29, which keeps its firewall rules in the
+# nftables backend. The codespace also carries a stale iptables-LEGACY rule set
+# (older Docker layout) whose FORWARD policy is DROP, with accepts for docker0
+# only. The kernel applies both, so every user-defined bridge (br-*, i.e. every
+# docker compose network) is dropped there: containers reach neither each other
+# nor the internet, and a backend calling myGenAssist fails with
+# `getaddrinfo EAI_AGAIN`. Accepting the compose bridges in the legacy chain
+# fixes both; Docker's own nftables rules keep enforcing isolation.
+# Verified 2026-10-01. The rules are lost when the codespace stops, so this
+# runs on every start (idempotent), and it lives HERE for the same reason as
+# the bridge below: existing codespaces pick it up without a rebuild.
+# /proc/net/ip_tables_names is read first because calling iptables-legacy
+# where the legacy module is absent would load it.
+if [ -d /.codespaces ] \
+   && sudo -n grep -qsx filter /proc/net/ip_tables_names 2>/dev/null; then
+  _legacy_forward=$(sudo -n iptables-legacy -S FORWARD 2>/dev/null || true)
+  case "$_legacy_forward" in
+    "-P FORWARD DROP"*)
+      for _dir in -i -o; do
+        sudo -n iptables-legacy -C FORWARD "$_dir" br-+ -j ACCEPT 2>/dev/null \
+          || sudo -n iptables-legacy -I FORWARD "$_dir" br-+ -j ACCEPT 2>/dev/null \
+          || true
+      done
+      ;;
+  esac
+fi
+
 # ─── Claude Code activation (migration bridge) ──────────────────────
 # On existing (Cline-era) repos the new devcontainer.json postStartCommand only
 # takes effect after a container rebuild — but THIS script is invoked by path,
