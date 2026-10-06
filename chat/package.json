@@ -33,7 +33,7 @@
     "express": "^4.21.0",
     "express-rate-limit": "^8.7.0",
     "mammoth": "^1.8.0",
-    "multer": "^2.0.1",
+    "multer": "^2.4.0",
     "pdf-parse": "^1.1.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
