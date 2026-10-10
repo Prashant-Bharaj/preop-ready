@@ -109,21 +109,6 @@ export interface Clearance {
   source: string;
 }
 
-export interface PatientDetail {
-  patient: {
-    id: string;
-    name: string;
-    birthDate: string;
-    sex: string;
-    ward: string;
-  };
-  procedures: ProcedureDetail[];
-  labs: LabRow[];
-  reports: ReportRow[];
-  medications: MedicationRow[];
-  clearance: Clearance | null;
-}
-
 export interface TaskRow {
   id: string;
   procedureId: string;
@@ -139,6 +124,22 @@ export interface TaskRow {
   status: "OPEN" | "DONE";
   sourceRef: string;
   category: string;
+}
+
+export interface PatientDetail {
+  patient: {
+    id: string;
+    name: string;
+    birthDate: string;
+    sex: string;
+    ward: string;
+  };
+  procedures: ProcedureDetail[];
+  labs: LabRow[];
+  reports: ReportRow[];
+  medications: MedicationRow[];
+  clearance: Clearance | null;
+  openTasks?: TaskRow[];
 }
 
 export interface Extraction {
@@ -199,18 +200,20 @@ export interface ThresholdsDoc {
   };
 }
 
+/**
+ * Local-first API. There is no server: every call is answered in the browser
+ * from IndexedDB (see src/local/router.ts). Same paths and payloads as the
+ * former FastAPI backend, so pages did not need to change.
+ */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+  const { handle } = await import("./local/router");
+  try {
+    // Round-trip through JSON so callers never hold references into the store.
+    const data = await handle(path, init);
+    return (data === undefined ? {} : JSON.parse(JSON.stringify(data))) as T;
+  } catch (err) {
+    throw new Error(err instanceof Error && err.message ? err.message : "Request failed");
   }
-  const response = await fetch(`/api${path}`, { ...init, headers });
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
-  }
-  return data as T;
 }
 
 export function formatDate(iso: string, lang: "de" | "en"): string {
