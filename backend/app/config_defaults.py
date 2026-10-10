@@ -22,6 +22,7 @@ _LABS = (
     "sodium",
     "tsh",
     "crp",
+    "bnp",
 )
 
 
@@ -38,6 +39,30 @@ DEFAULT_REQUIREMENTS: dict = {
         "report.ECHO": {"de": "Echokardiographie", "en": "Echocardiography"},
         "report.CHEST_XRAY": {"de": "Röntgen-Thorax", "en": "Chest X-ray"},
         "report.ECG": {"de": "EKG", "en": "ECG"},
+        "report.AGREEMENT": {
+            "de": "Einverständniserklärung",
+            "en": "Patient agreement",
+        },
+        "report.DUPLEX_GROIN_PRE": {
+            "de": "Duplex Leiste (Tag vor Eingriff)",
+            "en": "Groin duplex (day before)",
+        },
+        "report.DUPLEX_GROIN_POST": {
+            "de": "Duplex Leiste (Tag nach Eingriff)",
+            "en": "Groin duplex (day after)",
+        },
+        "report.GASTROSCOPY": {
+            "de": "Gastroskopie (Tag nach Eingriff)",
+            "en": "Gastroscopy (day after)",
+        },
+        "report.ECHO_6W": {
+            "de": "Echo-Kontrolle (6 Wochen)",
+            "en": "Echo follow-up (6 weeks)",
+        },
+        "report.ECHO_6M": {
+            "de": "Echo-Kontrolle (6 Monate)",
+            "en": "Echo follow-up (6 months)",
+        },
         "clearance.anesthesia": {
             "de": "Anästhesiefreigabe",
             "en": "Anesthesia clearance",
@@ -49,6 +74,42 @@ DEFAULT_REQUIREMENTS: dict = {
             {"item": "report.ECHO", "required": True, "maxAgeDays": 90},
             {"item": "report.CHEST_XRAY", "required": True, "maxAgeDays": 30},
             {"item": "report.ECG", "required": True, "maxAgeDays": 7},
+            {
+                "item": "report.AGREEMENT",
+                "required": True,
+                "maxAgeDays": 30,
+                "mustMention": "Patientenunterschrift",
+            },
+            {
+                "item": "report.DUPLEX_GROIN_PRE",
+                "required": True,
+                "maxAgeDays": 1,
+                "timing": "pre",
+            },
+            {
+                "item": "report.DUPLEX_GROIN_POST",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 1,
+            },
+            {
+                "item": "report.GASTROSCOPY",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 1,
+            },
+            {
+                "item": "report.ECHO_6W",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 42,
+            },
+            {
+                "item": "report.ECHO_6M",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 183,
+            },
             {"item": "clearance.anesthesia", "required": True, "maxAgeDays": None},
         ],
         "M-TEER": [
@@ -61,6 +122,42 @@ DEFAULT_REQUIREMENTS: dict = {
             },
             {"item": "report.CHEST_XRAY", "required": True, "maxAgeDays": 30},
             {"item": "report.ECG", "required": True, "maxAgeDays": 7},
+            {
+                "item": "report.AGREEMENT",
+                "required": True,
+                "maxAgeDays": 30,
+                "mustMention": "Patientenunterschrift",
+            },
+            {
+                "item": "report.DUPLEX_GROIN_PRE",
+                "required": True,
+                "maxAgeDays": 1,
+                "timing": "pre",
+            },
+            {
+                "item": "report.DUPLEX_GROIN_POST",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 1,
+            },
+            {
+                "item": "report.GASTROSCOPY",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 1,
+            },
+            {
+                "item": "report.ECHO_6W",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 42,
+            },
+            {
+                "item": "report.ECHO_6M",
+                "required": True,
+                "timing": "post",
+                "offsetDays": 183,
+            },
             {"item": "clearance.anesthesia", "required": True, "maxAgeDays": None},
         ],
     },
@@ -179,6 +276,17 @@ DEFAULT_THRESHOLDS: dict = {
             "implausibleHigh": 600,
             "unit": "mg/L",
         },
+        "bnp": {
+            "labelDe": "BNP",
+            "labelEn": "BNP",
+            "low": 0,
+            "high": 100,
+            "criticalLow": None,
+            "criticalHigh": 1000,
+            "implausibleLow": 0,
+            "implausibleHigh": 100000,
+            "unit": "pmol/L",
+        },
     },
     "aliases": {
         "hämoglobin": "hb",
@@ -199,6 +307,7 @@ DEFAULT_THRESHOLDS: dict = {
         "sodium": "sodium",
         "tsh": "tsh",
         "crp": "crp",
+        "bnp": "bnp",
     },
     "consistency": {
         "pauseRequiredClasses": ["DOAC", "VKA"],

@@ -19,6 +19,8 @@ class RequirementItem(BaseModel):
     required: bool = True
     maxAgeDays: Optional[int] = Field(default=None, ge=0, le=3650)
     mustMention: Optional[str] = Field(default=None, max_length=40)
+    timing: Optional[str] = Field(default="pre", max_length=10)
+    offsetDays: Optional[int] = Field(default=None, ge=0, le=400)
 
     @field_validator("item")
     @classmethod
@@ -26,6 +28,16 @@ class RequirementItem(BaseModel):
         if not _ITEM.fullmatch(value):
             raise ValueError("item")
         return value
+
+    @field_validator("timing")
+    @classmethod
+    def known_timing(cls, value: Optional[str]) -> Optional[str]:
+        if value is None or value == "":
+            return "pre"
+        token = value.strip().lower()
+        if token not in {"pre", "post"}:
+            raise ValueError("timing")
+        return token
 
 
 class LabelPair(BaseModel):
@@ -100,6 +112,57 @@ class ThresholdsDocument(BaseModel):
                 raise ValueError("alias")
             cleaned[str(key).lower()] = target
         return cleaned
+
+
+class NewCase(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    birthDate: str
+    sex: str
+    ward: str = Field(min_length=1, max_length=80)
+    procedureType: str = Field(min_length=1, max_length=20)
+    plannedDate: str
+    plannedTime: str
+    operator: str = Field(min_length=1, max_length=80)
+
+    @field_validator("name", "ward", "operator")
+    @classmethod
+    def plain_text(cls, value: str) -> str:
+        cleaned = " ".join(value.split())
+        if not cleaned or len(cleaned) > 80 or re.search(r"[<>]", cleaned):
+            raise ValueError("text")
+        return cleaned
+
+    @field_validator("sex")
+    @classmethod
+    def known_sex(cls, value: str) -> str:
+        if value not in {"female", "male"}:
+            raise ValueError("sex")
+        return value
+
+    @field_validator("procedureType")
+    @classmethod
+    def procedure_shape(cls, value: str) -> str:
+        if not _PROC.fullmatch(value):
+            raise ValueError("procedure type")
+        return value
+
+    @field_validator("birthDate", "plannedDate")
+    @classmethod
+    def date_shape(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("date")
+        return value
+
+    @field_validator("plannedTime")
+    @classmethod
+    def time_shape(cls, value: str) -> str:
+        match = re.fullmatch(r"(\d{2}):(\d{2})", value)
+        if not match:
+            raise ValueError("time")
+        hour, minute = int(match.group(1)), int(match.group(2))
+        if hour > 23 or minute > 59:
+            raise ValueError("time")
+        return value
 
 
 class TaskPatch(BaseModel):

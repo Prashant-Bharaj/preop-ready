@@ -6,7 +6,7 @@ This module only applies those documents and the fixed category rules.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from app.domain import (
     AnesthesiaClearance,
@@ -32,7 +32,9 @@ ROLE_COORDINATION = "Pflege/Koordination"
 
 
 def overall_status(findings: list[Finding]) -> str:
-    if any(f.category == MISSING or f.severity == CRITICAL for f in findings):
+    # Severity drives readiness: MISSING+WARNING (e.g. post-procedure items
+    # not yet due) stays yellow; MISSING+CRITICAL remains red.
+    if any(f.severity == CRITICAL for f in findings):
         return "RED"
     if any(f.severity == WARNING or f.category == OUTDATED for f in findings):
         return "YELLOW"
@@ -63,6 +65,7 @@ def evaluate_case(
     medications: list[Medication],
     requirements_doc: dict,
     thresholds_doc: dict,
+    as_of: date | None = None,
 ) -> list[Finding]:
     procedure_rules = (requirements_doc.get("procedures") or {}).get(procedure_type)
     if not procedure_rules:
@@ -81,12 +84,15 @@ def evaluate_case(
     labels = requirements_doc.get("labels") or {}
     labs_cfg = thresholds_doc.get("labs") or {}
     findings: list[Finding] = []
+    check_day = as_of or planned_date
 
     for rule in procedure_rules:
         item = str(rule.get("item") or "")
         required = bool(rule.get("required", True))
         max_age = rule.get("maxAgeDays")
         must_mention = rule.get("mustMention")
+        timing = str(rule.get("timing") or "pre").lower()
+        offset_days = rule.get("offsetDays")
         if item.startswith("lab."):
             findings.extend(
                 _check_lab(
@@ -109,9 +115,12 @@ def evaluate_case(
                     required=required,
                     max_age=max_age,
                     must_mention=must_mention,
+                    timing=timing,
+                    offset_days=offset_days,
                     patient_id=patient_id,
                     procedure_type=procedure_type,
                     planned_date=planned_date,
+                    as_of=check_day,
                     reports=reports,
                     label=labels.get(item) or {},
                 )
@@ -129,9 +138,6 @@ def evaluate_case(
                 )
             )
 
-    findings.extend(
-        _check_identity(patient_id, observations, reports, labels)
-    )
     findings.extend(
         _check_medications(
             patient_id=patient_id,
@@ -227,7 +233,7 @@ def _check_lab(
                 item=item,
                 source_ref=latest_rows[0].id,
                 de=(
-                    f"{label_de} ist veraltet ({age} Tage, erlaubt {int(max_age)}) "
+                    f"{label_de}: veraltet ({age} Tage, erlaubt {int(max_age)}) "
                     f"– bitte vor {procedure_type} am {_fmt(planned_date)} wiederholen."
                 ),
                 en=(
@@ -370,9 +376,12 @@ def _check_report(
     required: bool,
     max_age,
     must_mention,
+    timing: str,
+    offset_days,
     patient_id: str,
     procedure_type: str,
     planned_date: date,
+    as_of: date,
     reports: list[DiagnosticReport],
     label: dict,
 ) -> list[Finding]:
@@ -380,23 +389,50 @@ def _check_report(
     rows = [
         r for r in reports if r.patient_id == patient_id and r.report_type == report_type
     ]
+    if timing == "post":
+        return _check_report_post(
+            report_type=report_type,
+            item=item,
+            required=required,
+            must_mention=must_mention,
+            offset_days=1 if offset_days is None else int(offset_days),
+            procedure_type=procedure_type,
+            planned_date=planned_date,
+            as_of=as_of,
+            rows=rows,
+            label_de=label_de,
+            label_en=label_en,
+        )
+
     findings: list[Finding] = []
     if not rows:
         if required:
+            if report_type == "AGREEMENT":
+                de = (
+                    f"{label_de} fehlt – der Patient muss vor {procedure_type} "
+                    f"am {_fmt(planned_date)} unterschreiben."
+                )
+                en = (
+                    f"{label_en} is missing – the patient must sign it before "
+                    f"{procedure_type} on {_fmt(planned_date)}."
+                )
+            else:
+                de = (
+                    f"{label_de} fehlt – bitte vor {procedure_type} "
+                    f"am {_fmt(planned_date)} anmelden."
+                )
+                en = (
+                    f"{label_en} is missing – please schedule it before "
+                    f"{procedure_type} on {_fmt(planned_date)}."
+                )
             findings.append(
                 _finding(
                     category=MISSING,
                     severity=CRITICAL,
                     item=item,
                     source_ref=item,
-                    de=(
-                        f"{label_de} fehlt – bitte vor {procedure_type} "
-                        f"am {_fmt(planned_date)} anmelden."
-                    ),
-                    en=(
-                        f"{label_en} is missing – please schedule it before "
-                        f"{procedure_type} on {_fmt(planned_date)}."
-                    ),
+                    de=de,
+                    en=en,
                 )
             )
         return findings
@@ -446,7 +482,7 @@ def _check_report(
                     item=item,
                     source_ref=latest.id,
                     de=(
-                        f"{label_de} ist veraltet ({age} Tage, erlaubt {int(max_age)}) "
+                        f"{label_de}: veraltet ({age} Tage, erlaubt {int(max_age)}) "
                         f"– bitte vor {procedure_type} am {_fmt(planned_date)} wiederholen."
                     ),
                     en=(
@@ -455,42 +491,162 @@ def _check_report(
                     ),
                 )
             )
-    if must_mention and latest.conclusion_text:
-        if str(must_mention).lower() not in latest.conclusion_text.lower():
+    findings.extend(
+        _must_mention_findings(
+            must_mention=must_mention,
+            latest=latest,
+            item=item,
+            label_de=label_de,
+            label_en=label_en,
+            procedure_type=procedure_type,
+            planned_date=planned_date,
+        )
+    )
+    return findings
+
+
+def _check_report_post(
+    *,
+    report_type: str,
+    item: str,
+    required: bool,
+    must_mention,
+    offset_days: int,
+    procedure_type: str,
+    planned_date: date,
+    as_of: date,
+    rows: list[DiagnosticReport],
+    label_de: str,
+    label_en: str,
+) -> list[Finding]:
+    target = planned_date + timedelta(days=offset_days)
+    findings: list[Finding] = []
+
+    for row in rows:
+        if row.report_date is None:
             findings.append(
                 _finding(
-                    category=MISSING,
-                    severity=CRITICAL,
+                    category=IMPLAUSIBLE,
+                    severity=WARNING,
                     item=item,
-                    source_ref=latest.id,
+                    source_ref=row.id,
+                    de=f"{label_de}: kein Befunddatum dokumentiert.",
+                    en=f"{label_en}: no report date documented.",
+                )
+            )
+        elif row.report_date < planned_date:
+            findings.append(
+                _finding(
+                    category=INCONSISTENT,
+                    severity=WARNING,
+                    item=item,
+                    source_ref=row.id,
                     de=(
-                        f"{must_mention}-Hinweis fehlt in der {label_de} – bitte vor "
-                        f"{procedure_type} am {_fmt(planned_date)} ergänzen."
+                        f"{label_de} ist auf den {_fmt(row.report_date)} datiert – "
+                        f"erwartet am {_fmt(target)} (nach {procedure_type})."
                     ),
                     en=(
-                        f"{must_mention} is not mentioned in the {label_en} – please "
-                        f"add it before {procedure_type} on {_fmt(planned_date)}."
+                        f"{label_en} is dated {_fmt(row.report_date)} – "
+                        f"expected on {_fmt(target)} (after {procedure_type})."
                     ),
                 )
             )
-    elif must_mention and not latest.conclusion_text:
+
+    usable = [
+        r
+        for r in rows
+        if r.report_date is not None and r.report_date >= target
+    ]
+    if not usable:
+        if not required:
+            return findings
+        pending = as_of < target
+        severity = WARNING if pending else CRITICAL
+        when_de = (
+            "Tag nach dem Eingriff"
+            if offset_days == 1
+            else f"{offset_days} Tage nach dem Eingriff"
+        )
+        when_en = (
+            "day after the procedure"
+            if offset_days == 1
+            else f"{offset_days} days after the procedure"
+        )
+        de = (
+            f"{label_de} fehlt – geplant für den {_fmt(target)} "
+            f"({when_de}, {procedure_type} am {_fmt(planned_date)})."
+        )
+        en = (
+            f"{label_en} is missing – scheduled for {_fmt(target)} "
+            f"({when_en}, {procedure_type} on {_fmt(planned_date)})."
+        )
+        if not pending:
+            de = (
+                f"{label_de} fehlt – bitte am {_fmt(target)} "
+                f"nach {procedure_type} nachholen."
+            )
+            en = (
+                f"{label_en} is missing – please obtain it on {_fmt(target)} "
+                f"after {procedure_type}."
+            )
         findings.append(
             _finding(
                 category=MISSING,
-                severity=CRITICAL,
+                severity=severity,
                 item=item,
-                source_ref=latest.id,
-                de=(
-                    f"{must_mention}-Hinweis fehlt in der {label_de} – bitte vor "
-                    f"{procedure_type} am {_fmt(planned_date)} ergänzen."
-                ),
-                en=(
-                    f"{must_mention} is not mentioned in the {label_en} – please "
-                    f"add it before {procedure_type} on {_fmt(planned_date)}."
-                ),
+                source_ref=item,
+                de=de,
+                en=en,
             )
         )
+        return findings
+
+    latest = max(usable, key=lambda r: r.report_date or target)
+    findings.extend(
+        _must_mention_findings(
+            must_mention=must_mention,
+            latest=latest,
+            item=item,
+            label_de=label_de,
+            label_en=label_en,
+            procedure_type=procedure_type,
+            planned_date=planned_date,
+        )
+    )
     return findings
+
+
+def _must_mention_findings(
+    *,
+    must_mention,
+    latest: DiagnosticReport,
+    item: str,
+    label_de: str,
+    label_en: str,
+    procedure_type: str,
+    planned_date: date,
+) -> list[Finding]:
+    if not must_mention:
+        return []
+    text = latest.conclusion_text or ""
+    if str(must_mention).lower() in text.lower():
+        return []
+    return [
+        _finding(
+            category=MISSING,
+            severity=CRITICAL,
+            item=item,
+            source_ref=latest.id,
+            de=(
+                f"{must_mention}-Hinweis fehlt in der {label_de} – bitte vor "
+                f"{procedure_type} am {_fmt(planned_date)} ergänzen."
+            ),
+            en=(
+                f"{must_mention} is not mentioned in the {label_en} – please "
+                f"add it before {procedure_type} on {_fmt(planned_date)}."
+            ),
+        )
+    ]
 
 
 def _check_clearance(
@@ -558,7 +714,7 @@ def _check_clearance(
                 source_ref=clearance.id,
                 role=ROLE_ANESTHESIA,
                 de=(
-                    f"{label_de} ist veraltet ({age} Tage, erlaubt {int(max_age)})."
+                    f"{label_de}: veraltet ({age} Tage, erlaubt {int(max_age)})."
                 ),
                 en=(
                     f"{label_en} is outdated ({age} days, allowed {int(max_age)})."
@@ -592,61 +748,6 @@ def _check_clearance(
                 en=f"{label_en}: unknown status “{clearance.status}”.",
             )
         )
-    return findings
-
-
-def _check_identity(
-    patient_id: str,
-    observations: list[Observation],
-    reports: list[DiagnosticReport],
-    labels: dict,
-) -> list[Finding]:
-    findings: list[Finding] = []
-    for row in observations:
-        if row.patient_id != patient_id:
-            continue
-        if row.document_patient_id and row.document_patient_id != patient_id:
-            findings.append(
-                _finding(
-                    category=IMPLAUSIBLE,
-                    severity=CRITICAL,
-                    item=f"lab.{row.code}",
-                    source_ref=row.id,
-                    de=(
-                        f"Patienten-ID im Laborbefund ({row.document_patient_id}) "
-                        f"stimmt nicht mit dem Fall ({patient_id}) überein."
-                    ),
-                    en=(
-                        f"Patient id in the lab report ({row.document_patient_id}) "
-                        f"does not match the case ({patient_id})."
-                    ),
-                )
-            )
-    for row in reports:
-        if row.patient_id != patient_id:
-            continue
-        if row.document_patient_id and row.document_patient_id != patient_id:
-            label = (labels.get(f"report.{row.report_type}") or {}).get("de", row.report_type)
-            label_en = (labels.get(f"report.{row.report_type}") or {}).get(
-                "en", row.report_type
-            )
-            findings.append(
-                _finding(
-                    category=IMPLAUSIBLE,
-                    severity=CRITICAL,
-                    item=f"report.{row.report_type}",
-                    source_ref=row.id,
-                    de=(
-                        f"Patienten-ID im Befund {label} ({row.document_patient_id}) "
-                        f"stimmt nicht mit dem Fall ({patient_id}) überein."
-                    ),
-                    en=(
-                        f"Patient id in the {label_en} report "
-                        f"({row.document_patient_id}) does not match the case "
-                        f"({patient_id})."
-                    ),
-                )
-            )
     return findings
 
 

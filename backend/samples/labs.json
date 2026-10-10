@@ -1,0 +1,23 @@
+{
+  "reportType": "LAB",
+  "dateOffsetDays": -1,
+  "patientId": "pat-c",
+  "patientName": "Testperson C",
+  "findings": [
+    {"name": "Hämoglobin", "value": 13.4, "unit": "g/dL", "evidence": "Hämoglobin 13.4 g/dL"},
+    {"name": "Thrombozyten", "value": 240, "unit": "10^9/L", "evidence": "Thrombozyten 240 10^9/L"},
+    {"name": "INR", "value": 1.0, "unit": "ratio", "evidence": "INR 1.0"},
+    {"name": "aPTT", "value": 31, "unit": "s", "evidence": "aPTT 31 s"},
+    {"name": "Kreatinin", "value": 80, "unit": "µmol/L", "evidence": "Kreatinin 80 µmol/L"},
+    {"name": "eGFR", "value": 78, "unit": "mL/min/1.73m2", "evidence": "eGFR 78 mL/min/1.73m2"},
+    {"name": "Kalium", "value": 4.1, "unit": "mmol/L", "evidence": "Kalium 4.1 mmol/L"},
+    {"name": "Natrium", "value": 139, "unit": "mmol/L", "evidence": "Natrium 139 mmol/L"},
+    {"name": "TSH", "value": 1.6, "unit": "mU/L", "evidence": "TSH 1.6 mU/L"},
+    {"name": "CRP", "value": 1.2, "unit": "mg/L", "evidence": "CRP 1.2 mg/L"},
+    {"name": "BNP", "value": 48, "unit": "pmol/L", "evidence": "BNP 48 pmol/L"}
+  ],
+  "clearanceStatus": null,
+  "conditions": [],
+  "asaClass": null,
+  "conclusionText": "Synthetisches Laborblatt. BNP 48 pmol/L. Kalium 4.1 mmol/L."
+}

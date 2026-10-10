@@ -1,412 +1,79 @@
-# !! IMPORTANT: No Real Data Allowed !!
+# PreOp Ready
 
-> **NEVER PUT REAL COMPANY DATA IN YOUR PROJECT FILES.**
->
-> Your app might work with sensitive information — employee lists, patient records, sales numbers, internal documents. **That data must never be saved in your project.** Not in spreadsheets, not in database files, not anywhere.
+Assistive checklist for planned cardiac procedures (TAVI, M-TEER). A deterministic rule engine decides the traffic light. A language model, when configured, only extracts structured fields from a report. The app never marks a patient cleared; a physician confirms that separately.
 
-**What counts as "real data"?** Anything that came from a real Bayer system — names, emails, reports, documents, numbers from real people or real business.
+This is a prototype. It is not a medical device. Every patient in the seed data is synthetic.
 
-| Safe | Not safe |
-|------|----------|
-| Make up test data: `John Doe`, `jane@example.com` | Use real names, real emails, or real documents |
-| Share reference files with the AI via the `context/` folder (your AI can read these, but they stay private) | Put spreadsheets, PDFs, or data files directly in your project |
-| Let the AI generate fake sample data for testing | Copy-paste real data into any file |
-| Add passwords and API keys through GitHub Settings | Write passwords or API keys directly in your code |
+The requirements and thresholds shipped with the demo are marked in the settings screen as **Demo-Werte – klinisch zu validieren**.
 
-**We have automated checks that will block your work if any data that even resembles real data is detected.** Your project will refuse to save if it finds spreadsheets, documents, passwords, or anything that looks like it could be real. Your AI assistant also follows these rules and will help you stay on the safe side.
+## Run in GitHub Codespaces or locally
 
-> **This platform is approved for non-production, non-regulated, dummy or synthetic data only. Processing of Bayer Confidential, PII, PHI, or regulated datasets is explicitly prohibited without prior security review and ITLM approval for elevated data classification.**
-
-> For the full details, see `.platform-rules/reference/sensitive-files.md`.
-
----
-
-# Welcome to the Vibe Hackathon Platform!
-
-> **No coding experience? No problem!** Your AI assistant will help you build and deploy your app.
->
-> **Developer?** Skip to the [Developer Quick-Start](#-developer-quick-start) below.
->
-> **Have existing code to migrate?** See the [Migration Guide](./docs/MIGRATION.md).
->
-> **Not sure how to describe your idea?** See [Example Prompts](./docs/EXAMPLES.md).
-
----
-
-## 🤔 What is this?
-
-This is your **hackathon project workspace**. You're going to build a web application that will be live on the internet!
-
-**What you'll create:**
-- A website that real people can visit
-- With features YOU design (forms, dashboards, AI integrations, etc.)
-- Deployed automatically when you save your work
-
-**What you DON'T need:**
-- ❌ Coding experience
-- ❌ Server setup knowledge
-- ❌ DevOps skills
-
-**Your AI assistant (Claude Code) will write all the code for you!**
-
----
-
-## 👨‍💻 Developer Quick-Start
-
-<details>
-<summary><b>Click here if you're a developer</b> - skip the hand-holding</summary>
-
-### Architecture
-```
-frontend/          → nginx (port 8080) - static or React build
-backend/           → Express/FastAPI/Actix-web (port 3000)
-database/          → PostgreSQL/MySQL/pgvector/Chroma/Qdrant (optional)
-```
-
-> nginx listens on **8080**, not 80: the container runs as a non-root user and
-> non-root cannot bind a privileged port. `./scripts/preflight-check.sh` fails
-> the build on `listen 80;`.
-
-### Deployment: ECS only
-| Project Type | Detection | URL |
-|-------------|-----------|-----|
-| **Full-Stack** (has backend) | Has `backend/Dockerfile` | `https://<repo>.vibe.intranet.cnb` |
-
-**A project with no `backend/Dockerfile` does not deploy.** The old
-frontend-only static publish to DevOps Docs is switched off (the job is
-commented out in `.github/workflows/deploy.yml`). If your app is pure
-front-end, add a minimal backend so it has a `backend/Dockerfile` — ask your
-AI assistant and it will set one up.
-
-### Routing (ECS)
-```
-https://[project].vibe.intranet.cnb      → frontend
-https://[project].vibe.intranet.cnb/api  → backend (stripped)
-```
-
-### Required: Health Endpoint
-```javascript
-// backend/server.js - MUST exist at /health on port 3000
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
-```
-
-### Pre-flight Check (Before First Deploy)
 ```bash
-./scripts/preflight-check.sh
-# Validates: Dockerfiles, nginx.conf, health endpoints, etc.
+docker compose up --build
 ```
 
-### Local Development
+Open http://localhost:8080. In Codespaces, use the forwarded port 8080.
+
+If 8080 or 3000 is already taken on your machine, publish different host ports. The containers still listen on 8080 and 3000.
+
 ```bash
-docker-compose up -d --build    # Run in background
-docker-compose logs -f          # Watch logs
-docker-compose down             # Stop
-# Frontend: http://localhost:8080
-# Backend:  http://localhost:3000
+FRONTEND_PORT=8090 BACKEND_PORT=3010 docker compose up --build
 ```
 
-### Deploy
+The backend listens on port 3000. The browser calls `/api/...`; local nginx strips that prefix before the request reaches FastAPI.
+
+## Environment
+
+Create `backend/.env` only if you want live extraction. With no key, uploads use the offline mock and the demo still runs.
+
 ```bash
-# First time: Contact admin to whitelist your repo in variables.tf
-
-# Stage the files you changed BY NAME. `git add .` / `git add -A` is not
-# allowed here — it sweeps up .env files, context/ material and local test
-# data, and the pre-commit hook will block the commit.
-git add frontend/index.html backend/server.js   # ← your actual files
-git commit -m "feat: description"
-git push
-# → GitHub Actions builds & deploys (~3-5 min)
-
-# URL: https://[repo-name].vibe.intranet.cnb
+ALLOW_LOCAL_DEV_IDENTITY=true
+MGA_BASE_URL=https://your-mygenassist-host/api/v1
+MGA_API_KEY=your-key
+MGA_MODEL=your-model-id
 ```
 
-### Secrets (GitHub → Settings → Secrets → Actions)
-| Secret Name | Env Var in Code |
-|-------------|-----------------|
-| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
-| `APP_API_KEY` | `process.env.API_KEY` |
-| `APP_SECRET_1` | `process.env.SECRET_1` |
+The same values are accepted under the platform names `LLM_ENDPOINT` / `SECRET_1`, `LLM_API_KEY` / `API_KEY`, and `LLM_MODEL` / `SECRET_2`. Do not point the client at a public model endpoint. There is no fallback URL.
 
-### Stack Options
-- **Frontend:** Copy `Dockerfile.vanilla` or `Dockerfile.react` → `Dockerfile`
-- **Backend:** Copy `Dockerfile.node`, `Dockerfile.python`, or `Dockerfile.rust` → `Dockerfile`
-- **Database:** Copy one of these to `database/Dockerfile`:
-  - `Dockerfile.postgres` - Standard SQL database (recommended)
-  - `Dockerfile.mysql` - MySQL database
-- **Vector DB:** Copy one of these to `vectordb/Dockerfile`:
-  - `Dockerfile.pgvector` - PostgreSQL + vector search (AI apps)
-  - `Dockerfile.chroma` - ChromaDB vector database
-  - `Dockerfile.qdrant` - Qdrant vector database
+`ALLOW_LOCAL_DEV_IDENTITY=true` is set in `docker-compose.yml` so a local session records confirmations as **Dr. Test Freigabe**. Do not set that flag in a deployed environment. There, the name comes from the verified `x-amzn-oidc-data` header. A present but invalid token is rejected.
 
-### Tell the AI
-When you open Claude Code, just say: **"I'm a developer"** - it'll skip the hand-holding.
+## Reset the synthetic cohort
 
-</details>
+Dates are relative to the day you seed, so “tomorrow” stays populated.
 
----
-
-## 🚀 How to Get Started
-
-### Step 1: Talk to Your AI Assistant
-
-Look for the **Claude Code** extension in the sidebar (🤖).
-
-*(First time in a Codespace, the terminal asks for your myGenAssist API key — paste it
-and you're connected. Set the Codespaces secret `MYGENASSIST_API_KEY` to skip the prompt.)*
-
-Click on it and say something like:
-
-```
-Hi! I want to build [your idea here]
+```bash
+docker compose exec backend python -m app.seed
 ```
 
-**Example ideas:**
-- "A voting app for our team's lunch decisions"
-- "A dashboard to track hackathon project ideas"
-- "A form that collects feedback and shows results"
-- "An AI chatbot that answers questions about our product"
+## Tests
 
-### Step 2: Let AI Build It
-
-The AI will:
-1. Ask clarifying questions about your idea
-2. Create all the code for you
-3. Explain what it's building (if you want to know)
-
-**Just describe what you want in plain English!**
-
-### Step 3: Test Your App
-
-When the AI finishes building, it will ask:
-
-```
-"Want me to start the app so you can see it?"
+```bash
+cd backend
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/pytest
 ```
 
-Say **yes** and the AI will run it for you! Then open: **http://localhost:8080**
+## Demo script
 
-### Step 4: Make It Live!
+1. Open the worklist. It defaults to tomorrow (T-1).
+2. Testperson A is green: labs, echo, chest X-ray, ECG, a patient agreement signed beforehand, and anesthesia clearance are present and in range. The case is not “cleared” until you press **Freigabe bestätigen**.
+3. Testperson B is yellow: labs are 10 days old (limit 7) and anesthesia is conditional (“Kalium korrigieren”).
+4. Testperson C is red: echo missing, potassium critically low, patient agreement not signed, no anesthesia clearance.
+5. Testperson D is red: a DOAC is still active and no pause is documented.
+6. Testperson E is yellow: creatinine is in mg/dL instead of the configured µmol/L.
+7. Testperson F is red: the chest X-ray is dated after the procedure.
+8. Open **Aufgaben**, copy an order text, mark one done.
+9. Open **Befund hochladen**. The list of synthetic files is on that page. Load `echo.txt` or `anesthesia.txt` (both are written for Testperson C), confirm, and reopen the case. The matching gap closes; the other findings stay.
+10. Open **Einstellungen**, change a max age or a threshold, save, and return to the worklist. The lights are recomputed from the new JSON config.
 
-> ⚠️ **First time?** Your repo must be [whitelisted](#-first-time-only-get-whitelisted) before deploying.
+The uploadable texts live in `context/` and are listed on the upload page: `labs.txt`, `echo.txt`, `ecg.txt`, `xray.txt`, `anesthesia.txt`, `agreement.txt`.
 
-Happy with your app? Just tell the AI:
+## Layout
 
-```
-"I'm happy with it, let's deploy!"
-```
+- `frontend/` React, TypeScript, Vite, Tailwind. German by default, English toggle.
+- `backend/app/rules/engine.py` the only place a traffic light is decided.
+- `backend/app/llm_client.py` the only outbound model call.
+- `backend/app/integrations/` empty extension points for a later ORBIS HL7/FHIR connector, booking intake, automatic re-check, notifications, and a discharge-letter hand-off.
 
-The AI will save your work and deploy it automatically!
-
-**Wait 3-5 minutes**, then visit your live site:
-
-**Your URL:**
-
-`https://YOUR-REPO-NAME.vibe.intranet.cnb`
-
-*(Requires Bayer VPN. Your project needs a `backend/Dockerfile` to deploy —
-the AI adds one for you.)*
-
----
-
-## 📁 Where is Everything?
-
-```
-📂 Your Project
-│
-├── 📁 frontend/          ← The website (what users see)
-│   ├── index.html        ← Your main webpage
-│   ├── style.css         ← Colors and styling
-│   ├── script.js         ← Interactive features
-│   └── Dockerfile        ← Copy from Dockerfile.vanilla or .react
-│
-├── 📁 backend/           ← The server (saves data, APIs)
-│   ├── server.js         ← Server code
-│   └── Dockerfile        ← Copy from Dockerfile.node, .python, or .rust
-│
-└── 📁 database/          ← Data storage (optional)
-    ├── Dockerfile        ← Copy from Dockerfile.postgres/.mysql/.pgvector/.chroma/.qdrant
-    └── init/init.sql     ← Database setup (for SQL databases)
-```
-
-**Don't worry about the other files** - the AI manages them for you!
-
----
-
-## ❓ Why This Platform?
-
-| Traditional Way | Vibe Platform |
-|-----------------|---------------|
-| Learn to code first | Just describe what you want |
-| Set up servers | Automatic deployment |
-| Configure databases | AI handles it |
-| Debug errors alone | AI helps fix issues |
-| Takes weeks | Takes hours |
-
-**Focus on your IDEA, not the technology!**
-
----
-
-## 🔄 How Deployment Works
-
-### ⚠️ First Time Only: Get Whitelisted
-
-Before your first deployment, your repository needs to be **whitelisted**:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  📧 Contact a Platform Admin                                    │
-│                                                                 │
-│  Send them your repository name:                                │
-│  • e.g., bayer-int/my-awesome-app                              │
-│                                                                 │
-│  They'll add it to the whitelist (takes ~5 minutes)            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**This is a one-time step** - once whitelisted, all future deployments are automatic!
-
----
-
-### 🚀 After You're Whitelisted
-
-When you say **"Let's deploy!"**, here's what happens:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  YOU: "I'm happy with it, let's deploy!"                       │
-│                           │                                     │
-│                           ▼                                     │
-│  ┌─────────────────────────────────────┐                       │
-│  │  1️⃣  AI saves your code             │  ← Instant           │
-│  │     (git add & commit)              │                       │
-│  └─────────────────────────────────────┘                       │
-│                           │                                     │
-│                           ▼                                     │
-│  ┌─────────────────────────────────────┐                       │
-│  │  2️⃣  Code pushed to GitHub          │  ← Instant           │
-│  │     (git push)                      │                       │
-│  └─────────────────────────────────────┘                       │
-│                           │                                     │
-│                           ▼                                     │
-│  ┌─────────────────────────────────────┐                       │
-│  │  3️⃣  GitHub Actions builds & ships  │  ← Automatic!        │
-│  │     backend/Dockerfile → ECS deploy │    (3-5 mins)        │
-│  │                                     │                       │
-│  └─────────────────────────────────────┘                       │
-│                           │                                     │
-│                           ▼                                     │
-│  ┌─────────────────────────────────────┐                       │
-│  │  4️⃣  YOUR APP IS LIVE! 🎉           │                       │
-│  │     <repo>.vibe.intranet.cnb        │                       │
-│  └─────────────────────────────────────┘                       │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Watch the Progress
-
-Want to see what's happening? 
-
-1. Go to your **GitHub repository** (the website)
-2. Click the **Actions** tab
-3. Watch the deployment progress in real-time!
-
-### After Deployment
-
-- ✅ **Green checkmark** = Success! Your app is live
-- ❌ **Red X** = Something went wrong - ask the AI to help fix it
-
----
-
-## 💡 Tips for Success
-
-### Be Specific with AI
-```
-❌ "Make it look nice"
-✅ "Use a dark theme with blue accent colors and rounded buttons"
-```
-
-### Start Simple, Then Add
-```
-❌ "Build a complete project management system with AI"
-✅ "Start with a page to add and view projects"
-   (then add features one at a time)
-```
-
-### Ask Questions!
-```
-"What does this code do?"
-"Why did you choose this approach?"
-"Can you explain how this works?"
-```
-
----
-
-## 🔐 Using API Keys (Like OpenAI)
-
-### For Local Testing
-
-Tell the AI: **"I need to set up my API keys for local testing"**
-
-It will create a private file for your keys. This file stays on your machine and is never uploaded to GitHub.
-
-### For Production (Live Site)
-
-Add secrets to GitHub (the AI will guide you):
-
-1. Go to your **GitHub repository** (the website)
-2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add your key with `APP_` prefix:
-   - Name: `APP_OPENAI_KEY`
-   - Value: *your actual API key*
-5. Deploy again
-
-| GitHub Secret | Use in Code |
-|---------------|-------------|
-| `APP_OPENAI_KEY` | `process.env.OPENAI_KEY` |
-| `APP_API_KEY` | `process.env.API_KEY` |
-| `APP_SECRET_1` | `process.env.SECRET_1` |
-
----
-
-## 🆘 Need Help?
-
-### "My app isn't working"
-Tell the AI: *"Something's broken, can you check my code?"*
-
-### "The deployment failed"
-Check the **Actions** tab in GitHub - the AI can help interpret errors.
-
-### "I want to change something"
-Just tell the AI what you want to change!
-
-### "I'm stuck"
-Ask the AI: *"I'm stuck, can you help me figure out what to do next?"*
-
----
-
-## 🎯 What to Say to the AI
-
-| What you want | Say this |
-|---------------|----------|
-| Test your app | "Can you start the app so I can see it?" |
-| Stop testing | "Stop the app" or press `Ctrl + C` |
-| Deploy live | "I'm happy with it, let's deploy!" |
-| Make changes | "Change the button color to blue" |
-| Fix something | "Something's not working, can you check?" |
-| Undo changes | "Can we go back to the previous version?" |
-
----
-
-## 🏆 You've Got This!
-
-Remember:
-- **There are no stupid questions** - ask the AI anything
-- **Mistakes are okay** - we can always undo and try again
-- **Have fun** - you're building something real!
-
-**Now go talk to your AI assistant and start building!** 🚀
+SQLite is stored at `/data/preop-ready.sqlite` inside the backend container.

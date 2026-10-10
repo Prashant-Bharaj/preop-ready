@@ -2,13 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --canvas: 244 247 249;
+  --surface: 255 255 255;
+  --surface-raised: 248 251 252;
+  --ink: 19 38 47;
+  --muted: 79 99 109;
+  --line: 210 222 225;
+  --accent: 12 105 110;
+  --accent-strong: 8 77 82;
+  --accent-soft: 218 241 239;
+  --success: 23 127 87;
+  --warning: 180 105 0;
+  --danger: 185 51 60;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: 16 27 32;
+  --surface: 23 39 45;
+  --surface-raised: 30 49 56;
+  --ink: 234 243 243;
+  --muted: 170 190 193;
+  --line: 58 81 88;
+  --accent: 74 194 187;
+  --accent-strong: 150 226 220;
+  --accent-soft: 27 70 72;
+  --success: 71 190 135;
+  --warning: 240 176 59;
+  --danger: 243 119 126;
+}
+
+* {
+  border-color: rgb(var(--line));
+}
+
 body {
   margin: 0;
-  background: #f4f7fb;
-  color: #0f2744;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top right, rgb(var(--accent) / 0.08), transparent 28rem),
+    rgb(var(--canvas));
+  color: rgb(var(--ink));
+  font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 :focus-visible {
-  outline: 3px solid #0b6bcb;
+  outline: 3px solid rgb(var(--accent));
   outline-offset: 2px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:not(:disabled) {
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* Preserve readable contrast in existing clinical views while they use semantic tokens. */
+:root[data-theme="dark"] .bg-white {
+  background-color: rgb(var(--surface)) !important;
+}
+
+:root[data-theme="dark"] .bg-slate-50,
+:root[data-theme="dark"] .bg-sky-50 {
+  background-color: rgb(var(--surface-raised)) !important;
+}
+
+:root[data-theme="dark"] .text-slate-950,
+:root[data-theme="dark"] .text-slate-900,
+:root[data-theme="dark"] .text-slate-700,
+:root[data-theme="dark"] .text-slate-600,
+:root[data-theme="dark"] .text-slate-500 {
+  color: rgb(var(--ink)) !important;
+}
+
+:root[data-theme="dark"] .text-sky-900,
+:root[data-theme="dark"] .text-sky-800,
+:root[data-theme="dark"] .text-sky-950 {
+  color: rgb(var(--accent-strong)) !important;
+}
+
+:root[data-theme="dark"] .border-slate-100,
+:root[data-theme="dark"] .border-sky-100,
+:root[data-theme="dark"] .border-sky-200 {
+  border-color: rgb(var(--line)) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

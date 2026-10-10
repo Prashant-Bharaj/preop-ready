@@ -32,6 +32,7 @@ def _eval(world, procedure_id):
         medications=world.medications,
         requirements_doc=default_requirements(),
         thresholds_doc=default_thresholds(),
+        as_of=TODAY,
     )
 
 
@@ -97,6 +98,54 @@ def _reports(echo_text="LVEF 60 %. Aortenklappe stenosiert.", echo_age=10, xray_
             "ECG",
             PLANNED - timedelta(days=ecg_age),
             "Sinusrhythmus.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-agreement",
+            "pat-x",
+            "AGREEMENT",
+            PLANNED - timedelta(days=2),
+            "Einverständniserklärung. Patientenunterschrift liegt vor.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-duplex-pre",
+            "pat-x",
+            "DUPLEX_GROIN_PRE",
+            PLANNED - timedelta(days=1),
+            "Duplex Leiste: Zugang möglich.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-duplex-post",
+            "pat-x",
+            "DUPLEX_GROIN_POST",
+            PLANNED + timedelta(days=1),
+            "Duplex Leiste post: kein Aneurysma.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-gastro",
+            "pat-x",
+            "GASTROSCOPY",
+            PLANNED + timedelta(days=1),
+            "Gastroskopie: unauffällig.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-echo-6w",
+            "pat-x",
+            "ECHO_6W",
+            PLANNED + timedelta(days=42),
+            "Echo-Kontrolle 6 Wochen: stabil.",
+            "test",
+        ),
+        DiagnosticReport(
+            "rep-echo-6m",
+            "pat-x",
+            "ECHO_6M",
+            PLANNED + timedelta(days=183),
+            "Echo-Kontrolle 6 Monate: stabil.",
             "test",
         ),
     ]
@@ -210,7 +259,7 @@ def test_report_dated_after_procedure_is_red():
     assert not any(f.category == "MISSING" and f.item == "report.CHEST_XRAY" for f in findings)
 
 
-def test_patient_id_mismatch_is_red():
+def test_document_patient_id_mismatch_is_ignored():
     reports = _reports()
     reports[0] = DiagnosticReport(
         "rep-echo",
@@ -225,9 +274,8 @@ def test_patient_id_mismatch_is_red():
         **_base_kwargs(observations=_complete_labs(), reports=reports, clearance=_granted())
     )
     mismatch = [f for f in findings if "stimmt nicht" in f.message_de]
-    assert mismatch
-    assert mismatch[0].severity == "CRITICAL"
-    assert overall_status(findings) == "RED"
+    assert not mismatch
+    assert overall_status(findings) == "GREEN"
 
 
 def test_duplicate_conflicting_values_are_yellow():
@@ -362,6 +410,57 @@ def test_complete_case_is_green_and_not_a_clearance():
     assert overall_status(findings) == "GREEN"
 
 
+def test_agreement_must_be_signed_before_the_procedure():
+    missing = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=[row for row in _reports() if row.report_type != "AGREEMENT"],
+            clearance=_granted(),
+        )
+    )
+    gap = [f for f in missing if f.item == "report.AGREEMENT"]
+    assert gap and gap[0].category == "MISSING" and gap[0].severity == "CRITICAL"
+    assert overall_status(missing) == "RED"
+
+    unsigned = [
+        row if row.report_type != "AGREEMENT" else DiagnosticReport(
+            row.id,
+            row.patient_id,
+            row.report_type,
+            row.report_date,
+            "Formular ohne Signatur.",
+            row.source,
+        )
+        for row in _reports()
+    ]
+    unsigned_case = evaluate_case(
+        **_base_kwargs(observations=_complete_labs(), reports=unsigned, clearance=_granted())
+    )
+    assert any(
+        f.item == "report.AGREEMENT" and "Patientenunterschrift" in f.message_de
+        for f in unsigned_case
+    )
+
+    future = [
+        row if row.report_type != "AGREEMENT" else DiagnosticReport(
+            row.id,
+            row.patient_id,
+            row.report_type,
+            PLANNED + timedelta(days=1),
+            "Patientenunterschrift liegt vor.",
+            row.source,
+        )
+        for row in _reports()
+    ]
+    late = evaluate_case(
+        **_base_kwargs(observations=_complete_labs(), reports=future, clearance=_granted())
+    )
+    assert any(
+        f.item == "report.AGREEMENT" and f.category == "IMPLAUSIBLE" and f.severity == "CRITICAL"
+        for f in late
+    )
+
+
 def test_demo_cohort_statuses():
     world = build_demo_world(TODAY)
     expected = {
@@ -377,6 +476,8 @@ def test_demo_cohort_statuses():
         assert overall_status(findings) == status, procedure_id
 
     red_c = _eval(world, "proc-c")
+    assert any(f.item == "report.AGREEMENT" and f.category == "MISSING" for f in red_c)
+    assert any("unterschreiben" in f.message_de for f in red_c if f.item == "report.AGREEMENT")
     assert any(f.item == "report.ECHO" and f.category == "MISSING" for f in red_c)
     assert any(f.item == "lab.potassium" and f.severity == "CRITICAL" for f in red_c)
     assert any(f.category == "CLEARANCE" and f.severity == "CRITICAL" for f in red_c)
@@ -409,3 +510,90 @@ def test_thresholds_are_not_hardcoded_in_the_engine():
         )
     )
     assert not any(f.item == "lab.sodium" for f in findings)
+
+
+def test_post_procedure_items_warn_before_due_then_critical():
+    reports = [
+        row
+        for row in _reports()
+        if row.report_type not in {"DUPLEX_GROIN_POST", "GASTROSCOPY"}
+    ]
+    pending = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=reports,
+            clearance=_granted(),
+            as_of=TODAY,
+        )
+    )
+    post = [f for f in pending if f.item == "report.DUPLEX_GROIN_POST"]
+    gastro = [f for f in pending if f.item == "report.GASTROSCOPY"]
+    assert post and post[0].category == "MISSING" and post[0].severity == "WARNING"
+    assert gastro and gastro[0].severity == "WARNING"
+    assert overall_status(pending) == "YELLOW"
+
+    overdue = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=reports,
+            clearance=_granted(),
+            as_of=PLANNED + timedelta(days=1),
+        )
+    )
+    assert any(
+        f.item == "report.GASTROSCOPY"
+        and f.category == "MISSING"
+        and f.severity == "CRITICAL"
+        for f in overdue
+    )
+    assert overall_status(overdue) == "RED"
+
+
+def test_groin_duplex_pre_is_required_day_before():
+    reports = [row for row in _reports() if row.report_type != "DUPLEX_GROIN_PRE"]
+    findings = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=reports,
+            clearance=_granted(),
+            as_of=TODAY,
+        )
+    )
+    missing = [f for f in findings if f.item == "report.DUPLEX_GROIN_PRE"]
+    assert missing and missing[0].category == "MISSING" and missing[0].severity == "CRITICAL"
+    assert "Duplex" in missing[0].message_de
+    assert overall_status(findings) == "RED"
+
+
+def test_echo_followups_at_six_weeks_and_six_months():
+    reports = [
+        row for row in _reports() if row.report_type not in {"ECHO_6W", "ECHO_6M"}
+    ]
+    pending = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=reports,
+            clearance=_granted(),
+            as_of=TODAY,
+        )
+    )
+    six_w = [f for f in pending if f.item == "report.ECHO_6W"]
+    six_m = [f for f in pending if f.item == "report.ECHO_6M"]
+    assert six_w and six_w[0].severity == "WARNING" and "42 Tage" in six_w[0].message_de
+    assert six_m and six_m[0].severity == "WARNING" and "183 Tage" in six_m[0].message_de
+    assert overall_status(pending) == "YELLOW"
+
+    due_6w = evaluate_case(
+        **_base_kwargs(
+            observations=_complete_labs(),
+            reports=reports,
+            clearance=_granted(),
+            as_of=PLANNED + timedelta(days=42),
+        )
+    )
+    assert any(
+        f.item == "report.ECHO_6W" and f.severity == "CRITICAL" for f in due_6w
+    )
+    assert any(
+        f.item == "report.ECHO_6M" and f.severity == "WARNING" for f in due_6w
+    )

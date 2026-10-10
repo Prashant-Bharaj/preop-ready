@@ -6,7 +6,9 @@ import {
   formatStamp,
   type Meta,
   type PatientDetail as PatientPayload,
+  type TaskRow,
 } from "../api";
+import { ReportUploadPanel } from "../components/ReportUploadPanel";
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
 
@@ -15,17 +17,23 @@ export function PatientDetail() {
   const [params] = useSearchParams();
   const { t, lang } = useI18n();
   const [data, setData] = useState<PatientPayload | null>(null);
+  const [openTasks, setOpenTasks] = useState<TaskRow[]>([]);
   const [userName, setUserName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadKey, setUploadKey] = useState(0);
+  const [uploadNotice, setUploadNotice] = useState("");
 
   async function load() {
-    const [detail, meta] = await Promise.all([
+    const [detail, meta, tasks] = await Promise.all([
       api<PatientPayload>(`/patients/${id}`),
       api<Meta>("/meta"),
+      api<{ tasks: TaskRow[] }>(`/tasks?status=OPEN&patientId=${encodeURIComponent(id)}`),
     ]);
     setData(detail);
     setUserName(meta.user.name);
+    setOpenTasks(tasks.tasks);
   }
 
   useEffect(() => {
@@ -38,6 +46,8 @@ export function PatientDetail() {
   const requested = params.get("procedure");
   const procedure = data.procedures.find((item) => item.id === requested) || data.procedures[0];
   if (!procedure) return <p>{t("empty")}</p>;
+
+  const procedureTasks = openTasks.filter((task) => task.procedureId === procedure.id);
 
   async function confirm() {
     setBusy(true);
@@ -56,6 +66,34 @@ export function PatientDetail() {
     try {
       await api(`/check/${procedure.id}`, { method: "POST" });
       await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markDone(task: TaskRow) {
+    setBusy(true);
+    try {
+      await api(`/tasks/${task.id}`, { method: "PATCH", body: JSON.stringify({ status: "DONE" }) });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markChecklistItemDone(itemKey: string) {
+    const related = procedureTasks.filter((task) => task.item === itemKey);
+    if (related.length === 0) return;
+    setBusy(true);
+    try {
+      for (const task of related) {
+        await api(`/tasks/${task.id}`, { method: "PATCH", body: JSON.stringify({ status: "DONE" }) });
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("error"));
     } finally {
       setBusy(false);
     }
@@ -92,6 +130,35 @@ export function PatientDetail() {
       </header>
 
       <section className="rounded-lg border border-line bg-white p-5">
+        <h2 className="text-lg font-bold">
+          {t("openTasksFor")} {data.patient.name}
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">{t("tasksLead")}</p>
+        {procedureTasks.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-600">{t("noTasks")}</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {procedureTasks.map((task) => (
+              <li key={task.id} className="rounded-lg border border-line bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">
+                  {task.assignedRole} · {task.procedureType} · {task.plannedTime}
+                </p>
+                <p className="mt-2 text-sm">{lang === "de" ? task.textDe : task.textEn}</p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void markDone(task)}
+                  className="mt-3 rounded-md border border-line bg-white px-3 py-1 text-sm font-semibold disabled:opacity-50"
+                >
+                  {t("markDone")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-line bg-white p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold">{t("checklist")}</h2>
           <button type="button" onClick={recheck} disabled={busy} className="rounded-md border border-line px-3 py-1 text-sm font-semibold">
@@ -99,15 +166,30 @@ export function PatientDetail() {
           </button>
         </div>
         <ul className="divide-y divide-line">
-          {procedure.checklist.map((item) => (
-            <li key={item.item} id={item.sourceRef || item.item} className="flex flex-wrap items-start justify-between gap-3 py-3">
-              <div>
-                <p className="font-semibold">{lang === "de" ? item.labelDe : item.labelEn}</p>
-                <p className="text-sm text-slate-700">{lang === "de" ? item.detailDe : item.detailEn}</p>
-              </div>
-              <StatePill state={item.state} />
-            </li>
-          ))}
+          {procedure.checklist.map((item) => {
+            const openForItem = procedureTasks.filter((task) => task.item === item.item);
+            return (
+              <li key={item.item} id={item.sourceRef || item.item} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{lang === "de" ? item.labelDe : item.labelEn}</p>
+                  <p className="text-sm text-slate-700">{lang === "de" ? item.detailDe : item.detailEn}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatePill state={item.state} />
+                  {item.state !== "complete" && openForItem.length > 0 && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void markChecklistItemDone(item.item)}
+                      className="rounded-md border border-line bg-white px-3 py-1 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {t("markDone")}
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -150,8 +232,37 @@ export function PatientDetail() {
       </section>
 
       <section className="rounded-lg border border-line bg-white p-5">
-        <h2 className="mb-3 text-lg font-bold">{t("reports")}</h2>
-        {data.reports.length === 0 && <p>{t("noReports")}</p>}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">{t("reports")}</h2>
+          <button
+            type="button"
+            onClick={() => {
+              setShowUpload((open) => !open);
+              setUploadNotice("");
+            }}
+            className="rounded-md border border-line px-3 py-1 text-sm font-semibold"
+          >
+            {showUpload ? t("cancel") : t("uploadReport")}
+          </button>
+        </div>
+        {uploadNotice && <p className="mb-3 font-semibold text-emerald-800">{uploadNotice}</p>}
+        {showUpload && (
+          <div className="mb-4 rounded-md border border-dashed border-sky-300 bg-sky-50/40 p-4">
+            <ReportUploadPanel
+              key={uploadKey}
+              lead={t("uploadOnCase")}
+              patientId={data.patient.id}
+              patientName={data.patient.name}
+              onSaved={async () => {
+                setUploadNotice(t("uploadSaved"));
+                setUploadKey((value) => value + 1);
+                setShowUpload(false);
+                await load();
+              }}
+            />
+          </div>
+        )}
+        {data.reports.length === 0 && !showUpload && <p>{t("noReports")}</p>}
         <div className="space-y-4">
           {data.reports.map((report) => (
             <article key={report.id} id={report.id} className="rounded-md border border-line p-4">
@@ -231,16 +342,25 @@ export function PatientDetail() {
       </section>
 
       <section className="rounded-lg border border-sky-200 bg-sky-50 p-5">
-        <p className="text-sm">{t("confirmHint")}</p>
-        {procedure.readiness !== "GREEN" && <p className="mt-2 text-sm font-semibold">{t("confirmWarn")}</p>}
-        <button
-          type="button"
-          disabled={busy || Boolean(procedure.confirmedAt)}
-          onClick={confirm}
-          className="mt-3 rounded-md bg-sky-800 px-4 py-3 text-base font-bold text-white disabled:opacity-50"
-        >
-          {t("confirm")} {t("asUser")} {userName}
-        </button>
+        <h2 className="text-lg font-bold">{t("confirmSection")}</h2>
+        <p className="mt-2 text-sm">{t("confirmHint")}</p>
+        {procedure.readiness !== "GREEN" && !procedure.confirmedAt && (
+          <p className="mt-2 text-sm font-semibold">{t("confirmWarn")}</p>
+        )}
+        {procedure.confirmedAt ? (
+          <p className="mt-3 text-sm font-semibold text-emerald-900">
+            {t("confirmDone")}: {procedure.confirmedBy} · {formatStamp(procedure.confirmedAt, lang)}
+          </p>
+        ) : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={confirm}
+            className="mt-3 rounded-md bg-sky-800 px-4 py-3 text-base font-bold text-white disabled:opacity-50"
+          >
+            {t("confirm")} {t("asUser")} {userName}
+          </button>
+        )}
       </section>
     </section>
   );

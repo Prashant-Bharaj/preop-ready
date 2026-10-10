@@ -1,37 +1,4 @@
-# ============================================================================
-# DOCKER BUILD CONTEXT EXCLUSIONS - frontend/
-# ============================================================================
-# Docker does NOT read .gitignore. Without this file every local file in
-# frontend/ is uploaded into the build context and baked into the image by
-# `COPY . /usr/share/nginx/html` (Dockerfile.vanilla).
-#
-# For the vanilla frontend that image IS the public web root: a local .env
-# ends up served at https://<repo>.vibe.intranet.cnb/.env — a public API key
-# leak. This file is the only thing that prevents it.
-#
-# The build context is ./frontend (see docker-compose.yml), so it is THIS
-# file that applies — a .dockerignore at the repo root does not.
-#
-# ⛔ DO NOT add nginx.conf here: both frontend Dockerfiles copy it explicitly
-#    (`COPY nginx.conf /etc/nginx/conf.d/default.conf`) and excluding it makes
-#    the build FAIL.
-# ============================================================================
-
-# Secrets — never in an image, and for a static frontend never on the web
+node_modules
+dist
 .env
 .env.*
-
-# Repo metadata — carries the full history of everything ever committed
-.git
-
-# Dependencies — reinstalled inside the image (Dockerfile.react), and huge
-node_modules
-
-# Reference material and local test data (gitignored — often REAL data)
-context/
-database/seed/
-
-# Local build/run noise
-*.log
-.template-backup/
-__pycache__/

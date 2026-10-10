@@ -132,6 +132,7 @@ export interface TaskRow {
   procedureType: string;
   plannedDate: string;
   plannedTime: string;
+  item: string;
   textDe: string;
   textEn: string;
   assignedRole: string;
@@ -165,6 +166,8 @@ export interface RequirementItem {
   required: boolean;
   maxAgeDays: number | null;
   mustMention?: string | null;
+  timing?: "pre" | "post" | null;
+  offsetDays?: number | null;
 }
 
 export interface RequirementsDoc {
