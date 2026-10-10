@@ -1,8 +1,8 @@
-fastapi==0.115.6
-uvicorn==0.34.0
-pydantic==2.10.6
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic==2.13.5
 httpx==0.28.1
 pypdf==5.1.0
 cryptography==44.0.0
-python-multipart==0.0.20
+python-multipart==0.0.32
 pytest==8.3.4
