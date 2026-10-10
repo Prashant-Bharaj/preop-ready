@@ -18,35 +18,84 @@
   --danger: 185 51 60;
 }
 
+/* Cool clinical night — slate base, clear teal, readable status hues */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --canvas: 16 27 32;
-  --surface: 23 39 45;
-  --surface-raised: 30 49 56;
-  --ink: 234 243 243;
-  --muted: 170 190 193;
-  --line: 58 81 88;
-  --accent: 74 194 187;
-  --accent-strong: 150 226 220;
-  --accent-soft: 27 70 72;
-  --success: 71 190 135;
-  --warning: 240 176 59;
-  --danger: 243 119 126;
+  --canvas: 11 15 21;
+  --surface: 18 24 32;
+  --surface-raised: 28 36 48;
+  --ink: 236 241 246;
+  --muted: 154 166 180;
+  --line: 52 64 80;
+  --accent: 78 190 182;
+  --accent-strong: 168 232 224;
+  --accent-soft: 26 52 58;
+  --success: 96 196 148;
+  --warning: 232 184 88;
+  --danger: 240 128 134;
+}
+
+/* Primary teal fills need dark type in night mode (accent is light). */
+:root[data-theme="dark"] .bg-accent {
+  color: rgb(11 15 21) !important;
+}
+
+:root[data-theme="dark"] .bg-accent-soft {
+  color: rgb(var(--accent-strong));
 }
 
 * {
   border-color: rgb(var(--line));
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at top right, rgb(var(--accent) / 0.08), transparent 28rem),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgb(var(--accent) / 0.09), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, rgb(var(--accent) / 0.04), transparent 50%),
     rgb(var(--canvas));
   color: rgb(var(--ink));
   font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   transition: background-color 180ms ease, color 180ms ease;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse 55% 42% at 92% -8%, rgb(var(--accent) / 0.12), transparent 58%),
+    radial-gradient(ellipse 45% 35% at -5% 105%, rgb(48 72 96 / 0.18), transparent 55%),
+    rgb(var(--canvas));
+}
+
+/* Comfortable tap targets on touch devices */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  select {
+    min-height: 2.75rem;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 2.75rem;
+    font-size: 16px; /* avoids iOS zoom on focus */
+  }
+}
+
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
 }
 
 :focus-visible {
@@ -68,14 +117,41 @@ button:not(:disabled):active {
   transform: translateY(1px);
 }
 
-/* Preserve readable contrast in existing clinical views while they use semantic tokens. */
+/* Map leftover light Tailwind utilities into the dark palette */
 :root[data-theme="dark"] .bg-white {
   background-color: rgb(var(--surface)) !important;
 }
 
 :root[data-theme="dark"] .bg-slate-50,
-:root[data-theme="dark"] .bg-sky-50 {
+:root[data-theme="dark"] .bg-sky-50,
+:root[data-theme="dark"] .bg-sky-50\/40 {
   background-color: rgb(var(--surface-raised)) !important;
+}
+
+:root[data-theme="dark"] .bg-slate-100 {
+  background-color: rgb(var(--surface-raised)) !important;
+  color: rgb(var(--ink));
+}
+
+:root[data-theme="dark"] .bg-sky-800 {
+  background-color: rgb(var(--accent)) !important;
+  color: rgb(var(--canvas)) !important;
+}
+
+:root[data-theme="dark"] .bg-red-50,
+:root[data-theme="dark"] .bg-red-100 {
+  background-color: rgb(var(--danger) / 0.14) !important;
+}
+
+:root[data-theme="dark"] .bg-amber-50,
+:root[data-theme="dark"] .bg-amber-100 {
+  background-color: rgb(var(--warning) / 0.14) !important;
+}
+
+:root[data-theme="dark"] .bg-emerald-50,
+:root[data-theme="dark"] .bg-emerald-100,
+:root[data-theme="dark"] .bg-emerald-50\/50 {
+  background-color: rgb(var(--success) / 0.14) !important;
 }
 
 :root[data-theme="dark"] .text-slate-950,
@@ -83,7 +159,7 @@ button:not(:disabled):active {
 :root[data-theme="dark"] .text-slate-700,
 :root[data-theme="dark"] .text-slate-600,
 :root[data-theme="dark"] .text-slate-500 {
-  color: rgb(var(--ink)) !important;
+  color: rgb(var(--muted)) !important;
 }
 
 :root[data-theme="dark"] .text-sky-900,
@@ -92,10 +168,45 @@ button:not(:disabled):active {
   color: rgb(var(--accent-strong)) !important;
 }
 
+:root[data-theme="dark"] .text-red-800,
+:root[data-theme="dark"] .text-red-900 {
+  color: rgb(var(--danger)) !important;
+}
+
+:root[data-theme="dark"] .text-amber-950,
+:root[data-theme="dark"] .text-amber-900 {
+  color: rgb(var(--warning)) !important;
+}
+
+:root[data-theme="dark"] .text-emerald-800,
+:root[data-theme="dark"] .text-emerald-900 {
+  color: rgb(var(--success)) !important;
+}
+
 :root[data-theme="dark"] .border-slate-100,
 :root[data-theme="dark"] .border-sky-100,
-:root[data-theme="dark"] .border-sky-200 {
+:root[data-theme="dark"] .border-sky-200,
+:root[data-theme="dark"] .border-sky-300 {
   border-color: rgb(var(--line)) !important;
+}
+
+:root[data-theme="dark"] .border-red-200,
+:root[data-theme="dark"] .border-amber-300,
+:root[data-theme="dark"] .border-emerald-200 {
+  border-color: rgb(var(--line)) !important;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background-color: rgb(var(--canvas));
+  color: rgb(var(--ink));
+  border-color: rgb(var(--line));
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: rgb(var(--muted) / 0.75);
 }
 
 @media (prefers-reduced-motion: reduce) {

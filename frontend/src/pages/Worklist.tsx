@@ -152,7 +152,7 @@ export function Worklist() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.14em]">
-            <ShinyText text="Clinical command center" color={resolvedTheme === "dark" ? "#4ac2bb" : "#0c696e"} shineColor={resolvedTheme === "dark" ? "#e6fffc" : "#5fd6cc"} speed={3} delay={4} trigger="loop" />
+            <ShinyText text="Clinical command center" color={resolvedTheme === "dark" ? "#7ed6d0" : "#0c696e"} shineColor={resolvedTheme === "dark" ? "#c8f4f0" : "#5fd6cc"} speed={3} delay={4} trigger="loop" />
           </p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{t("navWorklist")}</h1>
         </div>
@@ -179,39 +179,50 @@ export function Worklist() {
           </button>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {(["RED", "YELLOW", "GREEN"] as Readiness[]).map((readiness) => (
+      <div className="grid grid-cols-3 gap-3 max-sm:gap-2 lg:gap-4">
+        {(["RED", "YELLOW", "GREEN"] as Readiness[]).map((readiness) => {
+          const tint =
+            readiness === "RED"
+              ? { spot: "#f08086", surface: "rgb(var(--danger) / 0.22)", border: "rgb(var(--danger) / 0.55)", btn: "border-danger/55 bg-danger/20", label: "text-danger", num: "text-danger" }
+              : readiness === "YELLOW"
+                ? { spot: "#e8b858", surface: "rgb(var(--warning) / 0.22)", border: "rgb(var(--warning) / 0.55)", btn: "border-warning/55 bg-warning/20", label: "text-warning", num: "text-warning" }
+                : { spot: "#60c494", surface: "rgb(var(--success) / 0.22)", border: "rgb(var(--success) / 0.55)", btn: "border-success/55 bg-success/20", label: "text-success", num: "text-success" };
+          return (
           <SpotlightCard
             key={readiness}
             theme={resolvedTheme}
-            spotlightColor={readiness === "RED" ? "#e5484d" : readiness === "YELLOW" ? "#f0b03b" : "#30a46c"}
-            intensity={0.35}
+            spotlightColor={tint.spot}
+            intensity={resolvedTheme === "dark" ? 0.28 : 0.35}
             spotlightSize={180}
             className="rounded-xl p-0"
-            style={{ "--spotlight-card-surface": "rgb(var(--surface))", "--spotlight-card-border": "rgb(var(--line))" } as CSSProperties}
+            style={
+              {
+                "--spotlight-card-surface": resolvedTheme === "dark" ? tint.surface : "rgb(var(--surface))",
+                "--spotlight-card-border": resolvedTheme === "dark" ? tint.border : "rgb(var(--line))",
+              } as CSSProperties
+            }
           >
           <button
             type="button"
             onClick={() => setStatus(status === readiness ? "all" : readiness)}
-            className={`group w-full rounded-xl border p-4 text-left ${
-              readiness === "RED"
-                ? "border-danger/25 bg-danger/10"
-                : readiness === "YELLOW"
-                  ? "border-warning/25 bg-warning/10"
-                  : "border-success/25 bg-success/10"
-            } ${status === readiness ? "ring-2 ring-accent/40" : "hover:-translate-y-0.5"}`}
+            className={`group w-full rounded-xl border p-4 text-left transition-transform max-sm:p-2.5 ${tint.btn} ${
+              status === readiness ? "ring-2 ring-accent/50" : "hover:-translate-y-0.5 max-sm:hover:translate-y-0"
+            }`}
           >
-            <span className="text-xs font-bold uppercase tracking-wide text-muted">{readiness === "RED" ? t("red") : readiness === "YELLOW" ? t("yellow") : t("green")}</span>
+            <span className={`text-xs font-bold uppercase tracking-wide max-sm:text-[10px] ${tint.label}`}>
+              {readiness === "RED" ? t("red") : readiness === "YELLOW" ? t("yellow") : t("green")}
+            </span>
             <CountUp
               key={`${readiness}-${counts[readiness]}`}
               to={counts[readiness]}
               duration={0.6}
-              className="mt-1 block text-3xl font-extrabold tabular-nums text-ink"
+              className={`mt-1 block text-3xl font-extrabold tabular-nums max-sm:mt-0.5 max-sm:text-2xl ${resolvedTheme === "dark" ? tint.num : "text-ink"}`}
             />
-            <span className="text-sm text-muted">{t("procedure")}</span>
+            <span className="text-sm text-muted max-sm:hidden">{t("procedure")}</span>
           </button>
           </SpotlightCard>
-        ))}
+          );
+        })}
       </div>
       {adding && (
         <form onSubmit={createCase} className="grid gap-4 rounded-xl border border-line bg-surface p-5 shadow-sm sm:grid-cols-2">

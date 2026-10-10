@@ -60,6 +60,7 @@ class DemoWorld:
 def build_demo_world(today: date | None = None) -> DemoWorld:
     anchor = today or date.today()
     planned = anchor + timedelta(days=1)
+    horizon = anchor + timedelta(days=14)
     patients = [
         DemoPatient("pat-a", "Testperson A", date(1948, 3, 12), "female", "Station Kardiologie 1"),
         DemoPatient("pat-b", "Testperson B", date(1952, 7, 1), "male", "Station Kardiologie 1"),
@@ -67,6 +68,10 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
         DemoPatient("pat-d", "Testperson D", date(1955, 1, 9), "male", "Station Kardiologie 2"),
         DemoPatient("pat-e", "Testperson E", date(1949, 5, 18), "male", "Station Kardiologie 1"),
         DemoPatient("pat-f", "Testperson F", date(1951, 9, 30), "female", "Station Kardiologie 2"),
+        DemoPatient("pat-g", "Testperson G", date(1950, 4, 22), "female", "Station Kardiologie 1"),
+        DemoPatient("pat-h", "Testperson H", date(1947, 8, 14), "male", "Station Kardiologie 2"),
+        DemoPatient("pat-i", "Testperson I", date(1953, 12, 3), "female", "Station Kardiologie 1"),
+        DemoPatient("pat-j", "Testperson J", date(1945, 6, 27), "male", "Station Kardiologie 2"),
     ]
     procedures = [
         DemoProcedure("proc-a", "pat-a", "TAVI", planned, "07:30", "Dr. Test Operateur"),
@@ -75,6 +80,10 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
         DemoProcedure("proc-d", "pat-d", "M-TEER", planned, "10:30", "Dr. Test Operateur"),
         DemoProcedure("proc-e", "pat-e", "TAVI", planned, "11:45", "Dr. Test Operateur"),
         DemoProcedure("proc-f", "pat-f", "TAVI", planned, "13:00", "Dr. Test Operateur"),
+        DemoProcedure("proc-g", "pat-g", "TAVI", anchor, "08:00", "Dr. Test Operateur"),
+        DemoProcedure("proc-h", "pat-h", "M-TEER", anchor, "11:30", "Dr. Test Operateur"),
+        DemoProcedure("proc-i", "pat-i", "TAVI", horizon, "09:15", "Dr. Test Operateur"),
+        DemoProcedure("proc-j", "pat-j", "M-TEER", horizon, "14:00", "Dr. Test Operateur"),
     ]
 
     observations: list[Observation] = []
@@ -92,6 +101,18 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
         overrides={"creatinine": (1.1, "mg/dL")},
     )
     observations += _labs("pat-f", planned + timedelta(days=-1))
+    observations += _labs("pat-g", anchor + timedelta(days=-1))
+    observations += _labs(
+        "pat-h",
+        anchor + timedelta(days=-2),
+        overrides={"hb": (9.8, "g/dL")},
+    )
+    observations += _labs("pat-i", horizon + timedelta(days=-5))
+    observations += _labs(
+        "pat-j",
+        horizon + timedelta(days=-2),
+        overrides={"potassium": (3.1, "mmol/L")},
+    )
 
     echo_a = "Gute Schallbedingungen. LVEF 60 %. Aortenklappe hochgradig stenosiert."
     echo_tee = (
@@ -156,6 +177,20 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
         _report("pat-f", "ECG", planned + timedelta(days=-1), ecg),
         _report("pat-f", "AGREEMENT", planned + timedelta(days=-2), agreement),
         _report("pat-f", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
+        # Heute
+        _report("pat-g", "ECHO", anchor + timedelta(days=-18), echo_a),
+        _report("pat-g", "CHEST_XRAY", anchor + timedelta(days=-4), xray),
+        _report("pat-g", "ECG", anchor, ecg),
+        _report("pat-g", "AGREEMENT", anchor + timedelta(days=-1), agreement),
+        _report("pat-g", "DUPLEX_GROIN_PRE", anchor, duplex_pre),
+        _report("pat-h", "ECHO", anchor + timedelta(days=-8), echo_tee),
+        _report("pat-h", "ECG", anchor + timedelta(days=-1), ecg),
+        # T-14
+        _report("pat-i", "ECHO", horizon + timedelta(days=-10), echo_a),
+        _report("pat-i", "CHEST_XRAY", horizon + timedelta(days=-6), xray),
+        _report("pat-j", "ECHO", horizon + timedelta(days=-12), echo_tee),
+        _report("pat-j", "ECG", horizon + timedelta(days=-3), ecg),
+        _report("pat-j", "AGREEMENT", horizon + timedelta(days=-2), agreement),
     ]
 
     clearances = [
@@ -169,6 +204,13 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
         _clearance("pat-d", "GRANTED", planned + timedelta(days=-2), ()),
         _clearance("pat-e", "GRANTED", planned + timedelta(days=-2), ()),
         _clearance("pat-f", "GRANTED", planned + timedelta(days=-1), ()),
+        _clearance("pat-g", "GRANTED", anchor + timedelta(days=-2), ()),
+        _clearance(
+            "pat-h",
+            "CONDITIONAL",
+            anchor + timedelta(days=-1),
+            ("Hb kontrollieren",),
+        ),
     ]
 
     medications = [
@@ -185,6 +227,15 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
             id="med-d-1",
             patient_id="pat-d",
             name="Test-Apixaban",
+            drug_class="DOAC",
+            status="ACTIVE",
+            paused_since=None,
+            source="synthetic-seed",
+        ),
+        Medication(
+            id="med-h-1",
+            patient_id="pat-h",
+            name="Test-Rivaroxaban",
             drug_class="DOAC",
             status="ACTIVE",
             paused_since=None,

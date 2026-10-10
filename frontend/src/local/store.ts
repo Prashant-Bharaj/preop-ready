@@ -7,7 +7,7 @@ import type { RequirementsDoc, ThresholdsDoc } from "../api";
 import type { PatientRecord, ProcedureRecord } from "./demoData";
 import type { AnesthesiaClearance, DiagnosticReport, Medication, Observation } from "./engine";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export interface StoredReport extends DiagnosticReport {
   extractedFindings: unknown[] | null;

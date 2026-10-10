@@ -2,9 +2,9 @@ import type { Readiness } from "../api";
 import { useI18n } from "../i18n";
 
 const styles: Record<Readiness, string> = {
-  GREEN: "border-success/30 bg-success/15 text-success",
-  YELLOW: "border-warning/30 bg-warning/15 text-warning",
-  RED: "border-danger/30 bg-danger/15 text-danger",
+  GREEN: "border-success/40 bg-success/20 text-success",
+  YELLOW: "border-warning/40 bg-warning/20 text-warning",
+  RED: "border-danger/40 bg-danger/20 text-danger",
 };
 
 export function StatusBadge({ status, large = false }: { status: Readiness; large?: boolean }) {

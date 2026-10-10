@@ -71,7 +71,10 @@ function procedure(
 
 export function buildDemoWorld(today: ISODate): DemoWorld {
   const planned = addDays(today, 1);
+  const horizon = addDays(today, 14);
   const at = (days: number) => addDays(planned, days);
+  const onToday = (days: number) => addDays(today, days);
+  const onHorizon = (days: number) => addDays(horizon, days);
 
   const patients: PatientRecord[] = [
     { id: "pat-a", name: "Testperson A", birthDate: "1948-03-12", sex: "female", ward: "Station Kardiologie 1" },
@@ -80,6 +83,10 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
     { id: "pat-d", name: "Testperson D", birthDate: "1955-01-09", sex: "male", ward: "Station Kardiologie 2" },
     { id: "pat-e", name: "Testperson E", birthDate: "1949-05-18", sex: "male", ward: "Station Kardiologie 1" },
     { id: "pat-f", name: "Testperson F", birthDate: "1951-09-30", sex: "female", ward: "Station Kardiologie 2" },
+    { id: "pat-g", name: "Testperson G", birthDate: "1950-04-22", sex: "female", ward: "Station Kardiologie 1" },
+    { id: "pat-h", name: "Testperson H", birthDate: "1947-08-14", sex: "male", ward: "Station Kardiologie 2" },
+    { id: "pat-i", name: "Testperson I", birthDate: "1953-12-03", sex: "female", ward: "Station Kardiologie 1" },
+    { id: "pat-j", name: "Testperson J", birthDate: "1945-06-27", sex: "male", ward: "Station Kardiologie 2" },
   ];
   const procedures = [
     procedure("proc-a", "pat-a", "TAVI", planned, "07:30"),
@@ -88,6 +95,10 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
     procedure("proc-d", "pat-d", "M-TEER", planned, "10:30"),
     procedure("proc-e", "pat-e", "TAVI", planned, "11:45"),
     procedure("proc-f", "pat-f", "TAVI", planned, "13:00"),
+    procedure("proc-g", "pat-g", "TAVI", today, "08:00"),
+    procedure("proc-h", "pat-h", "M-TEER", today, "11:30"),
+    procedure("proc-i", "pat-i", "TAVI", horizon, "09:15"),
+    procedure("proc-j", "pat-j", "M-TEER", horizon, "14:00"),
   ];
 
   const observations: Observation[] = [
@@ -97,6 +108,10 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
     ...labs("pat-d", at(-1)),
     ...labs("pat-e", at(-1), { creatinine: [1.1, "mg/dL"] }),
     ...labs("pat-f", at(-1)),
+    ...labs("pat-g", onToday(-1)),
+    ...labs("pat-h", onToday(-2), { hb: [9.8, "g/dL"] }),
+    ...labs("pat-i", onHorizon(-5)),
+    ...labs("pat-j", onHorizon(-2), { potassium: [3.1, "mmol/L"] }),
   ];
 
   const echoA = "Gute Schallbedingungen. LVEF 60 %. Aortenklappe hochgradig stenosiert.";
@@ -143,6 +158,20 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
     report("pat-f", "ECG", at(-1), ecg),
     report("pat-f", "AGREEMENT", at(-2), agreement),
     report("pat-f", "DUPLEX_GROIN_PRE", at(-1), duplexPre),
+    // Heute — one nearly complete, one still open
+    report("pat-g", "ECHO", onToday(-18), echoA),
+    report("pat-g", "CHEST_XRAY", onToday(-4), xray),
+    report("pat-g", "ECG", onToday(0), ecg),
+    report("pat-g", "AGREEMENT", onToday(-1), agreement),
+    report("pat-g", "DUPLEX_GROIN_PRE", onToday(0), duplexPre),
+    report("pat-h", "ECHO", onToday(-8), echoTee),
+    report("pat-h", "ECG", onToday(-1), ecg),
+    // T-14 — early planning window
+    report("pat-i", "ECHO", onHorizon(-10), echoA),
+    report("pat-i", "CHEST_XRAY", onHorizon(-6), xray),
+    report("pat-j", "ECHO", onHorizon(-12), echoTee),
+    report("pat-j", "ECG", onHorizon(-3), ecg),
+    report("pat-j", "AGREEMENT", onHorizon(-2), agreement),
   ];
 
   const clearances = [
@@ -151,6 +180,8 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
     clearance("pat-d", "GRANTED", at(-2), []),
     clearance("pat-e", "GRANTED", at(-2), []),
     clearance("pat-f", "GRANTED", at(-1), []),
+    clearance("pat-g", "GRANTED", onToday(-2), []),
+    clearance("pat-h", "CONDITIONAL", onToday(-1), ["Hb kontrollieren"]),
   ];
 
   const medications: Medication[] = [
@@ -167,6 +198,15 @@ export function buildDemoWorld(today: ISODate): DemoWorld {
       id: "med-d-1",
       patientId: "pat-d",
       name: "Test-Apixaban",
+      drugClass: "DOAC",
+      status: "ACTIVE",
+      pausedSince: null,
+      source: "synthetic-seed",
+    },
+    {
+      id: "med-h-1",
+      patientId: "pat-h",
+      name: "Test-Rivaroxaban",
       drugClass: "DOAC",
       status: "ACTIVE",
       pausedSince: null,
