@@ -63,6 +63,11 @@ export function Layout() {
           </NavLink>
         </nav>
       </header>
+      <div className="border-b border-line bg-accent-soft">
+        <p className="mx-auto max-w-7xl px-4 py-2 text-xs font-semibold text-accent-strong lg:px-6" role="note">
+          {t("localNotice")}
+        </p>
+      </div>
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Outlet />
       </main>

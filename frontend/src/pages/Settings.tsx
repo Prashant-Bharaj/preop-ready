@@ -7,6 +7,7 @@ import {
   type ThresholdsDoc,
 } from "../api";
 import { useI18n } from "../i18n";
+import { DataPanel } from "../components/DataPanel";
 
 const CLASSES = ["DOAC", "VKA", "ANTIPLATELET", "METFORMIN", "OTHER"];
 const LAB_CODE = /^[a-z0-9_]{1,40}$/;
@@ -200,6 +201,8 @@ export function Settings() {
       </p>
       {message && <p className="font-semibold text-emerald-800">{message}</p>}
       {formError && <p className="font-semibold text-red-800">{formError}</p>}
+
+      <DataPanel />
 
       <section className="rounded-lg border border-line bg-white p-5">
         <h2 className="text-lg font-bold">{t("requirements")}</h2>

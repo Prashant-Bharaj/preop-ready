@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { I18nProvider } from "./i18n";
 import { PatientDetail } from "./pages/PatientDetail";
@@ -8,7 +8,7 @@ import { Worklist } from "./pages/Worklist";
 export function App() {
   return (
     <I18nProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Worklist />} />
@@ -16,7 +16,7 @@ export function App() {
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </I18nProvider>
   );
 }
