@@ -23,6 +23,7 @@ NORMAL_LABS: dict[str, tuple[float, str]] = {
     "sodium": (139, "mmol/L"),
     "tsh": (1.6, "mU/L"),
     "crp": (1.2, "mg/L"),
+    "bnp": (48, "pmol/L"),
 }
 
 
@@ -99,25 +100,62 @@ def build_demo_world(today: date | None = None) -> DemoWorld:
     )
     xray = "Keine Infiltrate. Herzgröße normal."
     ecg = "Sinusrhythmus, keine Ischämiezeichen."
+    agreement = (
+        "Einverständniserklärung zum geplanten Eingriff. "
+        "Patientenunterschrift liegt vor. Aufklärung ist erfolgt."
+    )
+    duplex_pre = (
+        "Duplexsonographie der Leiste (transfemoraler Zugang): "
+        "Gefäße unauffällig, Zugang möglich."
+    )
+    duplex_post = (
+        "Duplexsonographie der Leiste postinterventionell: "
+        "kein Aneurysma, keine Blutung."
+    )
+    gastroscopy = "Gastroskopie einen Tag nach dem Eingriff: unauffälliger Befund."
 
     reports = [
         _report("pat-a", "ECHO", planned + timedelta(days=-20), echo_a),
         _report("pat-a", "CHEST_XRAY", planned + timedelta(days=-5), xray),
         _report("pat-a", "ECG", planned + timedelta(days=-1), ecg),
+        _report("pat-a", "AGREEMENT", planned + timedelta(days=-2), agreement),
+        _report("pat-a", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
+        _report("pat-a", "DUPLEX_GROIN_POST", planned + timedelta(days=1), duplex_post),
+        _report("pat-a", "GASTROSCOPY", planned + timedelta(days=1), gastroscopy),
+        _report(
+            "pat-a",
+            "ECHO_6W",
+            planned + timedelta(days=42),
+            "Echo-Kontrolle 6 Wochen: Klappenfunktion stabil, LVEF 60 %.",
+        ),
+        _report(
+            "pat-a",
+            "ECHO_6M",
+            planned + timedelta(days=183),
+            "Echo-Kontrolle 6 Monate: kein Hinweis auf Klappendysfunktion.",
+        ),
         _report("pat-b", "ECHO", planned + timedelta(days=-10), echo_tee),
         _report("pat-b", "CHEST_XRAY", planned + timedelta(days=-4), xray),
         _report("pat-b", "ECG", planned + timedelta(days=-2), ecg),
+        _report("pat-b", "AGREEMENT", planned + timedelta(days=-2), agreement),
+        _report("pat-b", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
         _report("pat-c", "CHEST_XRAY", planned + timedelta(days=-3), xray),
         _report("pat-c", "ECG", planned + timedelta(days=-1), ecg),
         _report("pat-d", "ECHO", planned + timedelta(days=-6), echo_tee),
         _report("pat-d", "CHEST_XRAY", planned + timedelta(days=-2), xray),
         _report("pat-d", "ECG", planned + timedelta(days=-1), ecg),
+        _report("pat-d", "AGREEMENT", planned + timedelta(days=-2), agreement),
+        _report("pat-d", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
         _report("pat-e", "ECHO", planned + timedelta(days=-15), echo_a),
         _report("pat-e", "CHEST_XRAY", planned + timedelta(days=-4), xray),
         _report("pat-e", "ECG", planned + timedelta(days=-1), ecg),
+        _report("pat-e", "AGREEMENT", planned + timedelta(days=-2), agreement),
+        _report("pat-e", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
         _report("pat-f", "ECHO", planned + timedelta(days=-12), echo_a),
         _report("pat-f", "CHEST_XRAY", planned + timedelta(days=1), xray),
         _report("pat-f", "ECG", planned + timedelta(days=-1), ecg),
+        _report("pat-f", "AGREEMENT", planned + timedelta(days=-2), agreement),
+        _report("pat-f", "DUPLEX_GROIN_PRE", planned + timedelta(days=-1), duplex_pre),
     ]
 
     clearances = [

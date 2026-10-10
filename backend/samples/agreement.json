@@ -1,0 +1,11 @@
+{
+  "reportType": "AGREEMENT",
+  "dateOffsetDays": -2,
+  "patientId": "pat-c",
+  "patientName": "Testperson C",
+  "findings": [],
+  "clearanceStatus": null,
+  "conditions": [],
+  "asaClass": null,
+  "conclusionText": "Einverständniserklärung zum geplanten Eingriff. Patientenunterschrift liegt vor. Aufklärung ist erfolgt."
+}

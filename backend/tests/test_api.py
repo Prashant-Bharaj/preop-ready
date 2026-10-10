@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.api import create_app
 from app.db import connect, init_schema
-from app.extract import extract_document, mock_extract
+from app.extract import extract_document, mock_extract, mock_extract_image
 from app.repository import list_procedures, reset_and_seed
 from app.user_identity import extract_user_identity
 
@@ -57,6 +57,45 @@ def test_done_task_survives_recheck(tmp_path):
     conn.close()
 
 
+def test_mark_done_clears_readiness_flag(tmp_path):
+    from app.repository import create_case, list_tasks, update_task_status
+
+    conn = connect(tmp_path / "demo.sqlite")
+    init_schema(conn)
+    reset_and_seed(conn, date(2026, 10, 10))
+    actor = {"name": "Dr. Test", "user_id": "test"}
+    created = create_case(
+        conn,
+        {
+            "name": "Testperson New",
+            "birthDate": "1950-01-01",
+            "sex": "female",
+            "ward": "Station Kardiologie 1",
+            "procedureType": "TAVI",
+            "plannedDate": "2026-10-11",
+            "plannedTime": "15:00",
+            "operator": "Dr. Test Operateur",
+        },
+        actor,
+    )
+    assert created["readiness"] == "RED"
+    procedure_id = created["procedureId"]
+    tasks = list_tasks(conn, "OPEN", None, created["patientId"])
+    assert tasks
+    for task in tasks:
+        update_task_status(conn, task["id"], "DONE", actor)
+    readiness = conn.execute(
+        "SELECT readiness FROM procedures WHERE id = ?", (procedure_id,)
+    ).fetchone()["readiness"]
+    open_left = conn.execute(
+        "SELECT COUNT(*) AS n FROM tasks WHERE procedure_id = ? AND status = 'OPEN'",
+        (procedure_id,),
+    ).fetchone()["n"]
+    assert open_left == 0
+    assert readiness == "GREEN"
+    conn.close()
+
+
 def test_invalid_token_never_falls_back(monkeypatch):
     monkeypatch.setenv("ALLOW_LOCAL_DEV_IDENTITY", "true")
     assert extract_user_identity({"x-amzn-oidc-data": "not-a-jwt"}) is None
@@ -68,7 +107,7 @@ def test_invalid_token_never_falls_back(monkeypatch):
 
 
 def test_mock_extractor_reads_sidecar():
-    text = ( __import__("pathlib").Path(__file__).resolve().parents[1] / "samples" / "echo.txt").read_text(
+    text = ( __import__("pathlib").Path(__file__).resolve().parents[2] / "context" / "echo.txt").read_text(
         encoding="utf-8"
     )
     result = mock_extract(text, "echo.txt")
@@ -76,6 +115,18 @@ def test_mock_extractor_reads_sidecar():
     assert result["extraction"]["reportType"] == "ECHO"
     assert result["extraction"]["findings"][0]["evidence"] == "LVEF 58 %"
     assert result["manualReviewNeeded"] is False
+    labs = mock_extract("Kennung: SYNTH-LABS-001", "labs.txt")
+    names = [item["name"] for item in labs["extraction"]["findings"]]
+    assert labs["extraction"]["reportType"] == "LAB"
+    assert "BNP" in names
+
+
+def test_mock_image_matches_filename_fixture():
+    matched = mock_extract_image("echo.png")
+    assert matched["manualReviewNeeded"] is False
+    assert matched["extraction"]["reportType"] == "ECHO"
+    unknown = mock_extract_image("scan-photo.jpg")
+    assert unknown["manualReviewNeeded"] is True
 
 
 def test_llm_retries_once_then_reviews():
@@ -127,8 +178,34 @@ def test_api_worklist_and_confirm(tmp_path, monkeypatch):
         listed = client.get("/procedures")
         assert listed.status_code == 200
         assert len(listed.json()["procedures"]) == 6
+        catalog = client.get("/samples")
+        assert catalog.status_code == 200
+        names = [item["name"] for item in catalog.json()["samples"]]
+        assert names == ["labs.txt", "echo.txt", "ecg.txt", "xray.txt", "anesthesia.txt", "agreement.txt"]
+        assert client.get("/samples/../config_defaults.py").status_code == 404
         confirmed = client.post("/procedures/proc-a/confirm")
         assert confirmed.status_code == 200
         assert confirmed.json()["confirmedBy"] == "Dr. Test Freigabe"
         blocked = client.get("/procedures", headers={"x-amzn-oidc-data": "bad"})
         assert blocked.status_code == 401
+        meta = client.get("/meta").json()
+        created = client.post(
+            "/patients",
+            json={
+                "name": "Testperson Neu",
+                "birthDate": "1950-01-01",
+                "sex": "female",
+                "ward": "Station Kardiologie 1",
+                "procedureType": "TAVI",
+                "plannedDate": meta["tomorrow"],
+                "plannedTime": "14:15",
+                "operator": "Dr. Test Operateur",
+            },
+        )
+        assert created.status_code == 200
+        body = created.json()
+        assert body["tasks"]
+        assert all(task["status"] == "OPEN" for task in body["tasks"])
+        assert any(task["item"] == "report.AGREEMENT" for task in body["tasks"])
+        again = client.get(f"/procedures?date={meta['tomorrow']}")
+        assert any(row["patientName"] == "Testperson Neu" for row in again.json()["procedures"])

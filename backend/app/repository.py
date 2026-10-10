@@ -30,7 +30,8 @@ def seed_if_empty(conn: sqlite3.Connection, today: date | None = None) -> bool:
     row = conn.execute("SELECT COUNT(*) AS n FROM patients").fetchone()
     if row["n"]:
         return False
-    insert_world(conn, build_demo_world(today or clinic_today()))
+    day = today or clinic_today()
+    insert_world(conn, build_demo_world(day), as_of=day)
     return True
 
 
@@ -45,11 +46,17 @@ def reset_and_seed(conn: sqlite3.Connection, today: date | None = None) -> None:
     conn.execute("DELETE FROM procedures")
     conn.execute("DELETE FROM patients")
     conn.execute("DELETE FROM app_config")
-    insert_world(conn, build_demo_world(today or clinic_today()))
+    day = today or clinic_today()
+    insert_world(conn, build_demo_world(day), as_of=day)
 
 
-def insert_world(conn: sqlite3.Connection, world: DemoWorld) -> None:
+def insert_world(
+    conn: sqlite3.Connection,
+    world: DemoWorld,
+    as_of: date | None = None,
+) -> None:
     now = _now()
+    check_day = as_of
     conn.execute(
         "INSERT INTO app_config (key, value_json, updated_at) VALUES (?, ?, ?)",
         ("requirements", json.dumps(default_requirements(), ensure_ascii=False), now),
@@ -91,10 +98,14 @@ def insert_world(conn: sqlite3.Connection, world: DemoWorld) -> None:
     for med in world.medications:
         _insert_medication(conn, med)
     for procedure in world.procedures:
-        run_check(conn, procedure.id)
+        run_check(conn, procedure.id, as_of=check_day)
 
 
-def run_check(conn: sqlite3.Connection, procedure_id: str) -> dict:
+def run_check(
+    conn: sqlite3.Connection,
+    procedure_id: str,
+    as_of: date | None = None,
+) -> dict:
     procedure = conn.execute(
         "SELECT * FROM procedures WHERE id = ?", (procedure_id,)
     ).fetchone()
@@ -111,6 +122,7 @@ def run_check(conn: sqlite3.Connection, procedure_id: str) -> dict:
         medications=_medications_for(conn, patient_id),
         requirements_doc=get_config(conn, "requirements"),
         thresholds_doc=get_config(conn, "thresholds"),
+        as_of=as_of or clinic_today(),
     )
     readiness = _persist_findings(conn, procedure_id, patient_id, findings)
     open_issues = conn.execute(
@@ -207,7 +219,68 @@ def get_patient(conn: sqlite3.Connection, patient_id: str) -> dict | None:
     }
 
 
-def list_tasks(conn: sqlite3.Connection, status: str | None, role: str | None) -> list[dict]:
+def create_case(conn: sqlite3.Connection, payload: dict, actor: dict) -> dict:
+    requirements = get_config(conn, "requirements")
+    procedure_type = payload["procedureType"]
+    if procedure_type not in (requirements.get("procedures") or {}):
+        return {}
+    born = date.fromisoformat(payload["birthDate"])
+    planned = date.fromisoformat(payload["plannedDate"])
+    today = clinic_today()
+    if born > today or born.year < 1900:
+        return {}
+    if planned < today or (planned - today).days > 60:
+        return {}
+    patient_id = f"pat-{uuid.uuid4().hex[:12]}"
+    procedure_id = f"proc-{uuid.uuid4().hex[:12]}"
+    conn.execute(
+        "INSERT INTO patients (id, name, birth_date, sex, ward) VALUES (?, ?, ?, ?, ?)",
+        (patient_id, payload["name"], born.isoformat(), payload["sex"], payload["ward"]),
+    )
+    conn.execute(
+        """
+        INSERT INTO procedures (
+            id, patient_id, procedure_type, planned_date, planned_time,
+            operator, status, readiness
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            procedure_id,
+            patient_id,
+            procedure_type,
+            planned.isoformat(),
+            payload["plannedTime"],
+            payload["operator"],
+            "planned",
+            None,
+        ),
+    )
+    write_audit(
+        conn,
+        "patient.create",
+        actor,
+        "patient",
+        patient_id,
+        {"procedureId": procedure_id, "procedureType": procedure_type},
+    )
+    checked = run_check(conn, procedure_id)
+    return {
+        "patientId": patient_id,
+        "procedureId": procedure_id,
+        "patientName": payload["name"],
+        "plannedDate": planned.isoformat(),
+        "readiness": checked.get("readiness"),
+        "openIssues": checked.get("openIssues", 0),
+        "tasks": list_tasks(conn, "OPEN", None, patient_id),
+    }
+
+
+def list_tasks(
+    conn: sqlite3.Connection,
+    status: str | None,
+    role: str | None,
+    patient_id: str | None = None,
+) -> list[dict]:
     sql = """
         SELECT t.*, p.name AS patient_name, pr.procedure_type, pr.planned_date, pr.planned_time
         FROM tasks t
@@ -222,6 +295,9 @@ def list_tasks(conn: sqlite3.Connection, status: str | None, role: str | None) -
     if role:
         sql += " AND t.assigned_role = ?"
         params.append(role)
+    if patient_id:
+        sql += " AND t.patient_id = ?"
+        params.append(patient_id)
     sql += " ORDER BY pr.planned_date, pr.planned_time, t.assigned_role"
     rows = conn.execute(sql, params).fetchall()
     return [_task_dict(row) for row in rows]
@@ -240,6 +316,7 @@ def update_task_status(conn: sqlite3.Connection, task_id: str, status: str, acto
         task_id,
         {"status": status, "procedureId": row["procedure_id"]},
     )
+    _recompute_readiness(conn, row["procedure_id"])
     updated = conn.execute(
         """
         SELECT t.*, p.name AS patient_name, pr.procedure_type, pr.planned_date, pr.planned_time
@@ -364,7 +441,17 @@ def save_extraction(
             ),
         )
         stored["ids"].append(clearance_id)
-    elif report_type in {"ECHO", "CHEST_XRAY", "ECG"}:
+    elif report_type in {
+        "ECHO",
+        "CHEST_XRAY",
+        "ECG",
+        "AGREEMENT",
+        "DUPLEX_GROIN_PRE",
+        "DUPLEX_GROIN_POST",
+        "GASTROSCOPY",
+        "ECHO_6W",
+        "ECHO_6M",
+    }:
         report_id = f"rep-upload-{uuid.uuid4().hex[:10]}"
         conclusion = extraction.get("conclusionText") or ""
         evidence_bits = [
@@ -430,20 +517,60 @@ def write_audit(
     )
 
 
-def _persist_findings(
-    conn: sqlite3.Connection,
-    procedure_id: str,
-    patient_id: str,
-    findings: list[Finding],
-) -> str:
-    done_rows = conn.execute(
+def _done_keys(conn: sqlite3.Connection, procedure_id: str) -> set[tuple[str, str, str]]:
+    rows = conn.execute(
         """
         SELECT item, category, source_ref FROM tasks
          WHERE procedure_id = ? AND status = 'DONE'
         """,
         (procedure_id,),
     ).fetchall()
-    done = {(row["item"], row["category"], row["source_ref"]) for row in done_rows}
+    return {(row["item"], row["category"], row["source_ref"]) for row in rows}
+
+
+def _finding_key(finding: Finding) -> tuple[str, str, str]:
+    return (finding.item, finding.category, finding.source_ref)
+
+
+def _active_findings(findings: list[Finding], done: set[tuple[str, str, str]]) -> list[Finding]:
+    return [finding for finding in findings if _finding_key(finding) not in done]
+
+
+def _recompute_readiness(conn: sqlite3.Connection, procedure_id: str) -> str:
+    rows = conn.execute(
+        """
+        SELECT category, severity, item, message_de, message_en, source_ref, role
+          FROM findings WHERE procedure_id = ?
+        """,
+        (procedure_id,),
+    ).fetchall()
+    findings = [
+        Finding(
+            row["category"],
+            row["severity"],
+            row["item"],
+            row["message_de"],
+            row["message_en"],
+            row["source_ref"],
+            row["role"],
+        )
+        for row in rows
+    ]
+    readiness = overall_status(_active_findings(findings, _done_keys(conn, procedure_id)))
+    conn.execute(
+        "UPDATE procedures SET readiness = ? WHERE id = ?",
+        (readiness, procedure_id),
+    )
+    return readiness
+
+
+def _persist_findings(
+    conn: sqlite3.Connection,
+    procedure_id: str,
+    patient_id: str,
+    findings: list[Finding],
+) -> str:
+    done = _done_keys(conn, procedure_id)
     conn.execute("DELETE FROM findings WHERE procedure_id = ?", (procedure_id,))
     conn.execute(
         "DELETE FROM tasks WHERE procedure_id = ? AND status = 'OPEN'",
@@ -472,7 +599,7 @@ def _persist_findings(
                 finding.role,
             ),
         )
-        key = (finding.item, finding.category, finding.source_ref)
+        key = _finding_key(finding)
         alive.add(key)
         if key in done:
             continue
@@ -506,7 +633,8 @@ def _persist_findings(
                 """,
                 (procedure_id, item, category, source_ref),
             )
-    readiness = overall_status(findings)
+    remaining_done = done & alive
+    readiness = overall_status(_active_findings(findings, remaining_done))
     conn.execute(
         "UPDATE procedures SET readiness = ? WHERE id = ?",
         (readiness, procedure_id),
@@ -516,12 +644,16 @@ def _persist_findings(
 
 def _procedure_detail(conn, row, requirements, finding_dicts) -> dict:
     own = [f for f in finding_dicts if f["procedureId"] == row["id"]]
+    done = _done_keys(conn, row["id"])
+    active_own = [
+        f for f in own if (f["item"], f["category"], f["sourceRef"]) not in done
+    ]
     rules = (requirements.get("procedures") or {}).get(row["procedure_type"]) or []
     labels = requirements.get("labels") or {}
     checklist = []
     for rule in rules:
         item = rule["item"]
-        related = [f for f in own if f["item"] == item]
+        related = [f for f in active_own if f["item"] == item]
         state = item_state(
             item,
             [
@@ -568,7 +700,7 @@ def _procedure_detail(conn, row, requirements, finding_dicts) -> dict:
         "confirmedBy": row["confirmed_by"],
         "confirmedAt": row["confirmed_at"],
         "checklist": checklist,
-        "findings": own,
+        "findings": active_own,
     }
 
 

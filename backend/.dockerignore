@@ -1,33 +1,8 @@
-# ============================================================================
-# DOCKER BUILD CONTEXT EXCLUSIONS - backend/
-# ============================================================================
-# Docker does NOT read .gitignore. Without this file every local file in
-# backend/ is uploaded into the build context and baked into the image by
-# `COPY . .` (Dockerfile.node / Dockerfile.python).
-#
-# backend/.env is the file docker-compose loads as env_file, so it is almost
-# always present locally — and it holds the real API keys. Anyone who can
-# pull or exec into the image can read it.
-#
-# The build context is ./backend (see docker-compose.yml), so it is THIS
-# file that applies — a .dockerignore at the repo root does not.
-# ============================================================================
-
-# Secrets — the runtime gets these as environment variables, never as files
+.venv
+__pycache__
+.pytest_cache
+data
+*.sqlite
 .env
 .env.*
-
-# Repo metadata — carries the full history of everything ever committed
-.git
-
-# Dependencies — reinstalled inside the image, and huge
-node_modules
-
-# Reference material and local test data (gitignored — often REAL data)
-context/
-database/seed/
-
-# Local build/run noise
-*.log
-.template-backup/
-__pycache__/
+.mypy_cache

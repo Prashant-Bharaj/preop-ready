@@ -1,0 +1,18 @@
+{
+  "reportType": "ECG",
+  "dateOffsetDays": -1,
+  "patientId": "pat-b",
+  "patientName": "Testperson B",
+  "findings": [
+    {
+      "name": "Herzfrequenz",
+      "value": 72,
+      "unit": "/min",
+      "evidence": "Frequenz 72/min"
+    }
+  ],
+  "clearanceStatus": null,
+  "conditions": [],
+  "asaClass": null,
+  "conclusionText": "Sinusrhythmus. Frequenz 72/min. Keine Ischämiezeichen."
+}
