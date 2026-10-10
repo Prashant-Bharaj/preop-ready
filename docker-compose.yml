@@ -24,6 +24,7 @@ services:
       - ALLOW_LOCAL_DEV_IDENTITY=true
       - TZ=Europe/Berlin
       - PREOP_CONTEXT_DIR=/context
+      - PREOP_DB_PATH=/data/preop-ready.sqlite
     volumes:
       - preop-data:/data
       - ./context:/context:ro

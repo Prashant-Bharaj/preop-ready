@@ -96,6 +96,42 @@ def test_mark_done_clears_readiness_flag(tmp_path):
     conn.close()
 
 
+def test_checklist_item_done_works_without_client_task_list(tmp_path):
+    from app.repository import create_case, mark_checklist_item_done
+
+    conn = connect(tmp_path / "demo.sqlite")
+    init_schema(conn)
+    reset_and_seed(conn, date(2026, 10, 10))
+    actor = {"name": "Dr. Test", "user_id": "test"}
+    created = create_case(
+        conn,
+        {
+            "name": "Testperson Checklist",
+            "birthDate": "1950-01-01",
+            "sex": "female",
+            "ward": "Station Kardiologie 1",
+            "procedureType": "TAVI",
+            "plannedDate": "2026-10-11",
+            "plannedTime": "15:30",
+            "operator": "Dr. Test Operateur",
+        },
+        actor,
+    )
+    conn.commit()
+    result = mark_checklist_item_done(conn, created["procedureId"], "lab.hb", actor)
+    assert result is not None
+    assert result["marked"] >= 1
+    open_hb = conn.execute(
+        """
+        SELECT COUNT(*) AS n FROM tasks
+         WHERE procedure_id = ? AND item = 'lab.hb' AND status = 'OPEN'
+        """,
+        (created["procedureId"],),
+    ).fetchone()["n"]
+    assert open_hb == 0
+    conn.close()
+
+
 def test_invalid_token_never_falls_back(monkeypatch):
     monkeypatch.setenv("ALLOW_LOCAL_DEV_IDENTITY", "true")
     assert extract_user_identity({"x-amzn-oidc-data": "not-a-jwt"}) is None

@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, type Meta, type ProcedureRow, type Readiness } from "../api";
-import { ReportUploadPanel } from "../components/ReportUploadPanel";
 import CountUp from "../components/reactbits/CountUp";
-import FadeContent from "../components/reactbits/FadeContent";
 import ShinyText from "../components/reactbits/ShinyText";
 import SpotlightCard from "../components/reactbits/SpotlightCard";
 import { useTheme } from "../theme";
@@ -32,8 +30,6 @@ export function Worklist() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [created, setCreated] = useState<CreatedCase | null>(null);
   const [form, setForm] = useState({
     name: "",
     birthDate: "1950-01-01",
@@ -54,21 +50,38 @@ export function Worklist() {
   }, [meta?.today]);
 
   useEffect(() => {
+    let cancelled = false;
     api<Meta>("/meta")
-      .then(setMeta)
-      .catch(() => setError(t("error")));
+      .then((data) => {
+        if (!cancelled) setMeta(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError(t("error"));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [t]);
 
   useEffect(() => {
     if (!selectedDate) return;
+    let cancelled = false;
     setLoading(true);
     api<{ procedures: ProcedureRow[] }>(`/procedures?date=${selectedDate}`)
       .then((data) => {
+        if (cancelled) return;
         setRows(data.procedures);
         setError("");
       })
-      .catch(() => setError(t("error")))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setError(t("error"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, t]);
 
   const visible = useMemo(
@@ -91,12 +104,6 @@ export function Worklist() {
   async function checkAll() {
     await api("/check/all", { method: "POST" });
     await reload();
-  }
-
-  function goToCase(caseRow: CreatedCase) {
-    setCreated(null);
-    setNotice("");
-    navigate(`/patients/${caseRow.patientId}?procedure=${caseRow.procedureId}`);
   }
 
   function openAddForm() {
@@ -124,12 +131,9 @@ export function Worklist() {
       });
       setAdding(false);
       setForm((current) => ({ ...current, name: "", plannedDate: "" }));
-      setCreated(response);
-      setNotice(t("caseAdded"));
-      if (response.plannedDate === meta?.today) setWindowKey("today");
-      else if (response.plannedDate === meta?.tomorrow) setWindowKey("tomorrow");
-      else if (response.plannedDate === meta?.horizon) setWindowKey("horizon");
-      await reload(response.plannedDate);
+      navigate(
+        `/patients/${response.patientId}?procedure=${response.procedureId}&upload=1`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error"));
     } finally {
@@ -175,7 +179,7 @@ export function Worklist() {
           </button>
         </div>
       </div>
-      <FadeContent duration={500} className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {(["RED", "YELLOW", "GREEN"] as Readiness[]).map((readiness) => (
           <SpotlightCard
             key={readiness}
@@ -198,12 +202,17 @@ export function Worklist() {
             } ${status === readiness ? "ring-2 ring-accent/40" : "hover:-translate-y-0.5"}`}
           >
             <span className="text-xs font-bold uppercase tracking-wide text-muted">{readiness === "RED" ? t("red") : readiness === "YELLOW" ? t("yellow") : t("green")}</span>
-            <CountUp to={counts[readiness]} duration={0.8} className="mt-1 block text-3xl font-extrabold tabular-nums text-ink" />
+            <CountUp
+              key={`${readiness}-${counts[readiness]}`}
+              to={counts[readiness]}
+              duration={0.6}
+              className="mt-1 block text-3xl font-extrabold tabular-nums text-ink"
+            />
             <span className="text-sm text-muted">{t("procedure")}</span>
           </button>
           </SpotlightCard>
         ))}
-      </FadeContent>
+      </div>
       {adding && (
         <form onSubmit={createCase} className="grid gap-4 rounded-xl border border-line bg-surface p-5 shadow-sm sm:grid-cols-2">
           <label className="text-sm font-semibold">
@@ -300,28 +309,6 @@ export function Worklist() {
           </div>
         </form>
       )}
-      {created && (
-        <section className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-          <h2 className="text-lg font-bold">
-            {t("uploadReport")} – {created.patientName}
-          </h2>
-          <div className="mt-3">
-            <ReportUploadPanel
-              lead={t("uploadAfterAdd")}
-              patientId={created.patientId}
-              patientName={created.patientName}
-              onSaved={() => goToCase(created)}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => goToCase(created)}
-            className="mt-4 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink"
-          >
-            {t("skipUpload")}
-          </button>
-        </section>
-      )}
       <div className="flex flex-wrap gap-3 rounded-xl border border-line bg-surface-raised p-4">
         <label className="text-sm font-semibold">
           {t("procedure")}
@@ -399,9 +386,6 @@ export function Worklist() {
             </tbody>
           </table>
         </div>
-      )}
-      {notice && (
-        <p className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 font-semibold text-success">{notice}</p>
       )}
     </section>
   );

@@ -71,11 +71,14 @@ export default function CountUp({
     [maxDecimals, separator]
   );
 
+  // Keep the visible number in sync when `to` changes after the first paint
+  // (e.g. worklist counts load after meta). Avoid resetting to `from` on every update.
   useEffect(() => {
-    if (ref.current) {
-      ref.current.textContent = formatValue(direction === 'down' ? to : from);
+    if (!ref.current) return;
+    if (!isInView || !startWhen) {
+      ref.current.textContent = formatValue(direction === 'down' ? from : to);
     }
-  }, [from, to, direction, formatValue]);
+  }, [from, to, direction, formatValue, isInView, startWhen]);
 
   useEffect(() => {
     if (isInView && startWhen) {
@@ -85,6 +88,10 @@ export default function CountUp({
 
       const timeoutId = setTimeout(() => {
         motionValue.set(direction === 'down' ? from : to);
+        // Ensure final value is painted even if the spring skips a change event.
+        if (ref.current) {
+          ref.current.textContent = formatValue(direction === 'down' ? from : to);
+        }
       }, delay * 1000);
 
       const durationTimeoutId = setTimeout(
@@ -101,7 +108,7 @@ export default function CountUp({
         clearTimeout(durationTimeoutId);
       };
     }
-  }, [isInView, startWhen, motionValue, direction, from, to, delay, onStart, onEnd, duration]);
+  }, [isInView, startWhen, motionValue, direction, from, to, delay, onStart, onEnd, duration, formatValue]);
 
   useEffect(() => {
     const unsubscribe = springValue.on('change', (latest: number) => {
