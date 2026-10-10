@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   api,
@@ -21,26 +21,71 @@ export function PatientDetail() {
   const [userName, setUserName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [busyItem, setBusyItem] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [uploadKey, setUploadKey] = useState(0);
   const [uploadNotice, setUploadNotice] = useState("");
 
-  async function load() {
-    const [detail, meta, tasks] = await Promise.all([
-      api<PatientPayload>(`/patients/${id}`),
-      api<Meta>("/meta"),
-      api<{ tasks: TaskRow[] }>(`/tasks?status=OPEN&patientId=${encodeURIComponent(id)}`),
-    ]);
-    setData(detail);
-    setUserName(meta.user.name);
-    setOpenTasks(tasks.tasks);
-  }
+  const load = useCallback(
+    async (attempt = 0): Promise<void> => {
+      try {
+        const [detail, meta] = await Promise.all([
+          api<PatientPayload>(`/patients/${id}`),
+          api<Meta>("/meta").catch(() => null),
+        ]);
+        setError("");
+        setData(detail);
+        setOpenTasks(detail.openTasks ?? []);
+        if (meta) setUserName(meta.user.name);
+      } catch (err) {
+        if (attempt < 4) {
+          await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+          return load(attempt + 1);
+        }
+        throw err;
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
-    load().catch(() => setError(t("error")));
-  }, [id, t]);
+    let cancelled = false;
+    setError("");
+    load()
+      .catch(() => {
+        if (!cancelled) setError(t("error"));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, load, t]);
 
-  if (error) return <p className="text-red-800">{error}</p>;
+  useEffect(() => {
+    if (params.get("upload") === "1") {
+      setShowUpload(true);
+    }
+  }, [params]);
+
+  if (!data && error) {
+    return (
+      <section className="space-y-4">
+        <Link to="/" className="text-sm font-semibold text-sky-900">
+          {t("back")}
+        </Link>
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">{error}</p>
+        <button
+          type="button"
+          className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold"
+          onClick={() => {
+            setError("");
+            void load().catch(() => setError(t("error")));
+          }}
+        >
+          {t("recheck")}
+        </button>
+      </section>
+    );
+  }
   if (!data) return <p>{t("loading")}</p>;
 
   const requested = params.get("procedure");
@@ -51,6 +96,7 @@ export function PatientDetail() {
 
   async function confirm() {
     setBusy(true);
+    setError("");
     try {
       await api(`/procedures/${procedure.id}/confirm`, { method: "POST" });
       await load();
@@ -63,9 +109,12 @@ export function PatientDetail() {
 
   async function recheck() {
     setBusy(true);
+    setError("");
     try {
       await api(`/check/${procedure.id}`, { method: "POST" });
       await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("error"));
     } finally {
       setBusy(false);
     }
@@ -73,29 +122,56 @@ export function PatientDetail() {
 
   async function markDone(task: TaskRow) {
     setBusy(true);
+    setBusyItem(task.id);
+    setError("");
+    setOpenTasks((current) => current.filter((row) => row.id !== task.id));
     try {
       await api(`/tasks/${task.id}`, { method: "PATCH", body: JSON.stringify({ status: "DONE" }) });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error"));
+      await load().catch(() => undefined);
     } finally {
       setBusy(false);
+      setBusyItem("");
     }
   }
 
   async function markChecklistItemDone(itemKey: string) {
-    const related = procedureTasks.filter((task) => task.item === itemKey);
-    if (related.length === 0) return;
     setBusy(true);
+    setBusyItem(itemKey);
+    setError("");
+    setOpenTasks((current) => current.filter((task) => task.item !== itemKey));
+    setData((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        procedures: current.procedures.map((proc) => {
+          if (proc.id !== procedure.id) return proc;
+          return {
+            ...proc,
+            openIssues: Math.max(0, proc.openIssues - 1),
+            checklist: proc.checklist.map((item) =>
+              item.item === itemKey
+                ? { ...item, state: "complete" as const, detailDe: "", detailEn: "" }
+                : item,
+            ),
+          };
+        }),
+      };
+    });
     try {
-      for (const task of related) {
-        await api(`/tasks/${task.id}`, { method: "PATCH", body: JSON.stringify({ status: "DONE" }) });
-      }
+      await api(`/procedures/${procedure.id}/checklist-done`, {
+        method: "POST",
+        body: JSON.stringify({ itemKey }),
+      });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error"));
+      await load().catch(() => undefined);
     } finally {
       setBusy(false);
+      setBusyItem("");
     }
   }
 
@@ -106,6 +182,9 @@ export function PatientDetail() {
       <Link to="/" className="text-sm font-semibold text-sky-900">
         {t("back")}
       </Link>
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">{error}</p>
+      )}
       <header className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-line bg-white p-5">
         <div>
           <h1 className="text-2xl font-bold">{data.patient.name}</h1>
@@ -150,7 +229,7 @@ export function PatientDetail() {
                   onClick={() => void markDone(task)}
                   className="mt-3 rounded-md border border-line bg-white px-3 py-1 text-sm font-semibold disabled:opacity-50"
                 >
-                  {t("markDone")}
+                  {busyItem === task.id ? t("loading") : t("markDone")}
                 </button>
               </li>
             ))}
@@ -166,9 +245,7 @@ export function PatientDetail() {
           </button>
         </div>
         <ul className="divide-y divide-line">
-          {procedure.checklist.map((item) => {
-            const openForItem = procedureTasks.filter((task) => task.item === item.item);
-            return (
+          {procedure.checklist.map((item) => (
               <li key={item.item} id={item.sourceRef || item.item} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{lang === "de" ? item.labelDe : item.labelEn}</p>
@@ -176,59 +253,20 @@ export function PatientDetail() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatePill state={item.state} />
-                  {item.state !== "complete" && openForItem.length > 0 && (
+                  {item.state !== "complete" && (
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void markChecklistItemDone(item.item)}
                       className="rounded-md border border-line bg-white px-3 py-1 text-sm font-semibold disabled:opacity-50"
                     >
-                      {t("markDone")}
+                      {busyItem === item.item ? t("loading") : t("markDone")}
                     </button>
                   )}
                 </div>
               </li>
-            );
-          })}
+          ))}
         </ul>
-      </section>
-
-      <section className="rounded-lg border border-line bg-white p-5">
-        <h2 className="mb-3 text-lg font-bold">{t("labs")}</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
-              <tr>
-                <th className="py-2 pr-3">{t("labs")}</th>
-                <th className="py-2 pr-3">{t("value")}</th>
-                <th className="py-2 pr-3">{t("range")}</th>
-                <th className="py-2 pr-3">{t("date")}</th>
-                <th className="py-2">{t("source")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.labs.map((lab) => (
-                <tr
-                  key={lab.id}
-                  id={lab.id}
-                  className={
-                    lab.flag === "critical" ? "bg-red-50" : lab.flag === "warning" ? "bg-amber-50" : ""
-                  }
-                >
-                  <td className="py-2 pr-3 font-semibold">{lang === "de" ? lab.labelDe : lab.labelEn}</td>
-                  <td className="py-2 pr-3">
-                    {lab.value} {lab.unit}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {lab.low ?? "–"} – {lab.high ?? "–"} {lab.expectedUnit || ""}
-                  </td>
-                  <td className="py-2 pr-3">{formatDate(lab.effectiveDate, lang)}</td>
-                  <td className="py-2">{lab.source}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       <section className="rounded-lg border border-line bg-white p-5">
@@ -280,6 +318,44 @@ export function PatientDetail() {
               </p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-line bg-white p-5">
+        <h2 className="mb-3 text-lg font-bold">{t("labs")}</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-500">
+              <tr>
+                <th className="py-2 pr-3">{t("labs")}</th>
+                <th className="py-2 pr-3">{t("value")}</th>
+                <th className="py-2 pr-3">{t("range")}</th>
+                <th className="py-2 pr-3">{t("date")}</th>
+                <th className="py-2">{t("source")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.labs.map((lab) => (
+                <tr
+                  key={lab.id}
+                  id={lab.id}
+                  className={
+                    lab.flag === "critical" ? "bg-red-50" : lab.flag === "warning" ? "bg-amber-50" : ""
+                  }
+                >
+                  <td className="py-2 pr-3 font-semibold">{lang === "de" ? lab.labelDe : lab.labelEn}</td>
+                  <td className="py-2 pr-3">
+                    {lab.value} {lab.unit}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {lab.low ?? "–"} – {lab.high ?? "–"} {lab.expectedUnit || ""}
+                  </td>
+                  <td className="py-2 pr-3">{formatDate(lab.effectiveDate, lang)}</td>
+                  <td className="py-2">{lab.source}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 

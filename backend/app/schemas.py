@@ -176,6 +176,19 @@ class TaskPatch(BaseModel):
         return value
 
 
+class ChecklistItemDone(BaseModel):
+    """Dismiss all open findings/tasks for one checklist row."""
+
+    itemKey: str = Field(min_length=3, max_length=80)
+
+    @field_validator("itemKey")
+    @classmethod
+    def item_shape(cls, value: str) -> str:
+        if not _ITEM.fullmatch(value):
+            raise ValueError("itemKey")
+        return value
+
+
 class UploadConfirm(BaseModel):
     patientId: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
     extraction: Extraction

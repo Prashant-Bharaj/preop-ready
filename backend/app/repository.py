@@ -200,6 +200,7 @@ def get_patient(conn: sqlite3.Connection, patient_id: str) -> dict | None:
         (patient_id,),
     ).fetchall()
     finding_dicts = [_row_finding(row) for row in findings]
+    open_tasks = list_tasks(conn, "OPEN", None, patient_id)
     return {
         "patient": {
             "id": patient["id"],
@@ -216,6 +217,7 @@ def get_patient(conn: sqlite3.Connection, patient_id: str) -> dict | None:
         "reports": _report_rows(conn, patient_id),
         "medications": _medication_rows(conn, patient_id),
         "clearance": _clearance_dict(conn, patient_id),
+        "openTasks": open_tasks,
     }
 
 
@@ -328,6 +330,100 @@ def update_task_status(conn: sqlite3.Connection, task_id: str, status: str, acto
         (task_id,),
     ).fetchone()
     return _task_dict(updated)
+
+
+def mark_checklist_item_done(
+    conn: sqlite3.Connection,
+    procedure_id: str,
+    item: str,
+    actor: dict,
+) -> dict | None:
+    """Mark a checklist row done even when OPEN tasks are not yet loaded client-side."""
+    procedure = conn.execute(
+        "SELECT id, patient_id, readiness FROM procedures WHERE id = ?",
+        (procedure_id,),
+    ).fetchone()
+    if procedure is None:
+        return None
+
+    open_rows = conn.execute(
+        """
+        SELECT id FROM tasks
+         WHERE procedure_id = ? AND item = ? AND status = 'OPEN'
+        """,
+        (procedure_id, item),
+    ).fetchall()
+    marked = 0
+    for row in open_rows:
+        if update_task_status(conn, row["id"], "DONE", actor):
+            marked += 1
+
+    if marked == 0:
+        findings = conn.execute(
+            """
+            SELECT category, source_ref, message_de, message_en, role
+              FROM findings
+             WHERE procedure_id = ? AND item = ?
+            """,
+            (procedure_id, item),
+        ).fetchall()
+        for finding in findings:
+            already = conn.execute(
+                """
+                SELECT 1 FROM tasks
+                 WHERE procedure_id = ? AND item = ? AND category = ?
+                   AND source_ref = ? AND status = 'DONE'
+                """,
+                (
+                    procedure_id,
+                    item,
+                    finding["category"],
+                    finding["source_ref"],
+                ),
+            ).fetchone()
+            if already:
+                continue
+            conn.execute(
+                """
+                INSERT INTO tasks (
+                    id, procedure_id, patient_id, finding_id, item, category,
+                    source_ref, text_de, text_en, assigned_role, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DONE')
+                """,
+                (
+                    uuid.uuid4().hex,
+                    procedure_id,
+                    procedure["patient_id"],
+                    None,
+                    item,
+                    finding["category"],
+                    finding["source_ref"],
+                    finding["message_de"],
+                    finding["message_en"],
+                    finding["role"],
+                ),
+            )
+            marked += 1
+        if marked:
+            write_audit(
+                conn,
+                "checklist.item.done",
+                actor,
+                "procedure",
+                procedure_id,
+                {"itemKey": item, "marked": marked},
+            )
+            _recompute_readiness(conn, procedure_id)
+
+    readiness = conn.execute(
+        "SELECT readiness FROM procedures WHERE id = ?", (procedure_id,)
+    ).fetchone()["readiness"]
+    return {
+        "procedureId": procedure_id,
+        "itemKey": item,
+        "marked": marked,
+        "readiness": readiness,
+    }
 
 
 def confirm_procedure(conn: sqlite3.Connection, procedure_id: str, actor: dict) -> dict | None:

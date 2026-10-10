@@ -123,29 +123,47 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 """
 
 
+_RESOLVED_PATH: Path | None = None
+
+
 def resolve_db_path() -> Path:
+    """Resolve once per process so every request uses the same SQLite file."""
+    global _RESOLVED_PATH
+    if _RESOLVED_PATH is not None:
+        return _RESOLVED_PATH
+
     override = os.environ.get("PREOP_DB_PATH")
     if override:
-        return Path(override)
+        target = Path(override)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        _RESOLVED_PATH = target
+        return target
+
     preferred = Path("/data/preop-ready.sqlite")
     try:
         preferred.parent.mkdir(parents=True, exist_ok=True)
         probe = preferred.parent / ".write-probe"
         probe.write_text("ok", encoding="utf-8")
         probe.unlink()
+        _RESOLVED_PATH = preferred
         return preferred
     except OSError:
         fallback = Path(__file__).resolve().parent.parent / "data"
         fallback.mkdir(parents=True, exist_ok=True)
-        return fallback / "preop-ready.sqlite"
+        _RESOLVED_PATH = fallback / "preop-ready.sqlite"
+        return _RESOLVED_PATH
 
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
     target = Path(path) if path else resolve_db_path()
     target.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(target, timeout=10)
+    # check_same_thread=False: FastAPI may create the dependency connection
+    # on a different worker thread than the sync route handler.
+    conn = sqlite3.connect(str(target), timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=30000")
     return conn
 
 

@@ -31,6 +31,7 @@ from app.repository import (
     list_patient_options,
     list_procedures,
     list_tasks,
+    mark_checklist_item_done,
     put_config,
     run_check,
     run_check_all,
@@ -40,7 +41,14 @@ from app.repository import (
     update_task_status,
     write_audit,
 )
-from app.schemas import NewCase, RequirementsDocument, TaskPatch, ThresholdsDocument, UploadConfirm
+from app.schemas import (
+    ChecklistItemDone,
+    NewCase,
+    RequirementsDocument,
+    TaskPatch,
+    ThresholdsDocument,
+    UploadConfirm,
+)
 from app.user_identity import get_current_user
 
 logger = logging.getLogger("app")
@@ -81,9 +89,10 @@ def create_app() -> FastAPI:
 
 
 def _conn():
+    # Schema is initialized once in lifespan — do not re-run DDL per request
+    # (concurrent CREATE + reads caused intermittent patient 404s).
     conn = connect()
     try:
-        init_schema(conn)
         yield conn
         conn.commit()
     except Exception:
@@ -137,6 +146,8 @@ def create_patient(
     created = create_case(conn, body.model_dump(), user)
     if not created:
         raise bad_request("The case could not be added")
+    # Commit before the response so the next page load can read the new row.
+    conn.commit()
     return created
 
 
@@ -195,7 +206,23 @@ def patch_task(
     updated = update_task_status(conn, task_id, body.status, user)
     if updated is None:
         raise not_found("Task was not found")
+    conn.commit()
     return updated
+
+
+@router.post("/procedures/{procedure_id}/checklist-done")
+def checklist_item_done(
+    procedure_id: str,
+    body: ChecklistItemDone,
+    user: dict = Depends(get_current_user),
+    conn=Depends(_conn),
+):
+    _check_id(procedure_id)
+    result = mark_checklist_item_done(conn, procedure_id, body.itemKey, user)
+    if result is None:
+        raise not_found("Procedure was not found")
+    conn.commit()
+    return result
 
 
 @router.get("/config/requirements")
@@ -239,6 +266,7 @@ def confirm(
     result = confirm_procedure(conn, procedure_id, user)
     if result is None:
         raise not_found("Procedure was not found")
+    conn.commit()
     return result
 
 
@@ -306,6 +334,7 @@ def upload_confirm(
         body.patientId,
         {"reportType": body.extraction.reportType},
     )
+    conn.commit()
     return stored
 
 
