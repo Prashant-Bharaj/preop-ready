@@ -1,0 +1,11 @@
+{
+  "reportType": "CHEST_XRAY",
+  "dateOffsetDays": -3,
+  "patientId": "pat-f",
+  "patientName": "Testperson F",
+  "findings": [],
+  "clearanceStatus": null,
+  "conditions": [],
+  "asaClass": null,
+  "conclusionText": "Keine pneumonischen Infiltrate. Herzgröße im Normbereich. Kein Pleuraerguss."
+}

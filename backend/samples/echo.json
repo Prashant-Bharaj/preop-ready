@@ -1,0 +1,18 @@
+{
+  "reportType": "ECHO",
+  "dateOffsetDays": -4,
+  "patientId": "pat-c",
+  "patientName": "Testperson C",
+  "findings": [
+    {
+      "name": "LVEF",
+      "value": 58,
+      "unit": "%",
+      "evidence": "LVEF 58 %"
+    }
+  ],
+  "clearanceStatus": null,
+  "conditions": [],
+  "asaClass": null,
+  "conclusionText": "TEE mit guter Schallqualität. Hochgradige Aortenklappenstenose. LVEF 58 %. Kein Perikarderguss."
+}
