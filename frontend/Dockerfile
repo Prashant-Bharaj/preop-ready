@@ -1,6 +1,6 @@
 # React frontend. Builds with Node, serves with nginx as a non-root user.
 
-FROM node:22-slim AS builder
+FROM node:25-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --no-audit --no-fund
