@@ -1,0 +1,12 @@
+Universitätsklinikum – synthetischer Demobefund, keine echte Person.
+Kennung: SYNTH-ECHO-001
+
+Echokardiographie (TEE)
+Patient: Testperson C
+Patienten-ID: pat-c
+Untersuchung: transösophageale Echokardiographie
+
+Befund: TEE mit guter Schallqualität. Hochgradige Aortenklappenstenose.
+LVEF 58 %. Kein Perikarderguss.
+
+Beurteilung: TEE-Befund liegt vor. Synthetisches Demonstrationsdokument.

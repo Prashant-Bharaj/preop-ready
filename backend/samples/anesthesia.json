@@ -1,0 +1,11 @@
+{
+  "reportType": "ANESTHESIA",
+  "dateOffsetDays": -1,
+  "patientId": "pat-c",
+  "patientName": "Testperson C",
+  "findings": [],
+  "clearanceStatus": "GRANTED",
+  "conditions": [],
+  "asaClass": "ASA III",
+  "conclusionText": "Freigabe erteilt. Auflagen: keine. Narkosefähigkeit für den geplanten Eingriff gegeben."
+}
